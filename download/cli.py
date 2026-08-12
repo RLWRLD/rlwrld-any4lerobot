@@ -1,16 +1,16 @@
 """Fetch S3 objects fast, and diagnose why a transfer is slow.
 
     # measure the network alone (nothing touches the disk)
-    python3 -m lerobot_pipeline.scripts.fetch_s3 s3://bucket/prefix/ --discard --sample 8
+    python3 -m download s3://bucket/prefix/ --discard --sample 8
 
     # is the disk the ceiling, or the network? runs both and reports the gap
-    python3 -m lerobot_pipeline.scripts.fetch_s3 s3://bucket/prefix/ \
+    python3 -m download s3://bucket/prefix/ \
         --dest /scratch/data --diagnose --sample 8
 
     # actually fetch
-    python3 -m lerobot_pipeline.scripts.fetch_s3 s3://bucket/prefix/ --dest /scratch/data
+    python3 -m download s3://bucket/prefix/ --dest /scratch/data
 
-Defaults come from measurements on this project's data -- see `lerobot_pipeline/fetch.py`.
+Defaults come from measurements on this project's data -- see download/README.md.
 """
 
 import argparse
@@ -18,12 +18,9 @@ import json
 import sys
 from pathlib import Path
 
-from ..fetch import (
-    detect_nic_gbps,
-    execute_plan,
-    list_objects,
-    plan_fetch,
-)
+from .nic import default_nic, detect_nic_gbps
+from .plan import plan_fetch
+from .s3 import execute_plan, list_objects
 
 
 def split_s3_uri(uri: str) -> tuple[str, str]:
@@ -38,7 +35,7 @@ def split_s3_uri(uri: str) -> tuple[str, str]:
 
 def parse_args(argv=None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        prog="lerobot_pipeline.scripts.fetch_s3",
+        prog="download",
         description="Fetch S3 objects with one coordinated client, or diagnose a slow transfer.",
     )
     parser.add_argument("source", help="s3://bucket/prefix/")
@@ -75,7 +72,7 @@ def main(argv=None) -> int:
     except ValueError as exc:
         raise SystemExit(str(exc)) from exc
 
-    nic = detect_nic_gbps()
+    nic = detect_nic_gbps(nic=default_nic())
     print(f"NIC rate: {f'{nic:g} Gbps' if nic else 'unknown (off EC2?)'}")
 
     objects = list_objects(bucket, prefix, args.suffix)

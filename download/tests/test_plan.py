@@ -1,6 +1,6 @@
 import pytest
 
-from lerobot_pipeline.fetch import (
+from download.plan import (
     MAX_CONCURRENCY,
     FetchTask,
     RemoteObject,
@@ -128,7 +128,7 @@ def test_part_size_defaults_large_because_small_parts_cannot_reach_high_rates(tm
     """At 8MB parts, 600 Gbps would need ~9,400 GET/s -- above the ~5,500/s
     per-prefix guidance, and every object here shares one prefix. 64MB parts need
     ~1,170/s. Measured: 8MB parts held ~17 Gbps where 64MB reached 89."""
-    from lerobot_pipeline.fetch import DEFAULT_PART_SIZE
+    from download.plan import DEFAULT_PART_SIZE
 
     assert DEFAULT_PART_SIZE >= 64 * 1024 * 1024
     assert plan_fetch(_objs(10), dest_dir=tmp_path, target_gbps=25).part_size == DEFAULT_PART_SIZE
@@ -168,93 +168,3 @@ def test_reports_nic_utilisation_when_the_nic_rate_is_known():
 def test_zero_duration_does_not_divide_by_zero():
     s = summarize_fetch(total_bytes=10, seconds=0.0, concurrency=1)
     assert s.gbps == 0.0 and s.gigabytes_per_s == 0.0
-
-
-# --- NIC rate detection must not depend on IAM, and must not fail quietly ----
-# A run on c9gd.48xlarge silently fell back to 25 Gbps (concurrency 8 instead of
-# 32) because the instance role lacked ec2:DescribeInstanceTypes, and reported a
-# plausible-looking 2.9 GB/s. Detection now avoids the API, and says so when it
-# cannot determine the rate.
-
-
-def test_reads_the_link_rate_from_sysfs_without_needing_any_iam():
-    from lerobot_pipeline.fetch import nic_gbps_from_sysfs
-
-    assert nic_gbps_from_sysfs(read=lambda: "100000") == 100.0
-
-
-def test_sysfs_sentinel_values_are_not_believed():
-    from lerobot_pipeline.fetch import nic_gbps_from_sysfs
-
-    for value in ("-1", "0", "", "Unknown!", "4294967295"):
-        assert nic_gbps_from_sysfs(read=lambda v=value: v) is None
-
-
-def test_instance_type_maps_to_a_nic_rate_without_calling_the_api():
-    from lerobot_pipeline.fetch import nic_gbps_from_table
-
-    assert nic_gbps_from_table("c9gd.48xlarge") == 100.0
-    assert nic_gbps_from_table("c8gn.48xlarge") == 600.0
-    assert nic_gbps_from_table("c6id.32xlarge") == 50.0
-
-
-def test_an_unknown_instance_type_returns_none_rather_than_a_guess():
-    from lerobot_pipeline.fetch import nic_gbps_from_table
-
-    assert nic_gbps_from_table("zz9zza.99xlarge") is None
-
-
-def test_detection_prefers_sources_that_need_no_permissions():
-    from lerobot_pipeline import fetch as f
-
-    calls = []
-
-    def api(_):
-        calls.append("api")
-        return 999.0
-
-    assert f.detect_nic_gbps(
-        instance_type="c9gd.48xlarge", sysfs=lambda: None, api=api
-    ) == 100.0
-    assert calls == []  # the table answered; the API was never consulted
-
-
-def test_the_api_is_still_used_as_a_last_resort():
-    from lerobot_pipeline import fetch as f
-
-    assert f.detect_nic_gbps(
-        instance_type="zz9zza.99xlarge", sysfs=lambda: None, api=lambda _: 42.0
-    ) == 42.0
-
-
-def test_undetectable_rate_warns_instead_of_silently_using_a_wrong_target():
-    from lerobot_pipeline import fetch as f
-
-    with pytest.warns(UserWarning, match="could not determine the NIC rate"):
-        assert f.detect_nic_gbps(instance_type=None, sysfs=lambda: None, api=lambda _: None) is None
-
-
-# --- the discard path must stay in C -----------------------------------------
-# Measured on c9gd: --discard came out *slower* than writing to disk (-11%),
-# because every body chunk crossed into a Python on_body callback while the disk
-# path let CRT write the file natively. A discard baseline that is slower than
-# the thing it is a baseline for is worse than no baseline.
-
-
-def test_discard_writes_to_devnull_natively_instead_of_a_python_callback(tmp_path):
-    import os
-
-    from lerobot_pipeline.fetch import crt_request_kwargs
-
-    kwargs = crt_request_kwargs(FetchTask(obj=RemoteObject("k", 1), dest=None))
-    assert kwargs["recv_filepath"] == os.devnull
-    assert "on_body" not in kwargs
-
-
-def test_a_real_destination_is_passed_straight_through(tmp_path):
-    from lerobot_pipeline.fetch import crt_request_kwargs
-
-    dest = tmp_path / "a" / "b.tar"
-    kwargs = crt_request_kwargs(FetchTask(obj=RemoteObject("k", 1), dest=dest))
-    assert kwargs["recv_filepath"] == str(dest)
-    assert "on_body" not in kwargs

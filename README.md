@@ -66,6 +66,13 @@ machine needs one installed — `apt-get install ffmpeg` on Ubuntu.
   - [ ] Dataset Sampling
   - [ ] Dataset Merging
 
+The end-to-end flow is **download → preprocess → upload**; each stage is its own
+top-level package.
+
+- ​**​Download​**​:
+
+  - [x] [Download](./download/README.md) — parallel S3 fetch with measured defaults, plus `--diagnose` to attribute a slow transfer to the disk or the client
+
 - ​**​Preprocessing​**​:
 
   - [x] [LeRobot Pipeline](./lerobot_pipeline/README.md) — config-driven `source → steps → dest` preprocessing

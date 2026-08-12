@@ -1,6 +1,6 @@
 import pytest
 
-from lerobot_pipeline.scripts.fetch_s3 import parse_args, split_s3_uri
+from download.cli import parse_args, split_s3_uri
 
 
 def test_parses_an_s3_uri_into_bucket_and_prefix():
