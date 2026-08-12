@@ -21,14 +21,22 @@ FFMPEG_TIMEOUT_S = 60 * 60
 
 @dataclass(frozen=True)
 class EncodingParams:
-    """Output encoding settings. Mirrored from the source so re-encoding does not
-    silently change properties the training data loader depends on."""
+    """Output encoding settings.
+
+    Defaults mirror the source video so re-encoding does not silently change
+    properties the training data loader depends on. Every knob that an encoder has
+    its own default for is nullable: ``None`` means "do not pass the flag", which
+    is how a profile asks for the encoder's own behaviour rather than ours.
+    """
 
     codec: str = "libx264"
-    preset: str = "fast"
-    crf: int = 18
-    gop: int = 2
+    preset: str | None = "fast"
+    crf: int | None = 18
+    gop: int | None = 2
     pix_fmt: str = "yuv420p"
+    bframes: int | None = None
+    profile: str | None = None
+    sc_threshold: int | None = 0
 
 
 @dataclass(frozen=True)
@@ -106,7 +114,7 @@ def build_ffmpeg_command(
             "a no-op should be hard-linked instead of re-encoded"
         )
 
-    return [
+    command = [
         "ffmpeg",
         "-y",
         "-nostdin",
@@ -122,16 +130,25 @@ def build_ffmpeg_command(
         "-an",
         "-c:v",
         encoding.codec,
-        "-preset",
-        encoding.preset,
-        "-crf",
-        str(encoding.crf),
-        "-g",
-        str(encoding.gop),
-        # keep the keyframe interval deterministic; scene-cut detection would
-        # otherwise insert extra keyframes and make -g meaningless
-        "-sc_threshold",
-        "0",
+    ]
+
+    # Anything left at None is deliberately not passed, so the encoder's own
+    # default applies. A profile that wants ffmpeg's stock behaviour says so by
+    # leaving these unset rather than by us guessing the current defaults.
+    for flag, value in (
+        ("-preset", encoding.preset),
+        ("-crf", encoding.crf),
+        ("-profile:v", encoding.profile),
+        ("-g", encoding.gop),
+        # with scene-cut detection on, x264 inserts extra keyframes and -g becomes
+        # an upper bound rather than the interval
+        ("-sc_threshold", encoding.sc_threshold),
+        ("-bf", encoding.bframes),
+    ):
+        if value is not None:
+            command += [flag, str(value)]
+
+    command += [
         "-pix_fmt",
         encoding.pix_fmt,
         # after the input: encode-side threads
@@ -139,6 +156,7 @@ def build_ffmpeg_command(
         str(threads),
         str(dst),
     ]
+    return command
 
 
 def parse_ffprobe_video_stream(payload: str) -> VideoInfo:

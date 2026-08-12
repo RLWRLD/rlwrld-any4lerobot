@@ -16,14 +16,21 @@ from typing import Any
 from .registry import UnknownStepError, build_step
 
 LEROBOT_SOURCES = ("lerobot_v21", "lerobot_v30")
-CONVERTER_SOURCES = ("agibot", "libero", "openx", "robocasa", "robomind")
+CONVERTER_SOURCES = (
+    "actionnet",
+    "agibot",
+    "libero",
+    "openx",
+    "robocasa",
+    "robomind",
+)
 SOURCE_TYPES = LEROBOT_SOURCES + CONVERTER_SOURCES
 DEST_TYPES = LEROBOT_SOURCES
 
 _TOP_LEVEL_KEYS = {"name", "source", "steps", "dest", "runtime"}
 _SOURCE_KEYS = {"type", "path", "args"}
 _DEST_KEYS = {"type", "path"}
-_RUNTIME_KEYS = {"workers", "threads_per_ffmpeg", "preset", "crf"}
+_RUNTIME_KEYS = {"workers", "threads_per_ffmpeg", "preset", "crf", "encoding"}
 
 
 class ConfigError(ValueError):
@@ -55,6 +62,9 @@ class RuntimeConfig:
     threads_per_ffmpeg: int | None = None
     preset: str | None = None
     crf: int | None = None
+    # overrides layered on the source-derived encoder settings; comes from a named
+    # profile in configs/encoding or from an inline mapping
+    encoding: Mapping[str, Any] | None = None
 
 
 @dataclass(frozen=True)
@@ -181,11 +191,26 @@ def _parse_runtime(raw: Any) -> RuntimeConfig:
     if preset is not None and not isinstance(preset, str):
         raise ConfigError(f"runtime.preset must be a string, got {preset!r}")
 
+    encoding = raw.get("encoding")
+    if encoding is not None:
+        if not isinstance(encoding, (str, Mapping)):
+            raise ConfigError(
+                "runtime.encoding must be a profile name or a mapping of encoder "
+                f"settings, got {encoding!r}"
+            )
+        from .encoding import EncodingProfileError, load_profile
+
+        try:
+            encoding = load_profile(encoding)
+        except EncodingProfileError as exc:
+            raise ConfigError(f"runtime.encoding: {exc}") from exc
+
     return RuntimeConfig(
         workers=positive_int("workers"),
         threads_per_ffmpeg=positive_int("threads_per_ffmpeg"),
         preset=preset,
         crf=crf,
+        encoding=encoding,
     )
 
 

@@ -10,12 +10,13 @@ so the destination costs no extra disk and the source is never modified.
 
 import os
 import shutil
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
+from .encoding import apply_profile
 from .meta import (
     INFO_RELPATH,
     encoding_from_info,
@@ -63,6 +64,7 @@ def plan_transform(
     steps: Sequence[Any],
     preset: str | None = None,
     crf: int | None = None,
+    encoding_profile: Mapping[str, Any] | None = None,
 ) -> TransformPlan:
     root = Path(root)
     dest = Path(dest)
@@ -77,9 +79,10 @@ def plan_transform(
         if composed is None:
             continue
 
-        # codec and GOP stay mirrored from the source; only speed/quality knobs
-        # are open to config overrides
-        encoding = encoding_from_info(info, key)
+        # Settings start mirrored from the source, then the config layers over
+        # them: a named profile first, then the individual preset/crf knobs, which
+        # stay available as the common one-off overrides.
+        encoding = apply_profile(encoding_from_info(info, key), encoding_profile)
         overrides = {
             name: value
             for name, value in (("preset", preset), ("crf", crf))

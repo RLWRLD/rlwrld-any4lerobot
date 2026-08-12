@@ -30,6 +30,7 @@ _VERSION_SCRIPTS: dict[tuple[str, str], str] = {
 
 # source type -> (script, input flag, output flag)
 _CONVERTERS: dict[str, tuple[str, str, str]] = {
+    "actionnet": ("actionnet2lerobot/actionnet_h5.py", "--src-path", "--output-path"),
     "agibot": ("agibot2lerobot/agibot_h5.py", "--src-path", "--output-path"),
     "libero": ("libero2lerobot/libero_h5.py", "--src-paths", "--output-path"),
     "openx": ("openx2lerobot/openx_rlds.py", "--raw-dir", "--local-dir"),

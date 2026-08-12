@@ -122,6 +122,7 @@ def execute_transform(stage: StageSpec, config: PipelineConfig) -> Path:
         config.steps,
         preset=config.runtime.preset,
         crf=config.runtime.crf,
+        encoding_profile=config.runtime.encoding,
     )
     parallelism = plan_parallelism(
         file_count=len(plan.transcodes),

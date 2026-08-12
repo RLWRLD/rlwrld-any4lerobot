@@ -1,0 +1,26 @@
+# Convert the Fourier ActionNet dataset to LeRobot v2.1, resized.
+#
+# ActionNet is a raw source, so it goes through the converter first (converters
+# only ever emit v3.0), then the resize runs on the v3.0 video, then the dataset
+# is downgraded to v2.1.
+#
+# The source path is the directory produced by untarring the dataset: one
+# <episode_id>.hdf5 and one <episode_id>/top/ per episode, plus metadata.json.
+
+name: actionnet_v21
+
+source:
+  type: actionnet
+  path: /scratch/data
+  args:
+    executor: local
+    episodes_per_task: 100
+
+steps:
+  - type: resize_preserve_aspect_area
+    max_area: 65536 # 256 ** 2
+    multiple: 32 # image patch size
+
+dest:
+  type: lerobot_v21
+  path: /scratch/out/actionnet_v21

@@ -186,7 +186,9 @@ def test_runtime_encoder_settings_reach_the_transform(tmp_path, monkeypatch):
 
     captured = {}
 
-    def fake_plan_transform(root, dest, steps, preset=None, crf=None):
+    # **_ on purpose: this fake broke once when plan_transform gained a new
+    # pass-through argument. The test cares about preset/crf, not the full signature.
+    def fake_plan_transform(root, dest, steps, preset=None, crf=None, **_):
         captured.update(preset=preset, crf=crf)
         raise SystemExit("stop after planning")
 
@@ -244,8 +246,10 @@ def test_runtime_encoding_overrides_reach_the_transform(tmp_path, monkeypatch):
 
     captured = {}
 
-    def fake_plan_transform(root, dest, steps, preset=None, crf=None):
-        captured.update(preset=preset, crf=crf)
+    def fake_plan_transform(
+        root, dest, steps, preset=None, crf=None, encoding_profile=None, **_
+    ):
+        captured.update(preset=preset, crf=crf, encoding_profile=encoding_profile)
         return SimpleNamespace(transcodes=(), links=(), info={}, root=root, dest=dest)
 
     monkeypatch.setattr("lerobot_pipeline.run.plan_transform", fake_plan_transform)
@@ -257,12 +261,19 @@ def test_runtime_encoding_overrides_reach_the_transform(tmp_path, monkeypatch):
             "source": {"type": "lerobot_v21", "path": str(tmp_path / "in")},
             "steps": [{"type": "resize_preserve_aspect_area"}],
             "dest": {"type": "lerobot_v21", "path": str(tmp_path / "out")},
-            "runtime": {"preset": "veryfast", "crf": 23},
+            "runtime": {
+                "preset": "veryfast",
+                "crf": 23,
+                "encoding": "rldx1_reference",
+            },
         }
     )
     execute_transform(plan_stages(config, tmp_path / "work")[0], config)
 
-    assert captured == {"preset": "veryfast", "crf": 23}
+    assert captured["preset"] == "veryfast"
+    assert captured["crf"] == 23
+    # the named profile is resolved at config-parse time and handed over whole
+    assert captured["encoding_profile"]["gop"] == 250
 
 
 # --- CLI error reporting -----------------------------------------------------
