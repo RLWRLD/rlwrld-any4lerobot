@@ -46,6 +46,12 @@ A curated collection of utilities for [LeRobot Projects](https://github.com/hugg
   - [ ] Dataset Sampling
   - [ ] Dataset Merging
 
+- ​**​Preprocessing​**​:
+
+  - [x] [LeRobot Pipeline](./lerobot_pipeline/README.md) — config-driven `source → steps → dest` preprocessing
+  - [x] Aspect-ratio preserving resize (RLDX-style, area- and patch-size bounded)
+  - [ ] Frame-level steps (temporal subsampling, trimming)
+
 - ​**​Data Conversion​**​:
 
   - [x] [Generic Converter](./generic_converter/README.md)
