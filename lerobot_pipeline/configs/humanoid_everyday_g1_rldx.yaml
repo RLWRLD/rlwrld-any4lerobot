@@ -1,0 +1,23 @@
+# Preprocess humanoid_everyday for RLDX-family models.
+#
+# RLDX takes images at their original aspect ratio, and resizing during training
+# is disabled, so the dataset itself must carry the target resolution.
+#
+# Source is already LeRobot v2.1 and the output stays v2.1, and the only step is a
+# video step -- so this runs as a single pass over the mp4 files with no version
+# conversion.
+
+name: humanoid_everyday_g1_rldx
+
+source:
+  type: lerobot_v21
+  path: ~/data/vla_pretrain_dataset/humanoid_everyday/humanoid_everyday_g1
+
+steps:
+  - type: resize_preserve_aspect_area
+    max_area: 65536 # 256 ** 2
+    multiple: 32 # image patch size
+
+dest:
+  type: lerobot_v21
+  path: ~/data/vla_pretrain_dataset/humanoid_everyday/humanoid_everyday_g1_rldx

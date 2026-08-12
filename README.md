@@ -36,6 +36,26 @@ A curated collection of utilities for [LeRobot Projects](https://github.com/hugg
 - **\[2025.02.19\]** We have supported Data Conversion from Open X-Embodiment to LeRobot! 🔥🔥🔥
 </details>
 
+## 📦 Installation
+
+Dependencies are managed with [uv](https://docs.astral.sh/uv/). `pyproject.toml`
+pins LeRobot to a commit; `uv sync` resolves the rest. Note that `uv.lock` is
+currently gitignored, so transitive versions are *not* pinned across machines —
+commit the lockfile if you need byte-identical environments.
+
+```bash
+uv sync --extra actionnet   # or --extra agibot, --extra ray, ...
+uv run python actionnet2lerobot/actionnet_h5.py --help
+```
+
+LeRobot is pinned to a git commit rather than a PyPI release on purpose: the
+converters here use `lerobot.datasets.dataset_writer` and the v3.0 metadata layout,
+neither of which exists in the published 0.4.x wheels. Python 3.12 or newer is
+required, because LeRobot requires it.
+
+`torchcodec` links against the system FFmpeg (4 through 8) at import time, so the
+machine needs one installed — `apt-get install ffmpeg` on Ubuntu.
+
 ## ✨ Features
 
 - **Dataset Tutorial**:
@@ -46,9 +66,23 @@ A curated collection of utilities for [LeRobot Projects](https://github.com/hugg
   - [ ] Dataset Sampling
   - [ ] Dataset Merging
 
+The end-to-end flow is **download → preprocess → upload**; each stage is its own
+top-level package.
+
+- ​**​Download​**​:
+
+  - [x] [Download](./download/README.md) — give it an S3 prefix, it pulls everything as fast as the machine allows
+
+- ​**​Preprocessing​**​:
+
+  - [x] [LeRobot Pipeline](./lerobot_pipeline/README.md) — config-driven `source → steps → dest` preprocessing
+  - [x] Aspect-ratio preserving resize (RLDX-style, area- and patch-size bounded)
+  - [ ] Frame-level steps (temporal subsampling, trimming)
+
 - ​**​Data Conversion​**​:
 
   - [x] [Generic Converter](./generic_converter/README.md)
+  - [x] [Fourier ActionNet to LeRobot](./actionnet2lerobot/README.md)
   - [x] [Open X-Embodiment to LeRobot](./openx2lerobot/README.md)
   - [x] [AgiBot-World to LeRobot](./agibot2lerobot/README.md)
   - [x] [RoboMIND to LeRobot](./robomind2lerobot/README.md)

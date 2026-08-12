@@ -1,0 +1,19 @@
+# Optimised for the random single-frame reads a training data loader does.
+#
+# A keyframe every other frame means a seek never decodes more than one extra
+# frame. The cost is file size: with GOP 250 a seek to a random frame can decode
+# up to 250 frames first, which is what the delivered datasets do
+# (see rldx1_reference.yaml).
+#
+# This is also what LeRobot's own encoder aims for -- the OXE sources that were
+# never re-encoded are AV1 with GOP 2.
+
+codec: libx264
+profile: high
+pix_fmt: yuv420p
+preset: fast
+crf: 18
+gop: 2
+bframes: 0
+# pinned so -g is the actual interval rather than an upper bound
+sc_threshold: 0

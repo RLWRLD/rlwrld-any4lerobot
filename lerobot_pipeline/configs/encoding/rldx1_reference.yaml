@@ -1,0 +1,22 @@
+# Reproduces how the RLDX-1 pre-training datasets under
+# /data/taeyoung/data/vla_pretrain_dataset were encoded.
+#
+# The original preprocessing was ad-hoc and the code no longer exists (confirmed
+# by ALIN Lab, 2026-07-29). These values were recovered by probing the delivered
+# mp4 files, and every one of them is libx264's own default -- the conversion was
+# a plain `ffmpeg -c:v libx264` with no encoder flags. They are written out
+# explicitly here so the settings are inspectable and pinned rather than tracking
+# whatever the installed ffmpeg happens to default to.
+#
+# Measured on action_net, agibot, galaxea, neural_traj, robocurate and the
+# re-encoded OXE sources: h264 High / yuv420p / GOP 250 / 3 B-frames.
+
+codec: libx264
+profile: high
+pix_fmt: yuv420p
+preset: medium
+crf: 23
+gop: 250
+bframes: 3
+# unset: leave x264's scene-cut detection on, as the original encode did
+sc_threshold: null
