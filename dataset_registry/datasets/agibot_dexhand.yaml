@@ -1,0 +1,114 @@
+id: agibot_dexhand
+name: AgiBot World (dexhand subset)
+
+upstream:
+  huggingface: agibot-world/AgiBotWorld-Beta
+  revision: 2252b3fdc88dc67fa5d5e4b771e1b86f5e71c278
+  license: cc-by-nc-sa-4.0
+  # one of the three non-commercial sources excluded from Commercial RLDX
+  commercial_use: false
+
+delivered:
+  path: /data/taeyoung/data/vla_pretrain_dataset/agibot/agibot_dexhand
+  origin: /storage1/sjw_dataset/dataset
+  codebase_version: v2.1
+  episodes: 36425
+  frames: 8011584
+  converted_by: alin_lab
+
+lerobot:
+  robot_type: Agibot
+  fps: 30
+  embodiment_tag: agibot_dexhand
+
+  video:
+    cameras:
+      primary: head
+    resize: resize_preserve_aspect_area
+    encoding: rldx1_reference
+    keeps_original: false
+
+  features:
+    - observation.joint_position
+    - observation.effector_dexhand_qpos
+    - observation.head_position
+    - observation.waist_position
+    - action.joint_position
+    - action.effector_dexhand_qpos
+    - action.head_position
+    - action.waist_position
+    - absolute_action
+
+  state:
+    # the same eight-block skeleton as action_net, with the blocks the A2D does not
+    # have left as zeros -- which is what makes the widths land on exactly 44
+    width: 44
+    layout: gr1_body_parts
+    source_features:
+      joint:
+        state: observation.joint_position
+        action: action.joint_position
+      dexhand:
+        state: observation.effector_dexhand_qpos
+        action: action.effector_dexhand_qpos
+      head:
+        state: observation.head_position
+        action: action.head_position
+      waist:
+        state: observation.waist_position
+        action: action.waist_position
+
+    blocks:
+      - name: left_arm
+        slots: [0, 7]
+        source: {feature: joint, columns: [0, 7]}
+        evidence: measured
+
+      - name: left_hand
+        slots: [7, 13]
+        source: {feature: dexhand, columns: [0, 6]}
+        evidence: measured
+
+      - name: left_leg
+        slots: [13, 19]
+        evidence: constant
+        note: the A2D has no legs; all zeros
+
+      - name: neck
+        slots: [19, 21]
+        source: {feature: head, columns: [0, 2]}
+        evidence: measured
+
+      - name: neck_pad
+        slots: [21, 22]
+        evidence: constant
+        note: the head is 2-DoF but the block is 3 wide, so the last slot is zero
+
+      - name: right_arm
+        slots: [22, 29]
+        source: {feature: joint, columns: [7, 14]}
+        evidence: measured
+
+      - name: right_hand
+        slots: [29, 35]
+        source: {feature: dexhand, columns: [6, 12]}
+        evidence: measured
+
+      - name: right_leg
+        slots: [35, 41]
+        evidence: constant
+
+      - name: waist
+        slots: [41, 43]
+        source: {feature: waist, columns: [0, 2]}
+        evidence: measured
+
+      - name: waist_pad
+        slots: [43, 44]
+        evidence: constant
+        note: 2-DoF waist in a 3-wide block
+
+notes: >-
+  30 of 44 slots matched directly against the delivered data; the rest are the zero
+  leg blocks and the two pad slots. That the widths sum to exactly 44 under the
+  action_net skeleton is what identifies the layout.
