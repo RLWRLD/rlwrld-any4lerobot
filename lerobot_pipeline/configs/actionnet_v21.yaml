@@ -24,3 +24,8 @@ steps:
 dest:
   type: lerobot_v21
   path: /scratch/out/actionnet_v21
+
+runtime:
+  # reproduce how the delivered RLDX-1 datasets were encoded, rather than using
+  # this pipeline's own defaults -- see configs/encoding/rldx1_reference.yaml
+  encoding: rldx1_reference

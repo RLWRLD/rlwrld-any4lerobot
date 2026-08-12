@@ -1,0 +1,114 @@
+id: agibot_gripper
+name: AgiBot World (gripper subset, parts 1-4)
+
+upstream:
+  huggingface: agibot-world/AgiBotWorld-Beta
+  revision: 2252b3fdc88dc67fa5d5e4b771e1b86f5e71c278
+  license: cc-by-nc-sa-4.0
+  commercial_use: false
+
+delivered:
+  # split into agibot_gripper0_part1..part4, identical schema in each
+  path: /data/taeyoung/data/vla_pretrain_dataset/agibot/agibot_gripper0_part1
+  origin: /storage1/sjw_dataset/dataset
+  codebase_version: v2.1
+  episodes: 59137
+  frames: 16028434
+  converted_by: alin_lab
+
+lerobot:
+  robot_type: Agibot
+  fps: 30
+  embodiment_tag: agibot_gripper
+
+  video:
+    cameras:
+      primary: head
+      wrist_left: hand_left
+      wrist_right: hand_right
+    resize: resize_preserve_aspect_area
+    encoding: rldx1_reference
+    keeps_original: false
+
+  features:
+    - observation.joint_position
+    - observation.effector_gripper_pos_mm
+    - observation.head_position
+    - observation.waist_position
+    - action.joint_position
+    - action.effector_gripper_pos
+    - action.head_position
+    - action.waist_position
+    - absolute_action
+
+  state:
+    # same skeleton as agibot_dexhand with the hand blocks narrowed from 6 to 1:
+    # 7|1|6|3|7|1|6|3 = 34
+    width: 34
+    layout: gr1_body_parts
+    source_features:
+      joint:
+        state: observation.joint_position
+        action: action.joint_position
+      gripper:
+        state: observation.effector_gripper_pos_mm
+        action: action.effector_gripper_pos
+      head:
+        state: observation.head_position
+        action: action.head_position
+      waist:
+        state: observation.waist_position
+        action: action.waist_position
+
+    blocks:
+      - name: left_arm
+        slots: [0, 7]
+        source: {feature: joint, columns: [0, 7]}
+        evidence: measured
+
+      - name: left_hand
+        slots: [7, 8]
+        source: {feature: gripper, columns: [0, 1]}
+        evidence: measured
+        note: a gripper is one value, so the hand block is 1 wide instead of 6
+
+      - name: left_leg
+        slots: [8, 14]
+        evidence: constant
+
+      - name: neck
+        slots: [14, 16]
+        source: {feature: head, columns: [0, 2]}
+        evidence: measured
+
+      - name: neck_pad
+        slots: [16, 17]
+        evidence: constant
+
+      - name: right_arm
+        slots: [17, 24]
+        source: {feature: joint, columns: [7, 14]}
+        evidence: measured
+
+      - name: right_hand
+        slots: [24, 25]
+        source: {feature: gripper, columns: [1, 2]}
+        evidence: measured
+
+      - name: right_leg
+        slots: [25, 31]
+        evidence: constant
+
+      - name: waist
+        slots: [31, 33]
+        source: {feature: waist, columns: [0, 2]}
+        evidence: measured
+
+      - name: waist_pad
+        slots: [33, 34]
+        evidence: constant
+
+notes: >-
+  20 of 34 slots matched directly, identically across all four parts. The parts are
+  a random 20% sample of the full gripper set, split four ways for parallel
+  processing (per ALIN Lab, Notion Q13) -- so they are logically one dataset.

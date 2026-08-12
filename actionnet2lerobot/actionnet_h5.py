@@ -29,7 +29,12 @@ from actionnet_utils.actionnet_utils import (  # noqa: E402
     load_episode,
     load_prompts,
 )
-from actionnet_utils.config import FPS, ROBOT_TYPE, generate_features  # noqa: E402
+from actionnet_utils.config import (  # noqa: E402
+    FPS,
+    ROBOT_TYPE,
+    generate_features,
+    generate_modality,
+)
 
 from generic_converter import BaseAdapter, ConversionTask, run_converter  # noqa: E402
 from generic_converter.prerendered_video import PrerenderedDataset  # noqa: E402
@@ -46,7 +51,6 @@ class ActionNetAdapter(BaseAdapter):
         src_path: Path,
         output_path: Path,
         episodes_per_task: int,
-        include_pose: bool = True,
         max_episodes: int | None = None,
     ):
         super().__init__(output_path)
@@ -54,9 +58,8 @@ class ActionNetAdapter(BaseAdapter):
             raise ValueError("--episodes-per-task must be >= 1")
         self.src_path = src_path.expanduser().resolve()
         self.episodes_per_task = episodes_per_task
-        self.include_pose = include_pose
         self.max_episodes = max_episodes
-        self.features = generate_features(include_pose=include_pose)
+        self.features = generate_features()
 
     def load_tasks(self) -> list[ConversionTask]:
         episode_ids = discover_episode_ids(self.src_path)
@@ -84,9 +87,7 @@ class ActionNetAdapter(BaseAdapter):
             paths = EpisodePaths.build(self.src_path, episode_id)
             try:
                 frames, videos = load_episode(
-                    paths,
-                    prompt=prompts.get(episode_id, ""),
-                    include_pose=self.include_pose,
+                    paths, prompt=prompts.get(episode_id, "")
                 )
             except EpisodeSkipped as exc:
                 print(f"{episode_id}: skipping ({exc})")
@@ -132,6 +133,20 @@ class ActionNetAdapter(BaseAdapter):
             yield episode_ids[start : start + self.episodes_per_task]
 
 
+def write_modality(output_path: Path) -> Path:
+    """Emit ``meta/modality.json``, which LeRobot itself does not write.
+
+    Every dataset in the RLDX-1 pre-training collection has one, and the training
+    stack reads it to find the state/action blocks inside the flat vectors.
+    """
+    import json
+
+    path = output_path / "meta" / "modality.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(generate_modality(), indent=4) + "\n")
+    return path
+
+
 def main(
     src_path: Path,
     output_path: Path,
@@ -140,7 +155,6 @@ def main(
     tasks_per_job: int,
     workers: int,
     episodes_per_task: int,
-    include_pose: bool,
     max_episodes: int | None = None,
     resume_dir: Path | None = None,
     debug: bool = False,
@@ -151,10 +165,9 @@ def main(
         src_path=src_path,
         output_path=output_path,
         episodes_per_task=episodes_per_task,
-        include_pose=include_pose,
         max_episodes=max_episodes,
     )
-    run_converter(
+    result = run_converter(
         adapter=adapter,
         executor=executor,
         cpus_per_task=cpus_per_task,
@@ -166,6 +179,7 @@ def main(
         hub_repo_id=repo_id,
         push_to_hub=push_to_hub,
     )
+    print(f"wrote {write_modality(result)}")
 
 
 def parse_args():
@@ -183,12 +197,6 @@ def parse_args():
         type=int,
         default=100,
         help="episodes per temporary dataset; one task per chunk",
-    )
-    parser.add_argument(
-        "--no-pose",
-        dest="include_pose",
-        action="store_false",
-        help="drop observation.state.pose / action.pose (end-effector ortho6d)",
     )
     parser.add_argument(
         "--max-episodes",
@@ -213,7 +221,6 @@ if __name__ == "__main__":
         tasks_per_job=args.tasks_per_job,
         workers=args.workers,
         episodes_per_task=args.episodes_per_task,
-        include_pose=args.include_pose,
         max_episodes=args.max_episodes,
         resume_dir=args.resume_dir,
         debug=args.debug,
