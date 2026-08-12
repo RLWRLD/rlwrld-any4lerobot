@@ -1,0 +1,118 @@
+id: action_net
+name: Fourier ActionNet
+
+# The upstream release is the dataset's identity: a HuggingFace repo plus the
+# revision that pins its exact bytes. Mirrors are copies of that, and foundry
+# derives its prefix from the revision -- so the mapping below can be re-checked
+# online without touching any mirror.
+upstream:
+  huggingface: FourierIntelligence/ActionNet
+  revision: eb3b5bb16f3a5a7052c1498c1072e78ac99042d0
+  homepage: https://action-net.org/
+  license: cc-by-nc-sa-4.0
+  # one of the three non-commercial sources excluded from Commercial RLDX
+  commercial_use: false
+
+mirrors:
+  - kind: foundry
+    uri: s3://rlwrld-foundry-data/external/action_net/eb3b5bb16f3a5a7052c1498c1072e78ac99042d0/
+    layout: tar_archives
+    objects: 322
+    bytes: 2737000000000
+
+delivered:
+  path: /data/taeyoung/data/vla_pretrain_dataset/action_net
+  origin: /storage1/sjw_dataset/dataset/ActionNet
+  codebase_version: v2.1
+  episodes: 30120
+  frames: 15489245
+  # ALIN Lab, ad-hoc, code not kept (Notion 3ac6cbdf-f6f6-80ef-aa98-d85739443184, Q2)
+  converted_by: alin_lab
+
+lerobot:
+  robot_type: ActionNet
+  fps: 30
+  embodiment_tag: action_net
+
+  video:
+    cameras:
+      # lerobot key <- source camera directory
+      primary: top
+    resize: resize_preserve_aspect_area
+    encoding: rldx1_reference
+    keeps_original: false
+
+  features:
+    # emitted alongside state/action, unpermuted, as the delivered dataset does
+    - observation.robot_joints
+    - observation.hand_joints
+    - action.robot_joints
+    - action.hand_joints
+    - absolute_action
+
+  state:
+    width: 44
+    layout: gr1_body_parts
+    source_features:
+      robot:
+        state: state/robot
+        action: action/robot
+      hand:
+        state: state/hand
+        action: action/hand
+
+    blocks:
+      - name: left_arm
+        slots: [0, 7]
+        source: {feature: robot, columns: [18, 25]}
+        evidence: measured
+        note: shoulder pitch/roll/yaw, elbow, wrist yaw/roll/pitch
+
+      - name: left_hand
+        slots: [7, 13]
+        source: {feature: hand, columns: [0, 6]}
+        evidence: measured
+
+      - name: left_leg
+        slots: [13, 19]
+        source: {feature: robot, columns: [0, 6]}
+        evidence: constant
+        note: >-
+          hip roll/yaw/pitch and knee are identically zero, ankles hold a fixed
+          ~1e-6; the six columns are indistinguishable from each other in the data,
+          so the order within the block follows the block structure, not a match
+
+      - name: neck
+        slots: [19, 22]
+        source: {feature: robot, columns: [15, 18]}
+        evidence: measured
+        note: yaw, roll, pitch
+
+      - name: right_arm
+        slots: [22, 29]
+        source: {feature: robot, columns: [25, 32]}
+        evidence: measured
+
+      - name: right_hand
+        slots: [29, 35]
+        source: {feature: hand, columns: [6, 12]}
+        evidence: measured
+
+      - name: right_leg
+        slots: [35, 41]
+        source: {feature: robot, columns: [6, 12]}
+        evidence: constant
+
+      - name: waist
+        slots: [41, 44]
+        source: {feature: robot, columns: [12, 15]}
+        evidence: measured
+        note: yaw, pitch, roll
+
+notes: >-
+  Recovered by comparing observation.state column-by-column against
+  observation.robot_joints / observation.hand_joints across four delivered
+  episodes, and independently confirmed by neural_gr1's meta/modality.json, which
+  names the same eight blocks at the same offsets. The delivered modality.json
+  exposes state as one flat 0..44 block, because RLDX-1 asks ActionNet for
+  modality_keys=["state"].

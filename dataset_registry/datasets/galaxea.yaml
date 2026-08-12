@@ -1,0 +1,117 @@
+id: galaxea
+name: Galaxea Open-World (parts 1-5)
+
+upstream:
+  huggingface: OpenGalaxea/Galaxea-Open-World-Dataset
+  revision: df670d8dc3f2b369f55d28a3428b8639f0dab37d
+  license: cc-by-nc-sa-4.0
+  # one of the three non-commercial sources excluded from Commercial RLDX
+  commercial_use: false
+
+mirrors:
+  - kind: foundry
+    uri: s3://rlwrld-foundry-data/external/galaxea/df670d8dc3f2b369f55d28a3428b8639f0dab37d/
+    layout: tar_gz_per_task
+    objects: 64
+    bytes: 819574532792
+
+delivered:
+  path: /data/taeyoung/data/vla_pretrain_dataset/galaxea/galaxea_part1
+  origin: /storage1/sjw_dataset/dataset
+  codebase_version: v2.1
+  episodes: 23039
+  frames: 5108454
+  converted_by: alin_lab
+
+lerobot:
+  robot_type: Galaxea
+  fps: 15
+  embodiment_tag: galaxea
+
+  video:
+    cameras:
+      primary: head
+      wrist_left: wrist_left
+      wrist_right: wrist_right
+    resize: resize_preserve_aspect_area
+    encoding: rldx1_reference
+    keeps_original: false
+
+  features:
+    - observation.joint_position_arm_left
+    - observation.gripper_state_left
+    - observation.joint_position_arm_right
+    - observation.gripper_state_right
+    - observation.joint_position_torso
+    - original_action
+    - absolute_action
+
+  state:
+    # no body-part skeleton: left side, right side, then torso. Note action is 26
+    # wide while state is 18 -- the two are not the same vector here.
+    width: 18
+    layout: custom
+    source_features:
+      arm_left:
+        state: observation.joint_position_arm_left
+        action: action.joint_position_arm_left
+      gripper_left:
+        state: observation.gripper_state_left
+        action: action.gripper_state_left
+      arm_right:
+        state: observation.joint_position_arm_right
+        action: action.joint_position_arm_right
+      gripper_right:
+        state: observation.gripper_state_right
+        action: action.gripper_state_right
+      torso:
+        state: observation.joint_position_torso
+        action: action.joint_position_torso
+
+    blocks:
+      - name: arm_left
+        slots: [0, 6]
+        source: {feature: arm_left, columns: [0, 6]}
+        evidence: measured
+
+      - name: gripper_left
+        slots: [6, 7]
+        source: {feature: gripper_left, columns: [0, 1]}
+        evidence: measured
+
+      - name: arm_right
+        slots: [7, 13]
+        source: {feature: arm_right, columns: [0, 6]}
+        evidence: measured
+
+      - name: gripper_right
+        slots: [13, 14]
+        source: {feature: gripper_right, columns: [0, 1]}
+        evidence: measured
+
+      - name: torso
+        slots: [14, 18]
+        source: {feature: torso, columns: [0, 4]}
+        evidence: measured
+
+  action:
+    # Galaxea is the one dataset whose action is not the same vector as its state:
+    # 26 wide against 18. It carries no action.* sub-features either, so there is
+    # nothing to match against and the composition is genuinely unknown.
+    width: 26
+    layout: unknown
+    source_features: {}
+    blocks:
+      - name: action
+        slots: [0, 26]
+        evidence: unknown
+        note: >-
+          composition not recovered; the delivered dataset exposes only
+          original_action and absolute_action, both 26 wide, with no sub-vectors
+
+notes: >-
+  All 18 state slots matched directly, identically across all five parts. The parts
+  come pre-split from the HuggingFace download, not from our own sharding (per ALIN
+  Lab, Notion Q13). The action-side source paths named under source_features are
+  stated by symmetry with the state side and have NOT been measured -- the delivered
+  dataset carries no action.* sub-features.

@@ -1,0 +1,94 @@
+id: humanoid_everyday_g1
+name: Humanoid-Everyday (Unitree G1)
+
+upstream:
+  # one upstream repo holds both the G1 and H1 splits; the foundry prefix name is a
+  # local label, not derived from the repo name
+  huggingface: USC-PSI-Lab/humanoid-everyday
+  revision: 71f6210e91c2a7e8b8e4d47db0147444a1a0640e
+  commercial_use: null
+
+mirrors:
+  - kind: foundry
+    uri: s3://rlwrld-foundry-data/external/humanoid_everyday_g1/71f6210e91c2a7e8b8e4d47db0147444a1a0640e/
+    layout: hf_repo
+    objects: 4466
+    bytes: 441459386784
+
+delivered:
+  path: /data/taeyoung/data/vla_pretrain_dataset/humanoid_everyday/humanoid_everyday_g1
+  origin: /storage1/sjw_dataset/dataset
+  codebase_version: "2.1"
+  episodes: 4064
+  frames: 1779287
+  converted_by: alin_lab
+
+lerobot:
+  robot_type: g1
+  fps: 30
+  embodiment_tag: humanoid_everyday_g1
+
+  video:
+    cameras:
+      egocentric: egocentric
+      egocentric_resized: egocentric
+    resize: resize_preserve_aspect_area
+    encoding: rldx1_reference
+    # the only dataset in the collection that keeps the untouched original
+    # (egocentric, 640x480) beside the resized copy (egocentric_resized, 256x192)
+    keeps_original: true
+
+  features:
+    - observation.imu.quaternion
+    - observation.imu.accelerometer
+    - observation.imu.gyroscope
+    - observation.imu.rpy
+    - observation.odometry.position
+    - observation.odometry.velocity
+    - observation.odometry.rpy
+    - observation.odometry.quat
+    - observation.arm_joints
+    - observation.leg_joints
+    - observation.hand_joints
+    - observation.tactile.sensor_id
+
+  state:
+    # same block vocabulary as the humanoid skeleton, different order: both arms
+    # first, then both hands. Declared outright in the delivered modality.json.
+    width: 28
+    layout: arms_then_hands
+    source_features:
+      arm:
+        state: observation.arm_joints
+        action: action.arm_joints
+      hand:
+        state: observation.hand_joints
+        action: action.hand_joints
+
+    blocks:
+      - name: left_arm
+        slots: [0, 7]
+        source: {feature: arm, columns: [0, 7]}
+        evidence: declared
+
+      - name: right_arm
+        slots: [7, 14]
+        source: {feature: arm, columns: [7, 14]}
+        evidence: declared
+
+      - name: left_hand
+        slots: [14, 21]
+        source: {feature: hand, columns: [0, 7]}
+        evidence: declared
+
+      - name: right_hand
+        slots: [21, 28]
+        source: {feature: hand, columns: [7, 14]}
+        evidence: declared
+
+notes: >-
+  All 28 slots matched directly, and the block boundaries are also named in the
+  delivered meta/modality.json, so measurement and declaration agree. The dataset
+  carries many more sub-features than it uses -- IMU, odometry, leg joints, tactile
+  -- none of which enter observation.state. The h1 variant is the same layout with
+  6-wide hand blocks (26 total).
