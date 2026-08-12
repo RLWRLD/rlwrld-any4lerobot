@@ -71,7 +71,7 @@ top-level package.
 
 - ​**​Download​**​:
 
-  - [x] [Download](./download/README.md) — parallel S3 fetch with measured defaults, plus `--diagnose` to attribute a slow transfer to the disk or the client
+  - [x] [Download](./download/README.md) — give it an S3 prefix, it pulls everything as fast as the machine allows
 
 - ​**​Preprocessing​**​:
 
