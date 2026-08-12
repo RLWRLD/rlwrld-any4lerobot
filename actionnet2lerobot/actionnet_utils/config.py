@@ -11,6 +11,13 @@ below was recovered by comparing ``observation.state`` against the
 ``observation.robot_joints`` / ``observation.hand_joints`` columns of a delivered
 parquet, and cross-checked against ``neural_gr1``'s ``modality.json``, which names
 the same eight blocks at the same offsets.
+
+Nothing here generalises to the rest of the collection. What the sibling datasets
+share is the *form* -- a flat state/action vector, the source's own sub-vectors kept
+alongside it, positional motor names, a flat ``modality.json`` block -- not the
+width or the ordering. Those are per-robot, and each dataset has its own
+``EmbodimentTag``: ``agibot_dexhand`` is also 44 wide and means something entirely
+different (joint_position / effector / head / waist).
 """
 
 # --- source layout -----------------------------------------------------------
@@ -70,6 +77,9 @@ def block_ranges() -> dict[str, tuple[int, int]]:
 
 # --- LeRobot features --------------------------------------------------------
 
+# ActionNet stores the single camera in a folder called `top`; the collection
+# names the main camera `primary` regardless of the source's own naming.
+SOURCE_CAMERA_DIR = "top"
 CAMERA_NAME = "primary"
 VIDEO_KEY = f"observation.images.{CAMERA_NAME}"
 RGB_SHAPE = (800, 1280, 3)

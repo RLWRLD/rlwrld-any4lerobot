@@ -28,6 +28,7 @@ from .config import (
     HAND_JOINTS,
     PERMUTATION,
     ROBOT_JOINTS,
+    SOURCE_CAMERA_DIR,
     VIDEO_KEY,
 )
 
@@ -47,7 +48,7 @@ class EpisodePaths:
 
     @classmethod
     def build(cls, root: Path, episode_id: str) -> "EpisodePaths":
-        camera_dir = root / episode_id / CAMERA_NAME
+        camera_dir = root / episode_id / SOURCE_CAMERA_DIR
         return cls(
             episode_id=episode_id,
             hdf5=root / f"{episode_id}.hdf5",
@@ -110,10 +111,19 @@ def match_timestamps(candidate: np.ndarray, ref: np.ndarray) -> np.ndarray:
     return np.array(closest_indices, dtype=np.int64)
 
 
+def assemble(robot: np.ndarray, hand: np.ndarray) -> np.ndarray:
+    """Reorder ``[robot | hand]`` into the GR1 body-part vector.
+
+    Source order is the robot's own (legs, waist, neck, left arm, right arm) plus
+    the two hands; the emitted order groups by body part, left side first. See
+    ``config.GR1_BLOCKS``.
+    """
+    return np.concatenate([robot, hand], axis=1, dtype=np.float32)[:, PERMUTATION]
+
+
 def load_episode(
     paths: EpisodePaths,
     prompt: str,
-    include_pose: bool = True,
 ) -> tuple[list[dict], dict[str, Path]]:
     """Return per-frame features for one episode plus its video files."""
     missing = paths.missing()
@@ -138,42 +148,24 @@ def load_episode(
             state_hand = np.asarray(handle["state/hand"], dtype=np.float32)
             action_robot = np.asarray(handle["action/robot"], dtype=np.float32)
             action_hand = np.asarray(handle["action/hand"], dtype=np.float32)
-            state_pose = np.asarray(handle["state/pose"], dtype=np.float32)
-            action_pose = np.asarray(handle["action/pose"], dtype=np.float32)
         except KeyError as exc:
             raise EpisodeSkipped(f"hdf5 missing dataset {exc}") from exc
 
-    state = np.concatenate(
-        [state_robot[:, LEG_JOINT_COUNT:], state_hand], axis=1, dtype=np.float32
-    )
-    action = np.concatenate(
-        [action_robot[:, LEG_JOINT_COUNT:], action_hand], axis=1, dtype=np.float32
-    )
-    if state.shape[1] != len(STATE_NAMES) or action.shape[1] != len(ACTION_NAMES):
-        # GR2 reports 29 joints and the 12-DoF hand reports 24 values; both would
-        # need their own feature schema, so they cannot share this dataset.
-        raise EpisodeSkipped(
-            f"unexpected widths state={state.shape[1]} action={action.shape[1]}; "
-            f"expected {len(STATE_NAMES)}"
-        )
-
-    frames_extra = {}
-    if include_pose:
-        pose_state = np.concatenate(
-            [filter_state_pose(state_pose), state_hand], axis=1, dtype=np.float32
-        )
-        pose_action = np.concatenate(
-            [action_pose, action_hand], axis=1, dtype=np.float32
-        )
-        if pose_state.shape[1] != len(STATE_POSE_FEATURE_NAMES) or pose_action.shape[
-            1
-        ] != len(ACTION_POSE_FEATURE_NAMES):
+    for name, array, expected in (
+        ("state/robot", state_robot, ROBOT_JOINTS),
+        ("state/hand", state_hand, HAND_JOINTS),
+        ("action/robot", action_robot, ROBOT_JOINTS),
+        ("action/hand", action_hand, HAND_JOINTS),
+    ):
+        if array.ndim != 2 or array.shape[1] != expected:
+            # GR2 reports 29 joints and the 12-DoF hand reports 24 values; both
+            # would need their own feature schema and cannot share this dataset.
             raise EpisodeSkipped(
-                f"unexpected pose widths state={pose_state.shape[1]} "
-                f"action={pose_action.shape[1]}"
+                f"{name} is {array.shape}, expected (n, {expected})"
             )
-        frames_extra["observation.state.pose"] = pose_state
-        frames_extra["action.pose"] = pose_action
+
+    state = assemble(state_robot, state_hand)
+    action = assemble(action_robot, action_hand)
 
     # Both filters are the reference converter's: keep only robot samples whose
     # timestamp advances, and only video frames recorded before the last robot
@@ -195,12 +187,18 @@ def load_episode(
         {
             "observation.state": state[index],
             "action": action[index],
-            **{key: value[index] for key, value in frames_extra.items()},
+            # actions are absolute joint targets, so this is the same vector; the
+            # training config reads it to tell absolute from delta
+            "absolute_action": action[index],
+            "observation.robot_joints": state_robot[index],
+            "observation.hand_joints": state_hand[index],
+            "action.robot_joints": action_robot[index],
+            "action.hand_joints": action_hand[index],
             "task": prompt,
         }
         for index in matched
     ]
-    return frames, {f"observation.images.{CAMERA_NAME}": paths.rgb}
+    return frames, {VIDEO_KEY: paths.rgb}
 
 
 def load_prompts(root: Path) -> dict[str, str]:
