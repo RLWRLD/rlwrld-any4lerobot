@@ -21,7 +21,19 @@ delivered:
   codebase_version: v2.1
   episodes: 23039
   frames: 5108454
+  # what the delivered copy actually is, per camera -- the target a
+  # rebuild is checked against
+  video:
+    wrist_left: {shape: [192, 320, 3], codec: h264, profile: high, gop: 250, bframes: 2}
+    wrist_right: {shape: [192, 320, 3], codec: h264, profile: high, gop: 250, bframes: 2}
+    primary: {shape: [192, 320, 3], codec: h264, profile: high, gop: 250, bframes: 2}
   converted_by: alin_lab
+
+source:
+  # No converter for this source yet. Its upstream has not been traced,
+  # so there is nothing to point a builder at; `plan` reports it as not
+  # rebuildable rather than letting a run start and fail late.
+  builder: none
 
 lerobot:
   robot_type: Galaxea
@@ -30,9 +42,9 @@ lerobot:
 
   video:
     cameras:
-      primary: head
-      wrist_left: wrist_left
-      wrist_right: wrist_right
+      primary: {source: head}
+      wrist_left: {source: wrist_left}
+      wrist_right: {source: wrist_right}
     resize: resize_preserve_aspect_area
     encoding: rldx1_reference
     keeps_original: false

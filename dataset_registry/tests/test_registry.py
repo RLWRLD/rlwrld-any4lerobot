@@ -98,7 +98,20 @@ class TestSourceMapping:
         assert load("agibot_dexhand").foundry_uri is None
 
     def test_camera_keys_map_to_source_cameras(self):
-        assert load("action_net").cameras == {"primary": "top"}
+        spec = load("action_net")
+        assert list(spec.cameras) == ["primary"]
+        assert spec.camera_source("primary") == "top"
+        # the source geometry, before the resize step -- not what was delivered
+        assert spec.camera_shape("primary") == (800, 1280, 3)
+
+    def test_delivered_geometry_is_recorded_separately(self):
+        # a rebuild is checked by comparing the two, so they must not be the same field
+        assert load("action_net").delivered_video["primary"]["shape"] == [192, 288, 3]
+
+    @pytest.mark.parametrize("name", available())
+    def test_every_spec_records_what_was_delivered(self, name):
+        spec = load(name)
+        assert spec.delivered_video, "no delivered.video to check a rebuild against"
 
 
 class TestValidation:

@@ -1,0 +1,7 @@
+# Declared by the delivered dataset's own meta/modality.json. `unused_*`
+# blocks are slots the 8-wide OXE state vector leaves empty; the original
+# conversion pads to a common width.
+
+order:
+  - end_effector_position
+  - unused_1

@@ -49,7 +49,7 @@ def source_features(spec) -> dict[str, dict[str, Any]]:
     for key in spec.cameras:
         features[f"observation.images.{key}"] = {
             "dtype": "video",
-            "shape": tuple(spec.video_shape),
+            "shape": tuple(spec.camera_shape(key) or ()),
             "names": ["height", "width", "rgb"],
         }
 

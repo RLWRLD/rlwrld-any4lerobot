@@ -1,0 +1,78 @@
+id: fractal20220817_data
+name: "RT-1 Robot Action (fractal20220817)"
+
+# Not yet traced to an upstream release. Recorded from the delivered copy only,
+# which is why every block below is `declared` and the dataset is not buildable.
+upstream:
+  commercial_use: null
+
+delivered:
+  path: /data/taeyoung/data/vla_pretrain_dataset/openx_lerobot/fractal20220817_data
+  origin: /storage1/sjw_dataset/dataset
+  codebase_version: v2.1
+  episodes: 87212
+  frames: 3786400
+  # what the delivered copy actually is, per camera -- the target a
+  # rebuild is checked against
+  video:
+    primary: {shape: [224, 256, 3], codec: h264, profile: high, gop: 250, bframes: 2}
+  converted_by: alin_lab
+
+source:
+  # Rebuilt by openx2lerobot, which reads the RLDS/tfrecord source and writes
+  # observation.state itself from OXE_DATASET_CONFIGS[fractal20220817_data]. The block boundaries
+  # under lerobot.state are that convention's output, and they were checked against
+  # the delivered copy: the two agree.
+  #
+  # RLDS cannot be described in YAML the way an hdf5 tree can, so this names the
+  # converter rather than the files. Point --raw-dir at a directory called
+  # fractal20220817_data -- openx_rlds.py keys OXE_DATASET_CONFIGS off the directory name.
+  builder: openx
+
+lerobot:
+  robot_type: "Google Robot"
+  fps: 3
+  embodiment_tag: fractal20220817_data
+
+  video:
+    # source-side geometry is unknown: this dataset has not been traced to an
+    # upstream release, so only its delivered form is recorded (see delivered.video)
+    cameras:
+      primary: {}
+    # H.264 High with a 250-frame GOP is the rldx1_reference profile, which
+    # only our encoder produces -- so the delivered copy was re-encoded, and
+    # reproducing it means running the profile's resize step
+    resize: resize_preserve_aspect_area
+    encoding: rldx1_reference
+    keeps_original: false
+
+  features:
+    - absolute_action
+
+  # how the training stack slices the flat vectors, from the delivered
+  # meta/modality.json
+  modality:
+    state: {"end_effector_position": {"start": 0, "end": 3}, "end_effector_rotation": {"start": 3, "end": 7, "rotation_type": "quaternion"}, "gripper_position": {"start": 7, "end": 8}}
+    action: {"end_effector_position": {"start": 0, "end": 3, "absolute": false}, "end_effector_rotation": {"start": 3, "end": 6, "absolute": false}, "gripper_close": {"start": 6, "end": 7, "dtype": "int64", "range": [0, 1]}}
+
+  state:
+    width: 8
+    layout: oxe_eef_position_eef_rotation_gripper
+    source_features: {}
+    blocks:
+      end_effector_position: {width: 3, evidence: declared}
+      end_effector_rotation: {width: 4, evidence: declared}
+      gripper_position: {width: 1, evidence: declared}
+
+  action:
+    # 7 wide against a 8-wide state; composition not recovered
+    width: 7
+    layout: unrecovered
+    source_features: {}
+    blocks:
+      unrecovered: {width: 7, evidence: unknown}
+
+notes: >-
+  Read from the delivered copy at openx_lerobot/fractal20220817_data. Block boundaries are declared by its
+  own meta/modality.json; no sub-feature vectors are carried, so nothing was
+  measured and the columns cannot be traced without the upstream source.

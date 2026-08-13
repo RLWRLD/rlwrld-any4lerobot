@@ -195,22 +195,41 @@ alongside `absolute_action`.
 
 ### OXE (27 datasets) — state 8, action 7
 
-**Not recoverable from the delivered data**: no sub-feature vectors, flat
-`modality.json`, anonymous `m0..m7` names. The semantics come from the conversion
-convention in this repo's `openx2lerobot/openx_rlds.py`, keyed on the dataset's
-`state_encoding`:
+**Declared, not inferred.** An earlier version of this document said these were
+unrecoverable — that they carried a flat `modality.json` and anonymous `m0..m7`
+names. That was wrong. Every OXE dataset in the collection declares its blocks
+outright, per dataset, in its own `meta/modality.json`:
 
-| encoding | slots 0‥7 |
-| --- | --- |
-| `POS_EULER` | `x, y, z, roll, pitch, yaw, pad, gripper` |
-| `POS_QUAT` | `x, y, z, rx, ry, rz, rw, gripper` |
-| `JOINT` | `motor_0‥motor_6, gripper` (unused joints become `pad`) |
+```json
+{"end_effector_position": {"start": 0, "end": 3},
+ "end_effector_rotation": {"start": 3, "end": 6},
+ "gripper_position":      {"start": 7, "end": 8}}
+```
 
-Action is 7 wide: `x, y, z, roll/axis_angle …, gripper`.
+Six distinct state layouts appear across the 27, matching the `state_encoding`
+convention in `openx2lerobot/openx_rlds.py`:
 
-**This is inference, not measurement** — the delivered files do not record which
-encoding each dataset used. Confirm per dataset against `OXE_DATASET_CONFIGS` before
-relying on it.
+| slots | datasets | shape |
+| --- | --: | --- |
+| `eef_position(3) · eef_rotation(3) · pad(1) · gripper(1)` | 11 | POS_EULER |
+| `eef_position(3) · eef_rotation(4) · gripper(1)` | 6 | POS_QUAT |
+| `joint_position(7) · gripper(1)` | 4 | JOINT |
+| `joint_position(6) · pad(1) · gripper(1)` | 1 | JOINT, 6-DoF arm |
+| `joint_position(6 or 7) · pad` | 2 | JOINT, no gripper in state |
+| `eef_position(2) · pad(6)` | 1 | `language_table`, planar |
+| `none(7) · pad(1)` | 1 | `roboturk`, unnamed |
+
+Note the **pad slot at index 6** in the POS_EULER family: the block list skips it,
+so `gripper_position` sits at 7 with slot 6 empty. That gap is real and is recorded
+explicitly in the registry as an `unused` block.
+
+Action is 7 wide everywhere: `end_effector_position(3)`, `end_effector_rotation(3)`
+(both `absolute: false`, i.e. deltas), `gripper_close(1)` as `int64` in `[0, 1]`.
+
+What *is* missing is provenance: these datasets carry no sub-feature vectors, only
+`observation.state` / `action` / `absolute_action`. So the boundaries are known and
+the source columns are not — they can be described but not rebuilt without the
+upstream RLDS.
 
 ## Summary of confidence
 
@@ -220,7 +239,13 @@ relying on it.
 | A — humanoid skeleton | neural_traj ×3, robocurate ×4, oneuniverse | declared in `modality.json` | 44/44 |
 | B — arms then hands | humanoid_everyday ×2 | measured + declared | 28/28, 26/26 |
 | C — per-robot | galaxea ×5 | measured | 18/18 |
-| C — per-robot | OXE ×27 | inferred from `openx2lerobot` | 0/8 measured |
+| C — per-robot | OXE ×27 | declared in `modality.json` | 8/8 declared, 0 measured |
+
+All 36 datasets are now written up in [`dataset_registry`](../dataset_registry),
+one YAML each, with per-block `evidence` and the delivered geometry recorded
+alongside. `python -m lerobot_pipeline.plan` reports which of them can actually be
+rebuilt: today only `action_net`, because it is the only one whose source columns
+were recovered *and* whose raw layout has been described.
 
 Unresolved slots are, without exception, blocks of identical constants (usually
 zeros for a body part the robot does not have). They cannot be disambiguated from

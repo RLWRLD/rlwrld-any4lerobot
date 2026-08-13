@@ -1,0 +1,103 @@
+id: humanoid_everyday_h1
+name: "Humanoid-Everyday (Unitree H1)"
+
+# Not yet traced to an upstream release. Recorded from the delivered copy only,
+# which is why every block below is `declared` and the dataset is not buildable.
+upstream:
+  commercial_use: null
+
+delivered:
+  path: /data/taeyoung/data/vla_pretrain_dataset/humanoid_everyday/humanoid_everyday_h1
+  origin: /storage1/sjw_dataset/dataset
+  codebase_version: 2.1
+  episodes: 4885
+  frames: 1656884
+  # what the delivered copy actually is, per camera -- the target a
+  # rebuild is checked against
+  video:
+    egocentric: {shape: [480, 640, 3], codec: h264, profile: high, gop: 250, bframes: 2}
+    egocentric_resized: {shape: [192, 256, 3], codec: h264, profile: high, gop: 250, bframes: 2}
+  converted_by: alin_lab
+
+source:
+  # No converter for this source yet. Its upstream has not been traced,
+  # so there is nothing to point a builder at; `plan` reports it as not
+  # rebuildable rather than letting a run start and fail late.
+  builder: none
+
+lerobot:
+  robot_type: h1
+  fps: 30
+  embodiment_tag: humanoid_everyday_h1
+
+  video:
+    # source-side geometry is unknown: this dataset has not been traced to an
+    # upstream release, so only its delivered form is recorded (see delivered.video)
+    cameras:
+      egocentric: {}
+      egocentric_resized: {}
+    # H.264 High with a 250-frame GOP is the rldx1_reference profile, which
+    # only our encoder produces -- so the delivered copy was re-encoded, and
+    # reproducing it means running the profile's resize step
+    resize: resize_preserve_aspect_area
+    encoding: rldx1_reference
+    # one camera is over the area bound: the untouched original is kept
+    # beside the resized copy
+    keeps_original: true
+
+  features:
+    - observation.imu.quaternion
+    - observation.imu.accelerometer
+    - observation.imu.gyroscope
+    - observation.imu.rpy
+    - observation.odometry.position
+    - observation.odometry.velocity
+    - observation.odometry.rpy
+    - observation.odometry.quat
+    - observation.arm_joints
+    - observation.leg_joints
+    - observation.hand_joints
+    - observation.tactile.sensor_id
+    - observation.tactile.values
+
+  # how the training stack slices the flat vectors, from the delivered
+  # meta/modality.json
+  modality:
+    state: {"left_arm": {"start": 0, "end": 7}, "left_hand": {"start": 14, "end": 20}, "right_arm": {"start": 7, "end": 14}, "right_hand": {"start": 20, "end": 26}}
+    action: {"left_arm": {"start": 0, "end": 7}, "left_hand": {"start": 14, "end": 20}, "right_arm": {"start": 7, "end": 14}, "right_hand": {"start": 20, "end": 26}}
+
+  state:
+    width: 26
+    layout: arms_then_hands
+    # same arrangement as humanoid_everyday_g1 with 6-wide hand blocks: the H1's
+    # hand reports 12 values against the G1's 14
+    source_features:
+      arm:
+        state: observation.arm_joints
+        action: action.arm_joints
+      hand:
+        state: observation.hand_joints
+        action: action.hand_joints
+
+    blocks:
+      left_arm:
+        width: 7
+        source: {feature: arm, columns: [0, 7]}
+        evidence: declared
+      right_arm:
+        width: 7
+        source: {feature: arm, columns: [7, 14]}
+        evidence: declared
+      left_hand:
+        width: 6
+        source: {feature: hand, columns: [0, 6]}
+        evidence: declared
+      right_hand:
+        width: 6
+        source: {feature: hand, columns: [6, 12]}
+        evidence: declared
+
+notes: >-
+  Read from the delivered copy at humanoid_everyday/humanoid_everyday_h1. Block boundaries are declared by its
+  own meta/modality.json; no sub-feature vectors are carried, so nothing was
+  measured and the columns cannot be traced without the upstream source.

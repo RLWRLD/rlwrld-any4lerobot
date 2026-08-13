@@ -14,7 +14,25 @@ delivered:
   codebase_version: v2.1
   episodes: 59137
   frames: 16028434
+  # what the delivered copy actually is, per camera -- the target a
+  # rebuild is checked against
+  video:
+    primary: {shape: [192, 256, 3], codec: h264, profile: high, gop: 250, bframes: 2}
+    wrist_left: {shape: [192, 256, 3], codec: h264, profile: high, gop: 250, bframes: 2}
+    wrist_right: {shape: [192, 256, 3], codec: h264, profile: high, gop: 250, bframes: 2}
   converted_by: alin_lab
+
+source:
+  # agibot2lerobot reads the raw AgiBot hdf5 tree and
+  # writes observation.state itself.
+  builder: agibot
+  # both subsets are read out of one AgiBotWorld-Beta tree; only
+  # --eef-type separates them
+  raw_dir: AgiBotWorld-Beta
+  # agibot2lerobot converts one end-effector type per run and selects the task ids
+  # for it; without this the two subsets would come out identical
+  args:
+    eef_type: gripper
 
 lerobot:
   robot_type: Agibot
@@ -23,9 +41,9 @@ lerobot:
 
   video:
     cameras:
-      primary: head
-      wrist_left: hand_left
-      wrist_right: hand_right
+      primary: {source: head}
+      wrist_left: {source: hand_left}
+      wrist_right: {source: hand_right}
     resize: resize_preserve_aspect_area
     encoding: rldx1_reference
     keeps_original: false

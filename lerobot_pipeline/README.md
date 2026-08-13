@@ -2,9 +2,8 @@
 
 Config-driven preprocessing for LeRobot datasets.
 
-One YAML file describes a whole run — where the data comes from, which
-preprocessing steps to apply in order, and what the final output should be. The
-CLI reads that config, runs each stage in sequence, and keeps only the result.
+A dataset is described in one file, a convention in another, and a machine in a
+third. Name a dataset and a machine, and the run assembles itself.
 
 ```
 source  →  [steps]  →  dest
@@ -20,65 +19,75 @@ the flow declarative and reusable.
 ## Quick start
 
 ```bash
-python -m lerobot_pipeline.run --config lerobot_pipeline/configs/actionnet_rldx1.yaml
+python -m lerobot_pipeline.run --env ec2 --dataset action_net
+python -m lerobot_pipeline.run --env ec2 --all
 ```
 
-See what a config resolves to before running it — stages, the full slot map, the
-video filters and encoder settings, and whether the dataset can be rebuilt at all:
+See what that resolves to first — stages, the full slot map, video handling, and
+whether the dataset can be rebuilt at all:
 
 ```bash
-python -m lerobot_pipeline.plan --config lerobot_pipeline/configs/actionnet_rldx1.yaml
+python -m lerobot_pipeline.plan --env ec2 --dataset action_net
+python -m lerobot_pipeline.plan --env ec2 --all
 ```
 
-Measure throughput on a sample before committing to a long run:
-
-```bash
-python -m lerobot_pipeline.bench --config lerobot_pipeline/configs/humanoid_everyday_g1_rldx.yaml --sample 20
+```
+dataset              builder  video                       raw source  ready
+action_net           spec     re-encoded, size confirmed  located     yes
+viola                openx    no video step               NOT FOUND   yes
+neural_robocurate    none     -                           -           NO (16)
 ```
 
-## Three layers
+## Where things live
 
-A run is described by three files, each of which changes on a different schedule.
+A dataset is described in exactly one place. Everything else is shared, or belongs
+to the machine.
 
-| layer | file | holds | changes |
-| --- | --- | --- | --- |
-| **fact** | `dataset_registry/datasets/*.yaml` | upstream pin, file layout, state layout | when a dataset is added |
-| **convention** | `configs/profiles/*.yaml`, `dataset_registry/layouts/*.yaml` | block order, resize, encoding, output version | when the convention changes |
-| **run** | `configs/*.yaml` | paths, workers, overrides | every run |
+| file | holds | one per |
+|---|---|---|
+| `dataset_registry/datasets/*.yaml` | what a dataset is: upstream pin, how to read it, state layout, delivered geometry | dataset |
+| `dataset_registry/layouts/*.yaml` | block order | convention |
+| `configs/profiles/*.yaml` | how the collection is processed: layouts, resize, encoding, output version | convention |
+| `configs/encoding/*.yaml` | ffmpeg settings | convention |
+| `configs/env/*.yaml` | where this machine keeps data, and how hard it may work | **machine** |
 
-The profile is where the processing convention lives, state and video side by side:
+There used to be a run config per dataset as well. Across all 36 they held no
+dataset-specific information — only the dataset's own name substituted into two
+paths — so they are gone, and the dataset is a flag instead. Adding a dataset is one
+YAML file and no other edit.
 
 ```yaml
-# configs/profiles/rldx1.yaml
-state:
-  layouts: {gr1_body_parts: gr1_body_parts}   # change a right-hand side to re-lay-out
-video:
-  resize: {type: resize_preserve_aspect_area, max_area: 65536, multiple: 32}
-  encoding: rldx1_reference
-dest:
-  version: lerobot_v21
+# configs/env/ec2.yaml — the whole machine, all 36 datasets
+profile: rldx1
+raw_root: /scratch/raw
+out_root: /scratch/out
+builders:
+  spec: {executor: local, episodes_per_task: 100}
 ```
 
-so a run config carries only what is specific to the run:
+Builder flags layer, most specific last:
 
-```yaml
-name: actionnet_rldx1
-dataset: action_net        # -> the registry: source layout, state layout, identity
-profile: rldx1             # -> the convention above
-source: {path: /scratch/data, args: {executor: local}}
-dest: {path: /scratch/out/actionnet_rldx1}
+```
+spec.source.args   what only the dataset knows    --eef-type gripper
+profile.builders   what the convention wants      --use-videos
+env.builders       what this machine can do       --executor ray
 ```
 
-Everything a profile supplies is a default; anything written in the run config wins,
-so a one-off run does not need a second profile file.
+Paths are `raw_root/<dir>` and `out_root/<id>`, where `<dir>` is the dataset's
+`source.raw_dir` when it has one — AgiBot's dexhand and gripper subsets both name
+`AgiBotWorld-Beta`, because they are one tree read twice. A machine that keeps a
+source somewhere else overrides it under `paths:`.
 
 ## Config
 
-```yaml
-name: humanoid_everyday_g1_rldx      # used for logs and the work directory
+The config a run resolves to — built from the environment and the registry rather
+than written by hand, and what `plan` prints:
 
-dataset: action_net                  # optional; a registry entry
-profile: rldx1                       # optional; a named convention
+```yaml
+name: action_net
+
+dataset: action_net                  # a registry entry
+profile: rldx1                       # a named convention
 
 source:
   type: lerobot_v21                  # lerobot_v21 | lerobot_v30 | spec | agibot

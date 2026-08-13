@@ -1,0 +1,26 @@
+# LeRobot's own default encoder, kept as-is.
+#
+# Roughly a third of the delivered collection is AV1 with a two-frame keyframe
+# interval and no B-frames -- toto, viola, jaco_play, roboturk, stanford_hydra,
+# the berkeley_* sets, cmu_stretch, dlr_edan, dobbe, nyu_franka, taco_play,
+# ucsd_kitchen, utaustin_mutex, austin_* and oneuniverse. Those were never
+# re-encoded: they came out of their original conversion already small enough for
+# the area bound, so no resize step ran and LeRobot's writer defaults survived.
+#
+# The very short GOP is deliberate on LeRobot's part: training samples random
+# frames, and a long keyframe interval makes every read walk back to the last one.
+# It costs a lot of space -- compare toto's 3.4 MB episode against action_net's
+# 0.6 MB -- which is why the re-encoded datasets use rldx1_reference instead.
+#
+# Reproducing one of these datasets means *not* running a video step at all. This
+# profile exists so that "keep what LeRobot produced" is a name rather than an
+# omission.
+
+codec: libsvtav1
+preset: null
+crf: null
+gop: 2
+pix_fmt: yuv420p
+bframes: 0
+profile: null
+sc_threshold: null

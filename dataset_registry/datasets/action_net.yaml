@@ -26,6 +26,10 @@ delivered:
   codebase_version: v2.1
   episodes: 30120
   frames: 15489245
+  # what the delivered copy actually is, per camera -- the target a rebuild is
+  # checked against. 288x192 is what the resize step produces from 1280x800.
+  video:
+    primary: {shape: [192, 288, 3], codec: h264, profile: high, gop: 250, bframes: 2}
   # ALIN Lab, ad-hoc, code not kept (Notion 3ac6cbdf-f6f6-80ef-aa98-d85739443184, Q2)
   converted_by: alin_lab
 
@@ -69,10 +73,8 @@ lerobot:
 
   video:
     cameras:
-      # lerobot key <- source camera directory
-      primary: top
-    # height, width, channels of the source mp4, before any resize step
-    shape: [800, 1280, 3]
+      # lerobot key -> where it lives in the source, and its size before any resize
+      primary: {source: top, shape: [800, 1280, 3]}
     resize: resize_preserve_aspect_area
     encoding: rldx1_reference
     keeps_original: false

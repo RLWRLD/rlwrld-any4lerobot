@@ -117,6 +117,8 @@ def parse_config(raw: Mapping[str, Any], base_dir: Path | None = None) -> Pipeli
     steps = _parse_steps(raw.get("steps") or [])
     runtime = _parse_runtime(raw.get("runtime") or {})
 
+    _check_converter_args(source)
+
     if source.path == dest.path:
         raise ConfigError(
             f"source.path and dest.path are the same ({source.path}); "
@@ -132,6 +134,21 @@ def parse_config(raw: Mapping[str, Any], base_dir: Path | None = None) -> Pipeli
         dataset=spec,
         profile=profile_name if isinstance(profile_name, str) else None,
     )
+
+
+def _check_converter_args(source: SourceConfig) -> None:
+    """Reject args the converter would reject, here rather than hours into a run."""
+    if source.is_lerobot or not source.args:
+        return
+    from .converter_args import check
+    from .stages import _CONVERTERS
+
+    entry = _CONVERTERS.get(source.type)
+    if entry is None:
+        return
+    problems = check(entry[0], source.args, source.type)
+    if problems:
+        raise ConfigError("; ".join(problems))
 
 
 def _load_profile(name: Any) -> dict[str, Any]:
@@ -154,7 +171,7 @@ def _load_spec(name: Any, profile: Mapping[str, Any]) -> Any:
 
     from dataset_registry import SpecError, load
 
-    layouts = (profile.get("state") or {}).get("layouts") or {}
+    layouts = (profile.get("state") or {}).get("build_layout_as") or {}
     try:
         return load(name, layouts=layouts)
     except SpecError as exc:
@@ -175,19 +192,29 @@ def _apply_profile(
 
     if spec is not None:
         source = dict(filled.get("source") or {})
-        source.setdefault("type", "spec" if spec.source else "lerobot_v21")
+        builder = spec.source.builder if spec.source else "none"
+        # `none` means the source is already LeRobot, so there is nothing to convert
+        source.setdefault("type", "lerobot_v21" if builder == "none" else builder)
+        args = dict(spec.source.args) if spec.source else {}
         if source["type"] == "spec":
-            # the converter is dataset-agnostic; which dataset is a flag
-            source["args"] = {"dataset": spec.id, **(source.get("args") or {})}
+            # the spec-driven converter is dataset-agnostic; which dataset is a flag
+            args["dataset"] = spec.id
+        # the run config still wins, so a one-off run can override
+        source["args"] = {**args, **(source.get("args") or {})}
         filled["source"] = source
 
     if "steps" not in filled:
         steps: list[Any] = []
-        if spec is not None:
+        if spec is not None and not (
+            spec.source and spec.source.builds_its_own_vectors
+        ):
+            # a pre-existing converter writes observation.state itself; running the
+            # layout step over its output would restate a convention it already applied
             # the already-resolved spec, so the step sees the profile's layouts
             steps.append({"type": "state_layout", "spec": spec})
+        # the spec says whether this dataset is resized at all; the profile says how
         resize = (profile.get("video") or {}).get("resize")
-        if resize:
+        if resize and (spec is None or spec.is_resized):
             steps.append(dict(resize))
         if steps:
             filled["steps"] = steps

@@ -59,9 +59,15 @@ _TOP_LEVEL = {
 _UPSTREAM = {"huggingface", "revision", "homepage", "license", "commercial_use"}
 _MIRROR = {"kind", "uri", "layout", "objects", "bytes"}
 MIRROR_KINDS = {"foundry", "naver", "other"}
-_DELIVERED = {"path", "origin", "codebase_version", "episodes", "frames", "converted_by"}
-_LEROBOT = {"robot_type", "fps", "embodiment_tag", "video", "state", "action", "features"}
-_VIDEO = {"cameras", "shape", "resize", "encoding", "keeps_original"}
+_DELIVERED = {
+    "path", "origin", "codebase_version", "episodes", "frames", "converted_by", "video",
+}
+_LEROBOT = {
+    "robot_type", "fps", "embodiment_tag", "video", "state", "action", "features",
+    "modality",
+}
+_VIDEO = {"cameras", "resize", "encoding", "keeps_original"}
+_CAMERA = {"source", "shape"}
 _STATE = {"width", "layout", "source_features", "blocks"}
 _BLOCK = {"width", "pad", "source", "evidence", "note"}
 _SOURCE = {"feature", "columns"}
@@ -69,8 +75,16 @@ _SOURCE = {"feature", "columns"}
 # How the raw upstream files are arranged, and how to line their clocks up. Read by
 # spec2lerobot; the format and clock names are the closed sets it implements.
 _SOURCE_SPEC = {
-    "format", "discover", "paths", "tasks", "clock", "features", "feature_widths",
+    "builder", "args", "raw_dir", "format", "discover", "paths", "tasks", "clock",
+    "features", "feature_widths", "layout", "note",
 }
+
+# Which program turns the raw source into LeRobot. `spec` is the data-driven path in
+# spec2lerobot; the rest are the converters this repo already had, each of which
+# carries its own dataset knowledge in code and emits observation.state itself --
+# so a dataset built by one of those skips the state_layout step. `none` is a source
+# that is already LeRobot and needs no conversion at all.
+BUILDERS = {"spec", "openx", "agibot", "libero", "robocasa", "robomind", "none"}
 _SOURCE_PATHS = {"episode", "video"}
 _SOURCE_TASKS = {"file", "key", "prompt"}
 _SOURCE_CLOCK = {"strategy", "data", "image", "image_format"}
@@ -217,11 +231,20 @@ class SourceSpec:
     directory from ``lerobot.video.cameras``).
     """
 
-    format: str
-    discover: str
-    paths: Mapping[str, str]
-    tasks: Mapping[str, str]
-    clock: Mapping[str, Any]
+    builder: str = "spec"
+    # flags the builder needs that only the dataset knows, e.g. which end-effector
+    # subset of AgiBot World this is. Merged into the run config's source.args.
+    args: Mapping[str, Any] = field(default_factory=dict)
+    # the directory this dataset occupies inside a collection of raw sources, when
+    # that is not just its own id. Two datasets can share one: the AgiBot dexhand and
+    # gripper subsets are both read out of AgiBotWorld-Beta and differ only by
+    # --eef-type.
+    raw_dir: str | None = None
+    format: str | None = None
+    discover: str | None = None
+    paths: Mapping[str, str] = field(default_factory=dict)
+    tasks: Mapping[str, str] = field(default_factory=dict)
+    clock: Mapping[str, Any] = field(default_factory=dict)
     # logical feature name -> where to read it inside the raw file, per side. This is
     # the counterpart of ``lerobot.state.source_features``, which names the *emitted*
     # LeRobot columns. The two are different namespaces and conflating them silently
@@ -236,6 +259,16 @@ class SourceSpec:
     @property
     def strategy(self) -> str:
         return self.clock["strategy"]
+
+    @property
+    def builds_its_own_vectors(self) -> bool:
+        """True when the converter emits observation.state itself.
+
+        The pre-existing converters do; the spec-driven path deliberately does not,
+        leaving assembly to the layout step. A dataset built by one of the others is
+        buildable without any block sources, because nothing here assembles it.
+        """
+        return self.builder not in ("spec", "none")
 
 
 @dataclass(frozen=True)
@@ -266,6 +299,10 @@ class DatasetSpec:
         problems: list[str] = []
         if self.source is None:
             problems.append("no source: section, so the raw files cannot be read")
+        elif self.source.builds_its_own_vectors:
+            # the converter writes observation.state itself, so there is no layout
+            # here to satisfy and the holes below do not block a rebuild
+            return problems
         for side in ("state", "action"):
             vector = self.vector(side)
             if vector is None:
@@ -305,22 +342,53 @@ class DatasetSpec:
         return (self.raw.get("delivered") or {}).get("path")
 
     @property
+    def delivered_video(self) -> Mapping[str, Mapping[str, Any]]:
+        """Per camera, what the delivered copy actually is: geometry and codec.
+
+        Kept apart from ``lerobot.video.cameras``, which describes the *source*.
+        A rebuild is checked by comparing the two, so conflating them would make the
+        check compare a value with itself.
+        """
+        return (self.raw.get("delivered") or {}).get("video") or {}
+
+    @property
     def embodiment_tag(self) -> str | None:
         return (self.raw.get("lerobot") or {}).get("embodiment_tag")
 
     @property
-    def cameras(self) -> Mapping[str, Any]:
+    def cameras(self) -> Mapping[str, Mapping[str, Any]]:
+        """LeRobot camera key -> ``{"source": <dir in the raw source>, "shape": [h, w, c]}``.
+
+        Cameras differ in size within one dataset -- humanoid_everyday carries a
+        640x480 original beside a 256x192 resize -- so the shape belongs to the
+        camera, not to the dataset.
+        """
         return self._video.get("cameras") or {}
+
+    def camera_source(self, key: str) -> str:
+        """The directory this camera has in the raw source; defaults to its own name."""
+        return (self.cameras.get(key) or {}).get("source") or key
+
+    def camera_shape(self, key: str) -> tuple[int, int, int] | None:
+        shape = (self.cameras.get(key) or {}).get("shape")
+        return tuple(shape) if shape else None
 
     @property
     def _video(self) -> Mapping[str, Any]:
         return ((self.raw.get("lerobot") or {}).get("video") or {}) or {}
 
     @property
-    def video_shape(self) -> tuple[int, int, int] | None:
-        """``(height, width, channels)`` of the source video, before any resize."""
-        shape = self._video.get("shape")
-        return tuple(shape) if shape else None
+    def is_resized(self) -> bool:
+        """Whether the delivered copy was resized, and so whether a rebuild should be.
+
+        A fact about the dataset rather than a choice: it was read back from the
+        delivered encoding, where AV1 with a two-frame GOP means LeRobot's own writer
+        output survived untouched. Running a resize over a dataset that never had one
+        re-encodes video that was meant to pass straight through, and what comes out
+        is not the dataset being reproduced. The profile decides *how* to resize;
+        this decides *whether*.
+        """
+        return bool(self._video.get("resize"))
 
     @property
     def fps(self) -> int | None:
@@ -329,6 +397,19 @@ class DatasetSpec:
     @property
     def robot_type(self) -> str | None:
         return (self.raw.get("lerobot") or {}).get("robot_type")
+
+    @property
+    def modality(self) -> Mapping[str, Any] | None:
+        """How the training stack slices the flat vectors, if the delivered dataset
+        declares it.
+
+        Distinct from ``state.blocks``, which records where each slot's *value* comes
+        from. The two disagree often: action_net's provenance is eight body-part
+        blocks but its modality.json is one flat 0..44 block, because the training
+        config asks it for ``modality_keys=["state"]``. Provenance is how to build
+        the vector; modality is how the model reads it.
+        """
+        return (self.raw.get("lerobot") or {}).get("modality")
 
 
 def available() -> list[str]:
@@ -374,7 +455,16 @@ def parse(
 
     lerobot = raw.get("lerobot") or {}
     _reject(lerobot, _LEROBOT, f"{origin}.lerobot")
-    _reject(lerobot.get("video") or {}, _VIDEO, f"{origin}.lerobot.video")
+    video = lerobot.get("video") or {}
+    _reject(video, _VIDEO, f"{origin}.lerobot.video")
+    for key, camera in (video.get("cameras") or {}).items():
+        where = f"{origin}.lerobot.video.cameras.{key}"
+        _reject(camera, _CAMERA, where)
+        shape = camera.get("shape")
+        if shape is not None and (
+            not isinstance(shape, Sequence) or isinstance(shape, str) or len(shape) != 3
+        ):
+            raise SpecError(f"{where}.shape must be [height, width, channels]")
 
     state_raw = lerobot.get("state")
     action_raw = lerobot.get("action")
@@ -407,6 +497,25 @@ def _parse_source(raw: Any, origin: str) -> SourceSpec:
         if not isinstance(value, str) or not value:
             raise SpecError(f"{where}.{key} must be a non-empty string, got {value!r}")
         return value
+
+    builder = raw.get("builder", "spec")
+    if builder not in BUILDERS:
+        raise SpecError(
+            f"{origin}.builder must be one of {', '.join(sorted(BUILDERS))}, "
+            f"got {builder!r}"
+        )
+    builder_args = raw.get("args") or {}
+    if not isinstance(builder_args, Mapping):
+        raise SpecError(f"{origin}.args must be a mapping of flag -> value")
+
+    raw_dir = raw.get("raw_dir")
+    if raw_dir is not None and (not isinstance(raw_dir, str) or not raw_dir):
+        raise SpecError(f"{origin}.raw_dir must be a non-empty string")
+
+    if builder != "spec":
+        # only the spec-driven path reads the file description; the others carry
+        # their own, so demanding one here would be asking for fiction
+        return SourceSpec(builder=builder, args=dict(builder_args), raw_dir=raw_dir)
 
     paths = raw.get("paths") or {}
     _reject(paths, _SOURCE_PATHS, f"{origin}.paths")
@@ -442,6 +551,9 @@ def _parse_source(raw: Any, origin: str) -> SourceSpec:
             )
 
     return SourceSpec(
+        builder=builder,
+        args=dict(builder_args),
+        raw_dir=raw_dir,
         format=text(raw, "format", origin),
         discover=text(raw, "discover", origin),
         paths=dict(paths),

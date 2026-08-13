@@ -160,7 +160,12 @@ def converter_command(
             f"available: {', '.join(sorted(_CONVERTERS))}"
         )
 
+    from .converter_args import check
+
     script, input_flag, output_flag = entry
+    problems = check(script, args, source_type)
+    if problems:
+        raise StageError("; ".join(problems))
     # a package is run with -m so its relative imports resolve; the older
     # converters are single scripts and are run by path
     entry_point = (

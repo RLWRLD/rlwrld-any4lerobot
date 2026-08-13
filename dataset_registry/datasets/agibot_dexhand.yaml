@@ -14,7 +14,23 @@ delivered:
   codebase_version: v2.1
   episodes: 36425
   frames: 8011584
+  # what the delivered copy actually is, per camera -- the target a
+  # rebuild is checked against
+  video:
+    primary: {shape: [192, 256, 3], codec: h264, profile: high, gop: 250, bframes: 2}
   converted_by: alin_lab
+
+source:
+  # agibot2lerobot reads the raw AgiBot hdf5 tree and
+  # writes observation.state itself.
+  builder: agibot
+  # both subsets are read out of one AgiBotWorld-Beta tree; only
+  # --eef-type separates them
+  raw_dir: AgiBotWorld-Beta
+  # agibot2lerobot converts one end-effector type per run and selects the task ids
+  # for it; without this the two subsets would come out identical
+  args:
+    eef_type: dexhand
 
 lerobot:
   robot_type: Agibot
@@ -23,7 +39,7 @@ lerobot:
 
   video:
     cameras:
-      primary: head
+      primary: {source: head}
     resize: resize_preserve_aspect_area
     encoding: rldx1_reference
     keeps_original: false
