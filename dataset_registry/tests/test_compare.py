@@ -138,3 +138,43 @@ def test_report_counts_the_failures(spec, tmp_path):
     b = write_dataset(tmp_path / "b")
     text = report(run(spec, a, b, episodes=2, check_video=False))
     assert "1/2 episodes reproduce" in text and "1 differ" in text
+
+
+class TestKeyframeInterval:
+    """Reading `-g` back off a file, which the stream header does not carry.
+
+    This is what makes deferring the encoding work safe: the first run does not try
+    to match GOP, and if the delivered copy turns out to differ, `compare` says so
+    rather than leaving it to be noticed in a size ratio.
+    """
+
+    def test_the_first_frame_counts_as_a_keyframe(self, tmp_path, monkeypatch):
+        """ffprobe appends a stray comma to the first row, so a plain equality test
+        misses frame 0 -- and frame 0 is always a keyframe, which turns every
+        interval into "only one keyframe found"."""
+        from dataset_registry import compare
+
+        monkeypatch.setattr(compare, "_ffprobe", lambda command, path: "1,\n0\n0\n1\n0\n")
+        assert compare.keyframe_interval(tmp_path / "x.mp4") == 3
+
+    def test_one_keyframe_means_unknown_rather_than_zero(self, tmp_path, monkeypatch):
+        """An episode shorter than the interval has a single keyframe; that is not
+        the same as a one-frame GOP."""
+        from dataset_registry import compare
+
+        monkeypatch.setattr(compare, "_ffprobe", lambda command, path: "1,\n0\n0\n0\n")
+        assert compare.keyframe_interval(tmp_path / "x.mp4") is None
+
+    def test_a_two_frame_gop_is_read_as_two(self, tmp_path, monkeypatch):
+        """LeRobot's own writer default, which the AV1 datasets still carry."""
+        from dataset_registry import compare
+
+        monkeypatch.setattr(compare, "_ffprobe", lambda command, path: "1,\n0\n1\n0\n1\n")
+        assert compare.keyframe_interval(tmp_path / "x.mp4") == 2
+
+    def test_gop_is_among_the_compared_fields(self):
+        """Guards the deferral: if this drops out, a 250-vs-2 difference would only
+        show up indirectly, as a file-size ratio."""
+        source = Path(compare_episode.__globals__["__file__"]).read_text()
+        fields = source.split('for field_name in (')[1].split('):')[0]
+        assert '"gop"' in fields

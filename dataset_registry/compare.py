@@ -15,11 +15,14 @@ The two are held to different standards, because they can be:
   full -- which is the interesting part: if every shared row matches, the difference
   is a trimmed tail, and if they diverge partway the two are keeping *different*
   frames and the strategy is wrong.
-* **video must match in geometry, frame count and codec settings; its bytes will
-  not match.** Two ffmpeg builds with the same flags do not emit the same file, so
-  the size is reported as a ratio and judged loosely. If the geometry or the frame
-  count differs, that is a real failure -- those are decided by our own code, not by
-  the encoder.
+* **video must match in geometry, frame count, codec and keyframe interval; its
+  bytes will not match.** Two ffmpeg builds with the same flags do not emit the same
+  file, so the size is reported as a ratio and judged loosely. Everything else there
+  is decided by our own settings rather than by the encoder build, so a difference is
+  a real failure. The keyframe interval is included deliberately: it is not in the
+  stream header and has to be read off the frames, and it is the one encoder setting
+  the training loader feels, since sampling a random frame from a 250-frame GOP means
+  decoding back to the last keyframe.
 
 Episodes carry no source id in the delivered copy, so they are aligned by position
 and the alignment is *checked* rather than assumed: the task prompt of each pair
@@ -96,23 +99,60 @@ def episode_videos(root: Path, index: int) -> dict[str, Path]:
     return out
 
 
-def probe(path: Path) -> dict[str, Any]:
-    """Geometry, frame count and codec settings of one mp4."""
-    command = [
-        "ffprobe", "-v", "error", "-select_streams", "v:0",
-        "-count_frames", "-show_entries",
-        "stream=codec_name,profile,width,height,pix_fmt,has_b_frames,nb_read_frames",
-        "-of", "json", str(path),
-    ]
+# How far into an episode to look for a second keyframe. Long enough to see a
+# 250-frame GOP, short enough not to decode whole episodes.
+GOP_PROBE_FRAMES = 320
+
+
+def _ffprobe(command: list[str], path: Path) -> str:
     try:
         result = subprocess.run(command, capture_output=True, text=True, timeout=300)
     except FileNotFoundError as exc:
         raise CompareError("ffprobe not found; it is needed to compare video") from exc
     if result.returncode != 0:
         raise CompareError(f"ffprobe failed on {path}: {result.stderr.strip()}")
-    streams = json.loads(result.stdout).get("streams") or [{}]
+    return result.stdout
+
+
+def keyframe_interval(path: Path) -> int | None:
+    """Frames between the first two keyframes, or ``None`` if there is only one.
+
+    The keyframe interval is not in the stream header -- ffprobe reports the codec
+    but not ``-g`` -- so it has to be read off the frames. It matters because it is
+    the one encoder setting the training loader actually feels: sampling a random
+    frame from a 250-frame GOP means decoding back to the last keyframe, which is
+    why LeRobot's own writer uses 2.
+
+    ``None`` also means "shorter than the interval", which is the common case for a
+    250-frame setting and a 200-frame episode. Two files that both report ``None``
+    agree as far as this can tell.
+    """
+    payload = _ffprobe([
+        "ffprobe", "-v", "error", "-select_streams", "v:0",
+        "-show_entries", "frame=key_frame",
+        "-read_intervals", f"%+#{GOP_PROBE_FRAMES}",
+        "-of", "csv=p=0", str(path),
+    ], path)
+    # ffprobe appends a stray comma to the first frame's row, so a plain equality
+    # test silently misses frame 0 -- which is always a keyframe, and skipping it
+    # turns every interval into "only one keyframe found"
+    flags = [value.strip().strip(",") for value in payload.split() if value.strip()]
+    keyframes = [index for index, value in enumerate(flags) if value == "1"]
+    return keyframes[1] - keyframes[0] if len(keyframes) > 1 else None
+
+
+def probe(path: Path) -> dict[str, Any]:
+    """Geometry, frame count, codec settings and keyframe interval of one mp4."""
+    payload = _ffprobe([
+        "ffprobe", "-v", "error", "-select_streams", "v:0",
+        "-count_frames", "-show_entries",
+        "stream=codec_name,profile,width,height,pix_fmt,has_b_frames,nb_read_frames",
+        "-of", "json", str(path),
+    ], path)
+    streams = json.loads(payload).get("streams") or [{}]
     stream = streams[0]
     stream["bytes"] = path.stat().st_size
+    stream["gop"] = keyframe_interval(path)
     return stream
 
 
@@ -225,7 +265,7 @@ def compare_video(rebuilt: Path, delivered: Path, index: int) -> tuple[dict, lis
 
         # decided by our own code, so they must agree exactly
         for field_name in ("width", "height", "nb_read_frames", "codec_name",
-                           "profile", "pix_fmt", "has_b_frames"):
+                           "profile", "pix_fmt", "has_b_frames", "gop"):
             if a.get(field_name) != b.get(field_name):
                 problems.append(
                     f"video {key}: {field_name} {a.get(field_name)!r} against "
@@ -242,6 +282,7 @@ def compare_video(rebuilt: Path, delivered: Path, index: int) -> tuple[dict, lis
             )
         summary[key] = (
             f"{a.get('width')}x{a.get('height')} {a.get('nb_read_frames')}f "
+            f"{a.get('codec_name')}/GOP{a.get('gop') or '>' + str(GOP_PROBE_FRAMES)} "
             f"{a['bytes']}B vs {b['bytes']}B ({ratio:.2f}x) {verdict}"
         )
     return summary, problems
