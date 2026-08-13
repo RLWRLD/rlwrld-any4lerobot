@@ -66,12 +66,9 @@ machine needs one installed — `apt-get install ffmpeg` on Ubuntu.
   - [ ] Dataset Sampling
   - [ ] Dataset Merging
 
-The end-to-end flow is **download → preprocess → upload**; each stage is its own
-top-level package.
-
-- ​**​Download​**​:
-
-  - [x] [Download](./download/README.md) — give it an S3 prefix, it pulls everything as fast as the machine allows
+The end-to-end flow is **download → preprocess → upload**. Downloading needs no code
+in this repo — see [Downloading source data](#-downloading-source-data) for the
+settings that matter.
 
 - ​**​Preprocessing​**​:
 
@@ -103,6 +100,55 @@ top-level package.
   - [ ] MultiLeRobotDataset
 
 - [**Want more features?**](https://github.com/Tavish9/any4lerobot/issues/new?template=feature-request.yml)
+
+## ⬇️ Downloading source data
+
+No code here for this — the AWS CLI is as fast as anything we could write, once it is
+configured. **The defaults are not**: `aws s3 cp` out of the box reached 1.4 Gbps on a
+100 Gbps instance, about 3% of the link.
+
+```bash
+aws configure set default.s3.preferred_transfer_client crt
+aws configure set default.s3.target_bandwidth 100Gb/s   # the instance's actual NIC rate
+aws configure set default.s3.multipart_chunksize 64MB
+
+# simplest, and resumes correctly on re-run
+aws s3 sync s3://bucket/prefix/ /scratch/data
+
+# ~15% faster, if you want it
+aws s3 ls s3://bucket/prefix/ --recursive | awk '{print $4}' \
+  | xargs -P 16 -I{} aws s3 cp "s3://bucket/{}" /scratch/data/
+```
+
+Measured on c9gd.48xlarge (100 Gbps, 3 local NVMe striped) over the same 2.735 TB /
+325 objects, all three with the settings above:
+
+| | GB/s | Gbps | resume |
+|---|---|---|---|
+| `aws s3 cp` + `xargs -P16` | **7.39** | 59.1 | — |
+| `aws s3 sync` | 6.31 | 50.5 | 0.5s, correct |
+
+Settings that matter, and why:
+
+- **`target_bandwidth` must equal the NIC rate, not more.** Declaring 100 Gbps on a
+  50 Gbps instance measured *slower* — 41.4 → 37.4 Gbps (n=3 per setting, alternating
+  order, σ 0.36/0.46).
+- **`multipart_chunksize` 64MB.** 8MB parts run out of request budget before bandwidth
+  (~9,400 GET/s needed at 600 Gbps against ~5,500/s per prefix); they held ~17 Gbps
+  where 64MB reached 89.
+- **Concurrency 16–32.** One transfer peaks near 14 Gbps regardless of instance size.
+  Past 32 it degrades and then fails: at 128 concurrent `aws s3 cp` processes, 433 of
+  604 objects were lost.
+- **Stream instead of landing files when you can.** Writing to disk cost 6–18%
+  depending on the machine, and disk is often the real ceiling.
+
+Two things that surprised us, recorded so nobody re-derives them:
+
+- **A bigger NIC stops paying off early.** Link utilisation went 95% (25 Gbps) → 83%
+  (50) → 67% (100) → 15% (600 Gbps). For large jobs add instances, not a bigger NIC —
+  per-second billing keeps the cost flat while wall clock divides.
+- **Object size dominates.** The same tool did 8.38 GB/s on 27 GB objects and
+  1.68 GB/s on 100 MB objects. How a dataset is packed matters more than the flags.
 
 ## 📚 Awesome LeRobot
 
