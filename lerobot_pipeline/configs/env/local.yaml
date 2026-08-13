@@ -8,6 +8,13 @@ profile: rldx1
 
 raw_root: ~/data/raw
 out_root: ~/data/out
+state_root: ~/data/state
+
+batch:
+  # One at a time here: a small box has no idle workers to fill, and processing
+  # one dataset per stage keeps the disk footprint to a single dataset.
+  max_datasets: 1
+  target_episodes: 1
 
 builders:
   spec: {executor: local, episodes_per_task: 100}

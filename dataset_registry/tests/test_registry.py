@@ -239,3 +239,12 @@ class TestSlotMap:
     def test_side_must_be_state_or_action(self):
         with pytest.raises(SpecError, match="must be 'state' or 'action'"):
             parse(spec()).state.slot_map("video")
+
+
+def test_every_spec_reports_how_many_episodes_were_delivered():
+    """The orchestrator groups datasets by how much parallel work they carry, and
+    episodes is the only per-dataset measure of that the registry holds."""
+    counts = {name: load(name).delivered_episodes for name in available()}
+
+    assert all(isinstance(count, int) and count > 0 for count in counts.values())
+    assert counts["action_net"] == 30120

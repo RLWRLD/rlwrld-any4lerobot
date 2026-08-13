@@ -22,7 +22,7 @@ PROFILE_DIR = Path(__file__).resolve().parent / "configs" / "profiles"
 _TOP_LEVEL = {"state", "video", "dest", "builders", "note"}
 _STATE = {"build_layout_as"}
 _VIDEO = {"resize", "encoding"}
-_DEST = {"version"}
+_DEST = {"version", "uri"}
 
 
 class ProfileError(ValueError):

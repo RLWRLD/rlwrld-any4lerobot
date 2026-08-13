@@ -108,3 +108,19 @@ class TestRefusal:
     def test_an_unknown_dataset_is_rejected(self):
         with pytest.raises(ConfigError, match="unknown dataset"):
             parse_config({**RUN, "dataset": "no_such_dataset"})
+
+
+class TestPublishDestination:
+    """Where the built collection is published is a property of the collection, so
+    it lives beside dest.version rather than in a machine's file."""
+
+    def test_a_profile_may_declare_where_its_output_is_published(self):
+        profile = load_profile({"dest": {"version": "lerobot_v21", "uri": "s3://b/{dataset}/"}})
+        assert profile["dest"]["uri"] == "s3://b/{dataset}/"
+
+    def test_the_shipped_profile_declares_one(self):
+        assert "uri" in load_profile("rldx1")["dest"]
+
+    def test_an_unknown_dest_key_is_still_rejected(self):
+        with pytest.raises(ProfileError, match="bucket"):
+            load_profile({"dest": {"bucket": "b"}})

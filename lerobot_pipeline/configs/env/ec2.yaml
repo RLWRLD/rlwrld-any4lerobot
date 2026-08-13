@@ -9,6 +9,16 @@ profile: rldx1
 
 raw_root: /scratch/raw
 out_root: /scratch/out
+# how far each dataset has got; survives a restart, so a run resumes
+state_root: /scratch/state
+
+batch:
+  # How many datasets a stage processes together. A single small dataset does not
+  # keep a large machine busy -- work is parallelised per file, so workers beyond
+  # the file count sit idle, and 14 of the 36 datasets have under a thousand
+  # episodes. Anything already carrying target_episodes runs on its own.
+  max_datasets: 3
+  target_episodes: 768
 
 builders:
   # one temporary dataset per 100 episodes, distributed across cores by datatrove

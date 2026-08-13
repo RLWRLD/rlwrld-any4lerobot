@@ -41,6 +41,10 @@ video:
 
 dest:
   version: lerobot_v21
+  # Where a built dataset is published. The collection's own address, so it sits
+  # here rather than in a machine's file -- every machine that builds under this
+  # profile publishes to the same place. {profile} and {dataset} are substituted.
+  uri: s3://rlwrld-foundry-data/lerobot/{profile}/{dataset}/
 
 builders:
   # Flags the convention wants, whichever machine runs it. A dataset supplies what
