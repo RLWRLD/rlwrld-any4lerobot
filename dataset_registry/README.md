@@ -7,7 +7,16 @@ file and nothing else — no Python.
 ```bash
 uv run python -m dataset_registry.verify --upstream --all      # re-check the pins online
 uv run python -m dataset_registry.verify action_net /path/to/dataset
+uv run python -m dataset_registry.compare action_net --rebuilt /out --delivered /ref
 ```
+
+`verify` checks a spec against a dataset: does each slot really hold the column the
+spec says. `compare` checks a rebuild against the delivered copy, and holds the two
+halves to different standards — **state and action must be identical**, since every
+slot is a copied float32, while **video bytes must only be close**, since two ffmpeg
+builds given the same flags do not emit the same file. Geometry, frame count and
+codec settings must still match exactly: those are decided by our code, not the
+encoder.
 
 Two things read these specs: [`spec2lerobot`](../spec2lerobot) converts a raw source
 using the `source:` section, and `lerobot_pipeline`'s `state_layout` step assembles

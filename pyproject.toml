@@ -32,7 +32,7 @@ ray = ["datatrove[ray]>=0.6.0"]
 # this same environment; the README predates that lerobot pin.
 
 [dependency-groups]
-dev = ["pytest>=8", "h5py"]
+dev = ["pytest>=8", "h5py", "pandas"]
 
 [tool.uv]
 # A collection of scripts, not an importable distribution: nothing to build.
