@@ -76,7 +76,7 @@ The profile is where the processing convention lives, state and video side by si
 ```yaml
 # configs/profiles/rldx1.yaml
 state:
-  layouts: {gr1_body_parts: gr1_body_parts}   # change a right-hand side to re-lay-out
+  build_layout_as: {gr1_body_parts: gr1_body_parts}   # <declared>: <built as>
 video:
   resize: {type: resize_preserve_aspect_area, max_area: 65536, multiple: 32}
   encoding: rldx1_reference

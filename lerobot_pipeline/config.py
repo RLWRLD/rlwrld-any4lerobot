@@ -171,7 +171,7 @@ def _load_spec(name: Any, profile: Mapping[str, Any]) -> Any:
 
     from dataset_registry import SpecError, load
 
-    layouts = (profile.get("state") or {}).get("layouts") or {}
+    layouts = (profile.get("state") or {}).get("build_layout_as") or {}
     try:
         return load(name, layouts=layouts)
     except SpecError as exc:

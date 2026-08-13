@@ -12,13 +12,18 @@
 # gr1_body_parts declares.
 
 state:
-  # Which layout each family is built under. RLDX-1 builds every family under the
-  # layout it was delivered with, so these are identity -- stated rather than
-  # omitted so the whole convention is visible in one place.
+  # <layout a dataset declares>: <layout to actually build it with>
   #
-  # A later profile changes a right-hand side and the entire collection is re-laid
-  # out; no dataset spec is touched, because none of them contain slot numbers.
-  layouts:
+  # Not a list of layouts, and not something a dataset has three of -- every dataset
+  # declares exactly one. There are three lines because the collection contains three
+  # layout families, and RLDX-1 builds each of them as delivered, so both sides match.
+  #
+  # Changing a right-hand side re-lays-out every dataset in that family at once. No
+  # dataset spec is touched, because none of them contain slot numbers: a spec gives
+  # each block's width, the layout gives the order, and the slots follow. That is why
+  # one layout serves different widths -- gr1_body_parts is 44 for action_net and 34
+  # for agibot_gripper, whose hand blocks are one slot wide instead of six.
+  build_layout_as:
     gr1_body_parts: gr1_body_parts
     arms_then_hands: arms_then_hands
     galaxea_r1: galaxea_r1

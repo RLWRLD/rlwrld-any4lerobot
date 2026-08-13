@@ -42,8 +42,14 @@ class TestLoading:
             load_profile({"video": {"resize": {"max_area": 1}}})
 
     def test_layouts_must_map_names_to_names(self):
-        with pytest.raises(ProfileError, match="layout name"):
-            load_profile({"state": {"layouts": {"gr1_body_parts": 3}}})
+        with pytest.raises(ProfileError, match="must be layout names"):
+            load_profile({"state": {"build_layout_as": {"gr1_body_parts": 3}}})
+
+    def test_the_old_key_name_is_rejected_rather_than_ignored(self):
+        """`layouts` read as a list of layouts a dataset has, which is not what it
+        is; a silently ignored key would mean a convention switch that did nothing."""
+        with pytest.raises(ProfileError, match="layouts"):
+            load_profile({"state": {"layouts": {"a": "b"}}})
 
 
 class TestResolution:
