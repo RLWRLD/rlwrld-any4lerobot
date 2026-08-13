@@ -1,0 +1,23 @@
+# Rebuild Dlr Edan Shared Control (RLDS) under the RLDX-1 convention.
+#
+# Nothing about this dataset is written here: `dataset:` pulls the source
+# description, state layout and upstream identity from dataset_registry, and
+# `profile:` pulls the resize, encoding and output version from
+# configs/profiles/rldx1.yaml. What is left is where this run reads and writes.
+#
+#     python -m lerobot_pipeline.plan --config lerobot_pipeline/configs/datasets/dlr_edan_shared_control_converted_externally_to_rlds.yaml
+#
+# source.path must be a directory named after the RLDS dataset --
+# openx_rlds.py keys OXE_DATASET_CONFIGS off the directory name.
+
+name: dlr_edan_shared_control_converted_externally_to_rlds
+
+dataset: dlr_edan_shared_control_converted_externally_to_rlds
+profile: rldx1
+
+source:
+  path: /scratch/raw/dlr_edan_shared_control_converted_externally_to_rlds
+  args: {use_videos: true}
+
+dest:
+  path: /scratch/out/dlr_edan_shared_control_converted_externally_to_rlds

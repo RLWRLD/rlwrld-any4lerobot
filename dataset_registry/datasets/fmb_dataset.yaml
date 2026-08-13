@@ -20,6 +20,17 @@ delivered:
     primary: {shape: [256, 256, 3], codec: h264, profile: high, gop: 250, bframes: 2}
   converted_by: alin_lab
 
+source:
+  # Rebuilt by openx2lerobot, which reads the RLDS/tfrecord source and writes
+  # observation.state itself from OXE_DATASET_CONFIGS[fmb_dataset]. The block boundaries
+  # under lerobot.state are that convention's output, and they were checked against
+  # the delivered copy: the two agree.
+  #
+  # RLDS cannot be described in YAML the way an hdf5 tree can, so this names the
+  # converter rather than the files. Point --raw-dir at a directory called
+  # fmb_dataset -- openx_rlds.py keys OXE_DATASET_CONFIGS off the directory name.
+  builder: openx
+
 lerobot:
   robot_type: Franka
   fps: 10

@@ -1,0 +1,20 @@
+# Rebuild AgiBot World (dexhand subset) under the RLDX-1 convention.
+#
+# Nothing about this dataset is written here: `dataset:` pulls the source
+# description, state layout and upstream identity from dataset_registry, and
+# `profile:` pulls the resize, encoding and output version from
+# configs/profiles/rldx1.yaml. What is left is where this run reads and writes.
+#
+#     python -m lerobot_pipeline.plan --config lerobot_pipeline/configs/datasets/agibot_dexhand.yaml
+
+name: agibot_dexhand
+
+dataset: agibot_dexhand
+profile: rldx1
+
+source:
+  path: /scratch/raw/agibot_dexhand
+  args: {executor: local}
+
+dest:
+  path: /scratch/out/agibot_dexhand

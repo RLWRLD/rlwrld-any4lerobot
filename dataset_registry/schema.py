@@ -75,8 +75,16 @@ _SOURCE = {"feature", "columns"}
 # How the raw upstream files are arranged, and how to line their clocks up. Read by
 # spec2lerobot; the format and clock names are the closed sets it implements.
 _SOURCE_SPEC = {
-    "format", "discover", "paths", "tasks", "clock", "features", "feature_widths",
+    "builder", "format", "discover", "paths", "tasks", "clock", "features",
+    "feature_widths", "layout", "note",
 }
+
+# Which program turns the raw source into LeRobot. `spec` is the data-driven path in
+# spec2lerobot; the rest are the converters this repo already had, each of which
+# carries its own dataset knowledge in code and emits observation.state itself --
+# so a dataset built by one of those skips the state_layout step. `none` is a source
+# that is already LeRobot and needs no conversion at all.
+BUILDERS = {"spec", "openx", "agibot", "libero", "robocasa", "robomind", "none"}
 _SOURCE_PATHS = {"episode", "video"}
 _SOURCE_TASKS = {"file", "key", "prompt"}
 _SOURCE_CLOCK = {"strategy", "data", "image", "image_format"}
@@ -223,11 +231,12 @@ class SourceSpec:
     directory from ``lerobot.video.cameras``).
     """
 
-    format: str
-    discover: str
-    paths: Mapping[str, str]
-    tasks: Mapping[str, str]
-    clock: Mapping[str, Any]
+    builder: str = "spec"
+    format: str | None = None
+    discover: str | None = None
+    paths: Mapping[str, str] = field(default_factory=dict)
+    tasks: Mapping[str, str] = field(default_factory=dict)
+    clock: Mapping[str, Any] = field(default_factory=dict)
     # logical feature name -> where to read it inside the raw file, per side. This is
     # the counterpart of ``lerobot.state.source_features``, which names the *emitted*
     # LeRobot columns. The two are different namespaces and conflating them silently
@@ -242,6 +251,16 @@ class SourceSpec:
     @property
     def strategy(self) -> str:
         return self.clock["strategy"]
+
+    @property
+    def builds_its_own_vectors(self) -> bool:
+        """True when the converter emits observation.state itself.
+
+        The pre-existing converters do; the spec-driven path deliberately does not,
+        leaving assembly to the layout step. A dataset built by one of the others is
+        buildable without any block sources, because nothing here assembles it.
+        """
+        return self.builder not in ("spec", "none")
 
 
 @dataclass(frozen=True)
@@ -272,6 +291,10 @@ class DatasetSpec:
         problems: list[str] = []
         if self.source is None:
             problems.append("no source: section, so the raw files cannot be read")
+        elif self.source.builds_its_own_vectors:
+            # the converter writes observation.state itself, so there is no layout
+            # here to satisfy and the holes below do not block a rebuild
+            return problems
         for side in ("state", "action"):
             vector = self.vector(side)
             if vector is None:
@@ -454,6 +477,17 @@ def _parse_source(raw: Any, origin: str) -> SourceSpec:
             raise SpecError(f"{where}.{key} must be a non-empty string, got {value!r}")
         return value
 
+    builder = raw.get("builder", "spec")
+    if builder not in BUILDERS:
+        raise SpecError(
+            f"{origin}.builder must be one of {', '.join(sorted(BUILDERS))}, "
+            f"got {builder!r}"
+        )
+    if builder != "spec":
+        # only the spec-driven path reads the file description; the others carry
+        # their own, so demanding one here would be asking for fiction
+        return SourceSpec(builder=builder)
+
     paths = raw.get("paths") or {}
     _reject(paths, _SOURCE_PATHS, f"{origin}.paths")
     tasks = raw.get("tasks") or {}
@@ -488,6 +522,7 @@ def _parse_source(raw: Any, origin: str) -> SourceSpec:
             )
 
     return SourceSpec(
+        builder=builder,
         format=text(raw, "format", origin),
         discover=text(raw, "discover", origin),
         paths=dict(paths),

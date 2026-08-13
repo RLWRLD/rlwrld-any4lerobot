@@ -17,6 +17,12 @@ delivered:
     ego_view: {shape: [192, 320, 3], codec: h264, profile: high, gop: 250, bframes: 2}
   converted_by: alin_lab
 
+source:
+  # No converter for this source yet. Its upstream has not been traced,
+  # so there is nothing to point a builder at; `plan` reports it as not
+  # rebuildable rather than letting a run start and fail late.
+  builder: none
+
 lerobot:
   robot_type: dream
   fps: 16

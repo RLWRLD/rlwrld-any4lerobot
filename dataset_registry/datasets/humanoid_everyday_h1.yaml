@@ -19,6 +19,12 @@ delivered:
     egocentric_resized: {shape: [192, 256, 3], codec: h264, profile: high, gop: 250, bframes: 2}
   converted_by: alin_lab
 
+source:
+  # No converter for this source yet. Its upstream has not been traced,
+  # so there is nothing to point a builder at; `plan` reports it as not
+  # rebuildable rather than letting a run start and fail late.
+  builder: none
+
 lerobot:
   robot_type: h1
   fps: 30
@@ -59,12 +65,33 @@ lerobot:
   state:
     width: 26
     layout: arms_then_hands
-    source_features: {}
+    # same arrangement as humanoid_everyday_g1 with 6-wide hand blocks: the H1's
+    # hand reports 12 values against the G1's 14
+    source_features:
+      arm:
+        state: observation.arm_joints
+        action: action.arm_joints
+      hand:
+        state: observation.hand_joints
+        action: action.hand_joints
+
     blocks:
-      left_arm: {width: 7, evidence: declared}
-      right_arm: {width: 7, evidence: declared}
-      left_hand: {width: 6, evidence: declared}
-      right_hand: {width: 6, evidence: declared}
+      left_arm:
+        width: 7
+        source: {feature: arm, columns: [0, 7]}
+        evidence: declared
+      right_arm:
+        width: 7
+        source: {feature: arm, columns: [7, 14]}
+        evidence: declared
+      left_hand:
+        width: 6
+        source: {feature: hand, columns: [0, 6]}
+        evidence: declared
+      right_hand:
+        width: 6
+        source: {feature: hand, columns: [6, 12]}
+        evidence: declared
 
 notes: >-
   Read from the delivered copy at humanoid_everyday/humanoid_everyday_h1. Block boundaries are declared by its

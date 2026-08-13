@@ -1,0 +1,20 @@
+# Rebuild Fourier ActionNet under the RLDX-1 convention.
+#
+# Nothing about this dataset is written here: `dataset:` pulls the source
+# description, state layout and upstream identity from dataset_registry, and
+# `profile:` pulls the resize, encoding and output version from
+# configs/profiles/rldx1.yaml. What is left is where this run reads and writes.
+#
+#     python -m lerobot_pipeline.plan --config lerobot_pipeline/configs/datasets/action_net.yaml
+
+name: action_net
+
+dataset: action_net
+profile: rldx1
+
+source:
+  path: /scratch/raw/action_net
+  args: {executor: local, episodes_per_task: 100}
+
+dest:
+  path: /scratch/out/action_net

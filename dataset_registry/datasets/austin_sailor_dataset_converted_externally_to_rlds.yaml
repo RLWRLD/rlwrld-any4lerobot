@@ -19,6 +19,17 @@ delivered:
     wrist_image: {shape: [128, 128, 3], codec: av1, profile: main, gop: 2, bframes: 0}
   converted_by: alin_lab
 
+source:
+  # Rebuilt by openx2lerobot, which reads the RLDS/tfrecord source and writes
+  # observation.state itself from OXE_DATASET_CONFIGS[austin_sailor_dataset_converted_externally_to_rlds]. The block boundaries
+  # under lerobot.state are that convention's output, and they were checked against
+  # the delivered copy: the two agree.
+  #
+  # RLDS cannot be described in YAML the way an hdf5 tree can, so this names the
+  # converter rather than the files. Point --raw-dir at a directory called
+  # austin_sailor_dataset_converted_externally_to_rlds -- openx_rlds.py keys OXE_DATASET_CONFIGS off the directory name.
+  builder: openx
+
 lerobot:
   robot_type: franka
   fps: 20

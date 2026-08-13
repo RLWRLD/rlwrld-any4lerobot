@@ -23,7 +23,32 @@ the flow declarative and reusable.
 python -m lerobot_pipeline.run --config lerobot_pipeline/configs/actionnet_rldx1.yaml
 ```
 
-See what a config resolves to before running it — stages, the full slot map, the
+One run config per dataset lives in `configs/datasets/`. Check them all at once:
+
+```bash
+python -m lerobot_pipeline.plan --all
+```
+
+```
+dataset              builder  video                       ready
+action_net           spec     re-encoded, size confirmed  yes
+viola                openx    delivered untouched (AV1)   yes
+neural_robocurate    none     -                           NO (16)
+...
+32/36 ready to rebuild
+```
+
+`builder` is which program turns the raw source into LeRobot: `spec` is the
+data-driven path in `spec2lerobot`, the others are the converters this repo already
+had (they write `observation.state` themselves, so `state_layout` is skipped), and
+`none` means the source is already LeRobot.
+
+The `video` column reads the *delivered codec*, not the delivered geometry — AV1
+with a two-frame GOP is LeRobot's own writer and survives only if nothing
+re-encoded the file, while H.264 High with a 250-frame GOP is only produced by
+`rldx1_reference`. Using the delivered size instead would assume the answer.
+
+See what one config resolves to before running it — stages, the full slot map, the
 video filters and encoder settings, and whether the dataset can be rebuilt at all:
 
 ```bash

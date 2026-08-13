@@ -175,15 +175,21 @@ def _apply_profile(
 
     if spec is not None:
         source = dict(filled.get("source") or {})
-        source.setdefault("type", "spec" if spec.source else "lerobot_v21")
+        builder = spec.source.builder if spec.source else "none"
+        # `none` means the source is already LeRobot, so there is nothing to convert
+        source.setdefault("type", "lerobot_v21" if builder == "none" else builder)
         if source["type"] == "spec":
-            # the converter is dataset-agnostic; which dataset is a flag
+            # the spec-driven converter is dataset-agnostic; which dataset is a flag
             source["args"] = {"dataset": spec.id, **(source.get("args") or {})}
         filled["source"] = source
 
     if "steps" not in filled:
         steps: list[Any] = []
-        if spec is not None:
+        if spec is not None and not (
+            spec.source and spec.source.builds_its_own_vectors
+        ):
+            # a pre-existing converter writes observation.state itself; running the
+            # layout step over its output would restate a convention it already applied
             # the already-resolved spec, so the step sees the profile's layouts
             steps.append({"type": "state_layout", "spec": spec})
         resize = (profile.get("video") or {}).get("resize")

@@ -1,0 +1,22 @@
+# Rebuild Humanoid-Everyday (Unitree H1) under the RLDX-1 convention.
+#
+# Nothing about this dataset is written here: `dataset:` pulls the source
+# description, state layout and upstream identity from dataset_registry, and
+# `profile:` pulls the resize, encoding and output version from
+# configs/profiles/rldx1.yaml. What is left is where this run reads and writes.
+#
+#     python -m lerobot_pipeline.plan --config lerobot_pipeline/configs/datasets/humanoid_everyday_h1.yaml
+#
+# The upstream is already a LeRobot dataset, so there is no conversion
+# stage: point source.path at it and the layout and video steps run.
+
+name: humanoid_everyday_h1
+
+dataset: humanoid_everyday_h1
+profile: rldx1
+
+source:
+  path: /scratch/raw/humanoid_everyday_h1
+
+dest:
+  path: /scratch/out/humanoid_everyday_h1

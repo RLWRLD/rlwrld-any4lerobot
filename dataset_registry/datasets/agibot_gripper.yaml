@@ -22,6 +22,11 @@ delivered:
     wrist_right: {shape: [192, 256, 3], codec: h264, profile: high, gop: 250, bframes: 2}
   converted_by: alin_lab
 
+source:
+  # agibot2lerobot reads the raw AgiBot hdf5 tree and
+  # writes observation.state itself.
+  builder: agibot
+
 lerobot:
   robot_type: Agibot
   fps: 30
