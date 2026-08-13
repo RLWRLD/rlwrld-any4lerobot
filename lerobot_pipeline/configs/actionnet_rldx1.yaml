@@ -1,0 +1,27 @@
+# Rebuild Fourier ActionNet under the RLDX-1 convention.
+#
+# Nothing about ActionNet is written here. `dataset: action_net` pulls the file
+# layout, hdf5 keys, clock strategy, robot type and 44-slot state layout from
+# dataset_registry; `profile: rldx1` pulls the resize, the encoding and the output
+# version from configs/profiles/rldx1.yaml. What is left is where this particular
+# run reads and writes.
+#
+# Inspect what that resolves to before running it:
+#     python -m lerobot_pipeline.plan --config lerobot_pipeline/configs/actionnet_rldx1.yaml
+#
+# source.path is the directory produced by untarring the dataset: one
+# <episode_id>.hdf5 and one <episode_id>/top/ per episode, plus metadata.json.
+
+name: actionnet_rldx1
+
+dataset: action_net
+profile: rldx1
+
+source:
+  path: /scratch/data
+  args:
+    executor: local
+    episodes_per_task: 100
+
+dest:
+  path: /scratch/out/actionnet_rldx1

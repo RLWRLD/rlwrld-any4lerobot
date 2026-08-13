@@ -20,7 +20,14 @@ the flow declarative and reusable.
 ## Quick start
 
 ```bash
-python -m lerobot_pipeline.run --config lerobot_pipeline/configs/humanoid_everyday_g1_rldx.yaml
+python -m lerobot_pipeline.run --config lerobot_pipeline/configs/actionnet_rldx1.yaml
+```
+
+See what a config resolves to before running it — stages, the full slot map, the
+video filters and encoder settings, and whether the dataset can be rebuilt at all:
+
+```bash
+python -m lerobot_pipeline.plan --config lerobot_pipeline/configs/actionnet_rldx1.yaml
 ```
 
 Measure throughput on a sample before committing to a long run:
@@ -29,14 +36,53 @@ Measure throughput on a sample before committing to a long run:
 python -m lerobot_pipeline.bench --config lerobot_pipeline/configs/humanoid_everyday_g1_rldx.yaml --sample 20
 ```
 
+## Three layers
+
+A run is described by three files, each of which changes on a different schedule.
+
+| layer | file | holds | changes |
+| --- | --- | --- | --- |
+| **fact** | `dataset_registry/datasets/*.yaml` | upstream pin, file layout, state layout | when a dataset is added |
+| **convention** | `configs/profiles/*.yaml`, `dataset_registry/layouts/*.yaml` | block order, resize, encoding, output version | when the convention changes |
+| **run** | `configs/*.yaml` | paths, workers, overrides | every run |
+
+The profile is where the processing convention lives, state and video side by side:
+
+```yaml
+# configs/profiles/rldx1.yaml
+state:
+  layouts: {gr1_body_parts: gr1_body_parts}   # change a right-hand side to re-lay-out
+video:
+  resize: {type: resize_preserve_aspect_area, max_area: 65536, multiple: 32}
+  encoding: rldx1_reference
+dest:
+  version: lerobot_v21
+```
+
+so a run config carries only what is specific to the run:
+
+```yaml
+name: actionnet_rldx1
+dataset: action_net        # -> the registry: source layout, state layout, identity
+profile: rldx1             # -> the convention above
+source: {path: /scratch/data, args: {executor: local}}
+dest: {path: /scratch/out/actionnet_rldx1}
+```
+
+Everything a profile supplies is a default; anything written in the run config wins,
+so a one-off run does not need a second profile file.
+
 ## Config
 
 ```yaml
 name: humanoid_everyday_g1_rldx      # used for logs and the work directory
 
+dataset: action_net                  # optional; a registry entry
+profile: rldx1                       # optional; a named convention
+
 source:
-  type: lerobot_v21                  # lerobot_v21 | lerobot_v30 | agibot | libero
-                                     # | openx | robocasa | robomind
+  type: lerobot_v21                  # lerobot_v21 | lerobot_v30 | spec | agibot
+                                     # | libero | openx | robocasa | robomind
   path: ~/data/humanoid_everyday/humanoid_everyday_g1
   args: {}                           # extra converter CLI flags; converter sources only
 
@@ -70,13 +116,25 @@ unexpected.
 | Step | Kind | What it does |
 |---|---|---|
 | `resize_preserve_aspect_area` | video | Downscale so `H*W <= max_area` with the aspect ratio preserved, then centre-crop both sides to multiples of `multiple`. |
+| `state_layout` | table | Assemble `observation.state` and `action` from the source's own feature vectors, following the dataset's layout, and write `meta/modality.json`. |
 
-Two kinds of step are planned for:
+Three kinds of step:
 
 - **`video`** — operates directly on the mp4 files. One decode/encode pass.
-- **`frame`** — decodes to frames and rewrites the dataset. Needed for anything
-  that changes frame counts or touches `parquet` columns, e.g. temporal
-  subsampling. **Not implemented yet**; the interface is reserved.
+- **`table`** — rewrites `parquet` columns and leaves the frame count alone, so
+  every video file is hard-linked straight through.
+- **`frame`** — changes how many frames there are, so the video has to be re-cut
+  too. **Not implemented**; the interface is reserved.
+
+Table steps run before video steps: they are cheap, and a failure there costs
+seconds rather than a re-encode.
+
+### Why the layout is a step and not part of each converter
+
+Datasets that arrive as raw HDF5 and datasets that arrive already in LeRobot form go
+through the same code, so the convention has one implementation instead of one per
+source. And changing the convention later rewrites `parquet` only — re-laying-out
+ActionNet takes minutes, against the days a full reconversion of 2.49 TiB would.
 
 Several video steps compose into a *single* ffmpeg filter chain, so adding steps
 does not add passes over the data.

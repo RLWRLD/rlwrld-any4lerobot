@@ -1,1 +1,1 @@
-from . import resize  # noqa: F401  -- imported for its registry side effect
+from . import resize, state_layout  # noqa: F401  -- imported for registry side effects
