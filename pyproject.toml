@@ -25,9 +25,6 @@ robocasa = ["h5py"]
 robomind = ["h5py"]
 # Distributed execution across cores or nodes (--executor ray).
 ray = ["datatrove[ray]>=0.6.0"]
-# Fast S3 fetch. awscrt is the same transfer engine behind the AWS CLI's `crt`
-# client, measured ~10x the stock one; boto3 is used for listing and as a fallback.
-s3 = ["awscrt", "boto3"]
 
 # NOTE on the v3.0 -> v2.1 downgrade: ds_version_convert/v30_to_v21/README.md asks
 # for `datasets<4.0.0`, which no longer has a solution -- the pinned lerobot requires
