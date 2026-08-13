@@ -7,18 +7,27 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from dataset_registry import SpecError, available, load, load_all, parse  # noqa: E402
 
+# Uses a real layout rather than a synthetic one: block order comes from
+# layouts/*.yaml and there is no inline form, which is the point -- a spec cannot
+# state an order of its own.
 MINIMAL = {
     "id": "demo",
     "name": "Demo",
     "lerobot": {
         "state": {
-            "width": 4,
+            "width": 6,
+            "layout": "arms_then_hands",
             "source_features": {"arm": {"state": "obs.arm", "action": "act.arm"}},
-            "blocks": [
-                {"name": "arm", "slots": [0, 3],
-                 "source": {"feature": "arm", "columns": [2, 5]}, "evidence": "measured"},
-                {"name": "pad", "slots": [3, 4], "evidence": "constant"},
-            ],
+            "blocks": {
+                "left_arm": {
+                    "width": 3,
+                    "source": {"feature": "arm", "columns": [2, 5]},
+                    "evidence": "measured",
+                },
+                "right_arm": {"width": 1, "evidence": "constant"},
+                "left_hand": {"width": 1, "evidence": "constant"},
+                "right_hand": {"width": 1, "evidence": "constant"},
+            },
         }
     },
 }
@@ -67,20 +76,6 @@ class TestActionNetLayout:
             "right_arm", "right_hand", "right_leg", "waist",
         ]
 
-    def test_slot_map_agrees_with_the_converter(self):
-        """The registry and actionnet_utils.config must not drift apart."""
-        sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "actionnet2lerobot"))
-        from actionnet_utils.config import PERMUTATION, ROBOT_JOINTS
-
-        slots = load("action_net").state.slot_map("state")
-        # the converter works on [robot | hand] concatenated; flatten the registry's
-        # (feature path, column) form the same way
-        flattened = [
-            column if path == "state/robot" else ROBOT_JOINTS + column
-            for path, column in slots
-        ]
-        assert flattened == list(PERMUTATION)
-
     def test_leg_blocks_are_marked_constant(self):
         # they are all-zero in the data and therefore unverifiable; saying so is the
         # point of the evidence field
@@ -111,27 +106,47 @@ class TestValidation:
         with pytest.raises(SpecError, match="colour"):
             parse(spec(colour="red"))
 
-    def test_gap_in_the_slots_is_rejected(self):
+    def test_a_missing_block_is_rejected(self):
         raw = spec()
-        raw["lerobot"]["state"]["blocks"] = raw["lerobot"]["state"]["blocks"][:1]
-        with pytest.raises(SpecError, match="not covered"):
+        del raw["lerobot"]["state"]["blocks"]["right_hand"]
+        with pytest.raises(SpecError, match="missing right_hand"):
             parse(raw)
 
-    def test_overlapping_blocks_are_rejected(self):
+    def test_a_block_the_layout_does_not_name_is_rejected(self):
         raw = spec()
-        raw["lerobot"]["state"]["blocks"][1]["slots"] = [2, 4]
-        with pytest.raises(SpecError, match="more than one block"):
+        raw["lerobot"]["state"]["blocks"]["tail"] = {"width": 1, "evidence": "constant"}
+        with pytest.raises(SpecError, match="unexpected tail"):
+            parse(raw)
+
+    def test_blocks_as_a_list_are_rejected(self):
+        # a list would let the spec imply an order that disagrees with the layout,
+        # which is exactly what moving order into layouts/ was meant to prevent
+        raw = spec()
+        raw["lerobot"]["state"]["blocks"] = [{"width": 6, "evidence": "constant"}]
+        with pytest.raises(SpecError, match="must be a mapping"):
+            parse(raw)
+
+    def test_widths_must_sum_to_the_declared_width(self):
+        raw = spec()
+        raw["lerobot"]["state"]["blocks"]["right_hand"]["width"] = 2
+        with pytest.raises(SpecError, match="sum to 7"):
             parse(raw)
 
     def test_slot_and_source_widths_must_agree(self):
         raw = spec()
-        raw["lerobot"]["state"]["blocks"][0]["source"]["columns"] = [2, 4]
+        raw["lerobot"]["state"]["blocks"]["left_arm"]["source"]["columns"] = [2, 4]
         with pytest.raises(SpecError, match="source columns"):
+            parse(raw)
+
+    def test_an_unknown_layout_is_rejected(self):
+        raw = spec()
+        raw["lerobot"]["state"]["layout"] = "no_such_layout"
+        with pytest.raises(SpecError, match="unknown layout"):
             parse(raw)
 
     def test_unknown_source_feature_is_rejected(self):
         raw = spec()
-        raw["lerobot"]["state"]["blocks"][0]["source"]["feature"] = "leg"
+        raw["lerobot"]["state"]["blocks"]["left_arm"]["source"]["feature"] = "leg"
         with pytest.raises(SpecError, match="not in source_features"):
             parse(raw)
 
@@ -139,18 +154,26 @@ class TestValidation:
         # "measured" means it was matched against a source column; with no source
         # named there is nothing it could have been matched against
         raw = spec()
-        raw["lerobot"]["state"]["blocks"][1]["evidence"] = "measured"
+        raw["lerobot"]["state"]["blocks"]["right_arm"]["evidence"] = "measured"
         with pytest.raises(SpecError, match="block with no source"):
             parse(raw)
 
     def test_a_sourceless_block_may_be_declared(self):
         raw = spec()
-        raw["lerobot"]["state"]["blocks"][1]["evidence"] = "declared"
+        raw["lerobot"]["state"]["blocks"]["right_arm"]["evidence"] = "declared"
         assert parse(raw).state.blocks[1].evidence == "declared"
+
+    def test_a_sourceless_block_cannot_be_padded(self):
+        raw = spec()
+        raw["lerobot"]["state"]["blocks"]["left_arm"] = {
+            "width": 3, "pad": 1, "evidence": "constant"
+        }
+        with pytest.raises(SpecError, match="pad is only meaningful"):
+            parse(raw)
 
     def test_unknown_evidence_value_is_rejected(self):
         raw = spec()
-        raw["lerobot"]["state"]["blocks"][0]["evidence"] = "probably"
+        raw["lerobot"]["state"]["blocks"]["left_arm"]["evidence"] = "probably"
         with pytest.raises(SpecError, match="evidence must be one of"):
             parse(raw)
 
@@ -184,12 +207,21 @@ class TestSlotMap:
     def test_maps_each_slot_to_its_source_column(self):
         state = parse(spec()).state
         assert state.slot_map("state") == [
-            ("obs.arm", 2), ("obs.arm", 3), ("obs.arm", 4), None
+            ("obs.arm", 2), ("obs.arm", 3), ("obs.arm", 4), None, None, None
         ]
 
     def test_action_side_uses_the_action_source_paths(self):
         state = parse(spec()).state
         assert state.slot_map("action")[0] == ("act.arm", 2)
+
+    def test_pad_slots_take_no_source(self):
+        raw = spec()
+        raw["lerobot"]["state"]["blocks"]["left_arm"]["pad"] = 1
+        raw["lerobot"]["state"]["blocks"]["left_arm"]["source"]["columns"] = [2, 4]
+        state = parse(raw).state
+        assert state.slot_map("state")[:3] == [("obs.arm", 2), ("obs.arm", 3), None]
+        # the pad is not counted as measured; nothing was measured about it
+        assert state.evidence_counts() == {"measured": 2, "pad": 1, "constant": 3}
 
     def test_side_must_be_state_or_action(self):
         with pytest.raises(SpecError, match="must be 'state' or 'action'"):

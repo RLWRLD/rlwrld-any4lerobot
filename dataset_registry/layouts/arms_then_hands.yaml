@@ -1,0 +1,13 @@
+# The same block vocabulary as gr1_body_parts in a different order: both arms
+# first, then both hands. Used by humanoid_everyday (g1 and h1), which declares it
+# in its own meta/modality.json.
+#
+# That two orderings of the same body parts coexist in one training mix is fine:
+# each embodiment has its own encoder weights, so no cross-dataset alignment is
+# required. See docs/vla-pretrain-state-action-layout.md.
+
+order:
+  - left_arm
+  - right_arm
+  - left_hand
+  - right_hand

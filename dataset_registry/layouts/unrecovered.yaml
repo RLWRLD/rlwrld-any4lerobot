@@ -1,0 +1,9 @@
+# One opaque block covering the whole vector: the width is known, the composition
+# is not. Used where a delivered dataset carries no sub-feature vectors to match
+# against, so there is nothing to recover the columns from.
+#
+# A dataset referencing this layout cannot be rebuilt -- DatasetSpec.buildable()
+# reports it, and the pipeline refuses to run rather than emitting zeros.
+
+order:
+  - unrecovered

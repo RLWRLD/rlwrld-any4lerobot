@@ -1,11 +1,17 @@
 # Dataset registry
 
-One YAML per dataset, saying where it came from and how its vectors are laid out.
+One YAML per dataset, saying where it came from, how to read it, and how its vectors
+are laid out. Adding a dataset whose source format is already implemented is this
+file and nothing else — no Python.
 
 ```bash
 uv run python -m dataset_registry.verify --upstream --all      # re-check the pins online
 uv run python -m dataset_registry.verify action_net /path/to/dataset
 ```
+
+Two things read these specs: [`spec2lerobot`](../spec2lerobot) converts a raw source
+using the `source:` section, and `lerobot_pipeline`'s `state_layout` step assembles
+the flat vectors using the `state:` / `action:` sections.
 
 ## Why this exists
 
@@ -59,29 +65,86 @@ Only `measured` and `constant` are checkable, and `verify.py` checks exactly tho
 A block with no `source` may not claim to be `measured` — there would have been
 nothing to match it against.
 
-## Layout shape
+## Layout shape — slots are derived, never written
+
+A dataset says which body parts it has and how wide they are. `layouts/*.yaml` says
+what order they go in. Slot numbers fall out of the two.
 
 ```yaml
 lerobot:
   state:
-    width: 44
+    width: 44                                      # a checksum on the widths below
     layout: gr1_body_parts
-    source_features:
-      robot: {state: state/robot, action: action/robot}
-    blocks:
-      - name: left_arm
-        slots: [0, 7]                              # half-open, into the emitted vector
-        source: {feature: robot, columns: [18, 25]}
+    source_features:                               # emitted LeRobot column names
+      robot_joints: {state: observation.robot_joints, action: action.robot_joints}
+    blocks:                                        # a mapping, deliberately
+      left_arm:
+        width: 7
+        source: {feature: robot_joints, columns: [18, 25]}
+        evidence: measured
+      neck:
+        width: 3
+        pad: 1                                     # a 2-DoF head in a 3-wide block
+        source: {feature: head, columns: [0, 2]}
         evidence: measured
 ```
 
-Blocks must tile the vector exactly — a gap is a slot nobody can explain, an overlap
-is two claims about the same number, and both are invisible once training starts.
+```yaml
+# layouts/gr1_body_parts.yaml
+order: [left_arm, left_hand, left_leg, neck, right_arm, right_hand, right_leg, waist]
+```
 
-`state.slot_map(side)` returns, per slot, the `(source path, column)` it takes. That
-is what a converter consumes; it is more general than a permutation, which only works
-when source and target widths match. Where `action` differs from `state` (Galaxea:
-18 vs 26) a separate `action:` section overrides.
+`blocks` is a mapping and not a list on purpose: a list would let a spec imply an
+order of its own, which could disagree with its layout. With order in one file,
+switching the whole collection to a different slot order is one edit, and no dataset
+spec has to change — that matters because the delivered order is load-bearing while
+the current checkpoint is in use, and will be replaced later.
+
+Validation: the block names must match the layout's exactly, the widths must sum to
+`width`, and each block's source range must equal its width minus its `pad`.
+
+`state.slot_map(side)` returns, per slot, the `(column, index)` it takes. That is
+what the layout step consumes; it is more general than a permutation, which only
+works when source and target widths match. Where `action` differs from `state`
+(Galaxea: 18 vs 26) a separate `action:` section overrides.
+
+## Reading the raw source
+
+`source:` describes the files, in templates and key names rather than code.
+
+```yaml
+source:
+  format: hdf5_episodes                            # a reader in spec2lerobot/formats
+  discover: "*.hdf5"
+  paths:
+    episode: "{id}.hdf5"
+    video: "{id}/{camera}/rgb.mp4"
+  tasks: {file: metadata.json, key: id, prompt: prompt}
+  clock:
+    strategy: nearest_timestamp_dedup              # a strategy in spec2lerobot/clocks
+    data: timestamp
+    image: "{id}/{camera}/timestamps.json"
+    image_format: "%Y-%m-%dT%H-%M-%S_%f"
+  features:                                        # where to read, inside the file
+    robot_joints: {state: state/robot, action: action/robot}
+  feature_widths: {robot_joints: 32}               # what the source really is
+```
+
+`source.features` and `state.source_features` are different namespaces: the first is
+where a vector is *read from*, the second is what it is *emitted as*. Conflating them
+makes `verify.py` silently match nothing.
+
+`feature_widths` is a fact the layout cannot supply — reading columns 0..31 says
+nothing about whether the array has 32 columns or 44. Stating it turns "this file is
+from a different robot" into a skipped episode instead of quietly wrong data.
+
+## Can it be rebuilt?
+
+`spec.buildable()` returns the reasons it cannot, and both the converter and the
+layout step refuse to run when it returns anything. A sourceless `constant` block is
+fine — it is a body part the robot does not have, so zeros are the answer. Every
+other sourceless block is a hole, and filling it with zeros would produce a dataset
+that trains without complaint on a blank stretch of vector.
 
 ## Status
 
@@ -93,6 +156,9 @@ when source and target widths match. Where `action` differs from `state` (Galaxe
 | `galaxea` | 18 | 18 measured (action 26 unknown) | ✅ |
 | `humanoid_everyday_g1` | 28 | 28 declared | ✅ |
 | `neural_robocurate` | 44 | 44 declared | — |
+
+Buildable today: `action_net`. The rest are missing either a `source:` section or the
+columns for part of a vector; `python -m lerobot_pipeline.plan` reports which.
 
 Not yet written: the 27 OpenX datasets. They carry no sub-feature vectors and a flat
 `modality.json`, so their 8 slots cannot be recovered from the delivered data at all;

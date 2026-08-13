@@ -59,53 +59,47 @@ lerobot:
         action: action.waist_position
 
     blocks:
-      - name: left_arm
-        slots: [0, 7]
+      left_arm:
+        width: 7
         source: {feature: joint, columns: [0, 7]}
         evidence: measured
 
-      - name: left_hand
-        slots: [7, 13]
+      left_hand:
+        width: 6
         source: {feature: dexhand, columns: [0, 6]}
         evidence: measured
 
-      - name: left_leg
-        slots: [13, 19]
+      left_leg:
+        width: 6
         evidence: constant
         note: the A2D has no legs; all zeros
 
-      - name: neck
-        slots: [19, 21]
+      neck:
+        width: 3
+        pad: 1
         source: {feature: head, columns: [0, 2]}
         evidence: measured
+        note: the head is 2-DoF but the skeleton's block is 3 wide
 
-      - name: neck_pad
-        slots: [21, 22]
-        evidence: constant
-        note: the head is 2-DoF but the block is 3 wide, so the last slot is zero
-
-      - name: right_arm
-        slots: [22, 29]
+      right_arm:
+        width: 7
         source: {feature: joint, columns: [7, 14]}
         evidence: measured
 
-      - name: right_hand
-        slots: [29, 35]
+      right_hand:
+        width: 6
         source: {feature: dexhand, columns: [6, 12]}
         evidence: measured
 
-      - name: right_leg
-        slots: [35, 41]
+      right_leg:
+        width: 6
         evidence: constant
 
-      - name: waist
-        slots: [41, 43]
+      waist:
+        width: 3
+        pad: 1
         source: {feature: waist, columns: [0, 2]}
         evidence: measured
-
-      - name: waist_pad
-        slots: [43, 44]
-        evidence: constant
         note: 2-DoF waist in a 3-wide block
 
 notes: >-

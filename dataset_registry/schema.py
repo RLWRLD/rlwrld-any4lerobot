@@ -22,6 +22,7 @@ from typing import Any
 
 REGISTRY_DIR = Path(__file__).resolve().parent
 DATASETS_DIR = REGISTRY_DIR / "datasets"
+LAYOUTS_DIR = REGISTRY_DIR / "layouts"
 
 # How a block's mapping is known. Recorded per block because the confidence is not
 # uniform even within one dataset.
@@ -52,20 +53,68 @@ SOURCE_LAYOUTS = {
     "lerobot",  # a plain LeRobot dataset tree
 }
 
-_TOP_LEVEL = {"id", "name", "notes", "upstream", "mirrors", "delivered", "lerobot"}
+_TOP_LEVEL = {
+    "id", "name", "notes", "upstream", "mirrors", "delivered", "source", "lerobot",
+}
 _UPSTREAM = {"huggingface", "revision", "homepage", "license", "commercial_use"}
 _MIRROR = {"kind", "uri", "layout", "objects", "bytes"}
 MIRROR_KINDS = {"foundry", "naver", "other"}
 _DELIVERED = {"path", "origin", "codebase_version", "episodes", "frames", "converted_by"}
 _LEROBOT = {"robot_type", "fps", "embodiment_tag", "video", "state", "action", "features"}
-_VIDEO = {"cameras", "resize", "encoding", "keeps_original"}
+_VIDEO = {"cameras", "shape", "resize", "encoding", "keeps_original"}
 _STATE = {"width", "layout", "source_features", "blocks"}
-_BLOCK = {"name", "slots", "source", "evidence", "note"}
+_BLOCK = {"width", "pad", "source", "evidence", "note"}
 _SOURCE = {"feature", "columns"}
+
+# How the raw upstream files are arranged, and how to line their clocks up. Read by
+# spec2lerobot; the format and clock names are the closed sets it implements.
+_SOURCE_SPEC = {
+    "format", "discover", "paths", "tasks", "clock", "features", "feature_widths",
+}
+_SOURCE_PATHS = {"episode", "video"}
+_SOURCE_TASKS = {"file", "key", "prompt"}
+_SOURCE_CLOCK = {"strategy", "data", "image", "image_format"}
+
+_LAYOUT = {"order", "note"}
 
 
 class SpecError(ValueError):
     """Raised for a malformed dataset spec."""
+
+
+def available_layouts() -> list[str]:
+    return sorted(path.stem for path in LAYOUTS_DIR.glob("*.yaml"))
+
+
+def load_layout(name: str) -> tuple[str, ...]:
+    """The block order a layout declares.
+
+    Order lives here rather than in the dataset spec so that changing a convention
+    is a one-file edit. A dataset declares which body parts it has and how wide they
+    are; the layout decides where they sit. Slots are derived from the two, never
+    written down, so they cannot drift.
+    """
+    import yaml
+
+    path = LAYOUTS_DIR / f"{name}.yaml"
+    if Path(name).name != name or not path.is_file():
+        raise SpecError(
+            f"unknown layout {name!r}. available: {', '.join(available_layouts())}"
+        )
+    raw = yaml.safe_load(path.read_text()) or {}
+    _reject(raw, _LAYOUT, str(path))
+
+    order = raw.get("order")
+    if (
+        not isinstance(order, Sequence)
+        or isinstance(order, str)
+        or not order
+        or not all(isinstance(item, str) for item in order)
+    ):
+        raise SpecError(f"{path}.order must be a non-empty list of block names")
+    if len(set(order)) != len(order):
+        raise SpecError(f"{path}.order repeats a block name")
+    return tuple(order)
 
 
 @dataclass(frozen=True)
@@ -77,11 +126,21 @@ class Block:
     feature: str | None = None
     src_start: int | None = None
     src_end: int | None = None
+    # trailing slots of this block that no source column fills. A robot whose head
+    # has 2 joints still occupies the skeleton's 3-wide `neck`, and the odd slot out
+    # is a zero. Declared rather than inferred from the arithmetic, so that a source
+    # range that is accidentally too short is an error instead of a silent pad.
+    pad: int = 0
     note: str | None = None
 
     @property
     def width(self) -> int:
         return self.end - self.start
+
+    @property
+    def sourced_width(self) -> int:
+        """Slots this block actually copies; ``width`` minus any pad."""
+        return 0 if self.src_start is None else self.src_end - self.src_start
 
     @property
     def is_constant(self) -> bool:
@@ -110,15 +169,73 @@ class StateSpec:
             if block.is_constant:
                 continue
             path = self.source_features[block.feature][side]
-            for offset in range(block.width):
+            for offset in range(block.sourced_width):
                 slots[block.start + offset] = (path, block.src_start + offset)
         return slots
 
     def evidence_counts(self) -> dict[str, int]:
+        """Slots per evidence value. Pad slots are counted as ``pad``, not as the
+        block's evidence: nothing was measured about them."""
         counts: dict[str, int] = {}
         for block in self.blocks:
-            counts[block.evidence] = counts.get(block.evidence, 0) + block.width
+            sourced = block.width - block.pad
+            if sourced:
+                counts[block.evidence] = counts.get(block.evidence, 0) + sourced
+            if block.pad:
+                counts["pad"] = counts.get("pad", 0) + block.pad
         return counts
+
+    def unbuildable(self) -> list[Block]:
+        """Blocks whose values cannot be produced, in spec order.
+
+        A sourceless ``constant`` block is fine: it is a body part the robot does not
+        have, so zeros are the answer rather than a missing one. Every other
+        sourceless block is a hole -- ``declared`` and ``inferred`` mean we know the
+        width and the name but never found the columns.
+
+        Filling those with zeros would produce a dataset that trains without
+        complaint on a quarter of a vector that is silently blank, so the loader
+        refuses instead. See ``DatasetSpec.buildable``.
+        """
+        return [
+            block
+            for block in self.blocks
+            if block.feature is None and block.evidence != "constant"
+        ]
+
+
+@dataclass(frozen=True)
+class SourceSpec:
+    """Where the raw upstream files are and how to read them.
+
+    Everything here is a path template, a key name or the name of a mechanism --
+    never code. ``format`` and ``clock.strategy`` select from the closed sets
+    ``spec2lerobot`` implements, which grow with the number of file formats, not
+    with the number of datasets.
+
+    Templates take ``{id}`` (the episode id) and ``{camera}`` (the source-side
+    directory from ``lerobot.video.cameras``).
+    """
+
+    format: str
+    discover: str
+    paths: Mapping[str, str]
+    tasks: Mapping[str, str]
+    clock: Mapping[str, Any]
+    # logical feature name -> where to read it inside the raw file, per side. This is
+    # the counterpart of ``lerobot.state.source_features``, which names the *emitted*
+    # LeRobot columns. The two are different namespaces and conflating them silently
+    # turns verification into a no-op, so they are stated separately.
+    features: Mapping[str, Mapping[str, str]] = field(default_factory=dict)
+    # true width of each source feature, by logical name. A fact about the source,
+    # not derivable from the layout: a layout that reads columns 0..31 says nothing
+    # about whether the array has 32 columns or 44. Stating it turns "this file is
+    # from a different robot" into a skipped episode instead of silently wrong data.
+    feature_widths: Mapping[str, int] = field(default_factory=dict)
+
+    @property
+    def strategy(self) -> str:
+        return self.clock["strategy"]
 
 
 @dataclass(frozen=True)
@@ -126,6 +243,7 @@ class DatasetSpec:
     id: str
     name: str
     raw: Mapping[str, Any] = field(repr=False)
+    source: SourceSpec | None = None
     state: StateSpec | None = None
     # Most datasets use one layout for both vectors. Galaxea does not -- its state
     # is 18 wide and its action 26 -- so `action` overrides when present.
@@ -137,6 +255,29 @@ class DatasetSpec:
         if side == "state":
             return self.state
         raise SpecError(f"side must be 'state' or 'action', got {side!r}")
+
+    def buildable(self) -> list[str]:
+        """Why this dataset cannot be rebuilt from its source; empty means it can.
+
+        Checked before a run rather than during one. A dataset that is missing the
+        columns for a quarter of its action vector should stop the pipeline at
+        planning time, not emit zeros for two days and look like it worked.
+        """
+        problems: list[str] = []
+        if self.source is None:
+            problems.append("no source: section, so the raw files cannot be read")
+        for side in ("state", "action"):
+            vector = self.vector(side)
+            if vector is None:
+                problems.append(f"no {side} layout")
+                continue
+            for block in vector.unbuildable():
+                problems.append(
+                    f"{side}.{block.name} ({block.width} slots at "
+                    f"{block.start}-{block.end - 1}) is {block.evidence} with no "
+                    "source column"
+                )
+        return problems
 
     @property
     def revision(self) -> str | None:
@@ -169,27 +310,56 @@ class DatasetSpec:
 
     @property
     def cameras(self) -> Mapping[str, Any]:
-        return ((self.raw.get("lerobot") or {}).get("video") or {}).get("cameras") or {}
+        return self._video.get("cameras") or {}
+
+    @property
+    def _video(self) -> Mapping[str, Any]:
+        return ((self.raw.get("lerobot") or {}).get("video") or {}) or {}
+
+    @property
+    def video_shape(self) -> tuple[int, int, int] | None:
+        """``(height, width, channels)`` of the source video, before any resize."""
+        shape = self._video.get("shape")
+        return tuple(shape) if shape else None
+
+    @property
+    def fps(self) -> int | None:
+        return (self.raw.get("lerobot") or {}).get("fps")
+
+    @property
+    def robot_type(self) -> str | None:
+        return (self.raw.get("lerobot") or {}).get("robot_type")
 
 
 def available() -> list[str]:
     return sorted(path.stem for path in DATASETS_DIR.glob("*.yaml"))
 
 
-def load(name: str) -> DatasetSpec:
+def load(name: str, layouts: Mapping[str, str] | None = None) -> DatasetSpec:
+    """Load a dataset spec, optionally building it under different layouts.
+
+    ``layouts`` renames layouts as the spec is parsed: ``{"gr1_body_parts":
+    "gr1_canonical"}`` lays every dataset that declares the first out under the
+    second. This is how a processing profile switches the whole collection to a new
+    slot order without touching a single dataset spec.
+    """
     import yaml
 
     path = DATASETS_DIR / f"{name}.yaml"
     if Path(name).name != name or not path.is_file():
         raise SpecError(f"unknown dataset {name!r}. available: {', '.join(available())}")
-    return parse(yaml.safe_load(path.read_text()) or {}, origin=str(path))
+    return parse(yaml.safe_load(path.read_text()) or {}, origin=str(path), layouts=layouts)
 
 
 def load_all() -> list[DatasetSpec]:
     return [load(name) for name in available()]
 
 
-def parse(raw: Mapping[str, Any], origin: str = "<spec>") -> DatasetSpec:
+def parse(
+    raw: Mapping[str, Any],
+    origin: str = "<spec>",
+    layouts: Mapping[str, str] | None = None,
+) -> DatasetSpec:
     if not isinstance(raw, Mapping):
         raise SpecError(f"{origin}: spec must be a mapping")
     _reject(raw, _TOP_LEVEL, origin)
@@ -208,12 +378,77 @@ def parse(raw: Mapping[str, Any], origin: str = "<spec>") -> DatasetSpec:
 
     state_raw = lerobot.get("state")
     action_raw = lerobot.get("action")
+    source_raw = raw.get("source")
     return DatasetSpec(
         id=raw["id"],
         name=raw["name"],
         raw=raw,
-        state=_parse_state(state_raw, f"{origin}.lerobot.state") if state_raw else None,
-        action=_parse_state(action_raw, f"{origin}.lerobot.action") if action_raw else None,
+        source=_parse_source(source_raw, f"{origin}.source") if source_raw else None,
+        state=(
+            _parse_state(state_raw, f"{origin}.lerobot.state", layouts)
+            if state_raw
+            else None
+        ),
+        action=(
+            _parse_state(action_raw, f"{origin}.lerobot.action", layouts)
+            if action_raw
+            else None
+        ),
+    )
+
+
+def _parse_source(raw: Any, origin: str) -> SourceSpec:
+    if not isinstance(raw, Mapping):
+        raise SpecError(f"{origin} must be a mapping")
+    _reject(raw, _SOURCE_SPEC, origin)
+
+    def text(mapping: Mapping[str, Any], key: str, where: str) -> str:
+        value = mapping.get(key)
+        if not isinstance(value, str) or not value:
+            raise SpecError(f"{where}.{key} must be a non-empty string, got {value!r}")
+        return value
+
+    paths = raw.get("paths") or {}
+    _reject(paths, _SOURCE_PATHS, f"{origin}.paths")
+    tasks = raw.get("tasks") or {}
+    _reject(tasks, _SOURCE_TASKS, f"{origin}.tasks")
+    clock = raw.get("clock") or {}
+    _reject(clock, _SOURCE_CLOCK, f"{origin}.clock")
+
+    for key in _SOURCE_PATHS:
+        text(paths, key, f"{origin}.paths")
+    for key in _SOURCE_TASKS:
+        text(tasks, key, f"{origin}.tasks")
+    text(clock, "strategy", f"{origin}.clock")
+
+    features = raw.get("features") or {}
+    if not isinstance(features, Mapping):
+        raise SpecError(f"{origin}.features must be a mapping of name -> {{state, action}}")
+    for name, sides in features.items():
+        if not isinstance(sides, Mapping) or set(sides) != {"state", "action"}:
+            raise SpecError(
+                f"{origin}.features.{name} must map both 'state' and 'action' to a "
+                f"path inside the raw file, got {sides!r}"
+            )
+
+    widths = raw.get("feature_widths") or {}
+    if not isinstance(widths, Mapping):
+        raise SpecError(f"{origin}.feature_widths must be a mapping of name -> width")
+    for name, value in widths.items():
+        if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+            raise SpecError(
+                f"{origin}.feature_widths.{name} must be a positive integer, "
+                f"got {value!r}"
+            )
+
+    return SourceSpec(
+        format=text(raw, "format", origin),
+        discover=text(raw, "discover", origin),
+        paths=dict(paths),
+        tasks=dict(tasks),
+        clock=dict(clock),
+        features={name: dict(sides) for name, sides in features.items()},
+        feature_widths=dict(widths),
     )
 
 
@@ -253,7 +488,9 @@ def _parse_mirrors(raw: Any, revision: str | None, origin: str) -> None:
             )
 
 
-def _parse_state(raw: Any, origin: str) -> StateSpec:
+def _parse_state(
+    raw: Any, origin: str, layouts: Mapping[str, str] | None = None
+) -> StateSpec:
     if not isinstance(raw, Mapping):
         raise SpecError(f"{origin} must be a mapping")
     _reject(raw, _STATE, origin)
@@ -270,16 +507,53 @@ def _parse_state(raw: Any, origin: str) -> StateSpec:
                 f"to a source path, got {sides!r}"
             )
 
+    declared_layout = raw.get("layout")
+    if not isinstance(declared_layout, str) or not declared_layout:
+        raise SpecError(f"{origin}.layout must name a layout in layouts/")
+    layout_name = (layouts or {}).get(declared_layout, declared_layout)
+    order = load_layout(layout_name)
+
+    declared = raw.get("blocks")
+    if not isinstance(declared, Mapping):
+        raise SpecError(
+            f"{origin}.blocks must be a mapping of block name -> {{width, source, "
+            "evidence}}. It is deliberately not a list: a list would let the spec "
+            f"imply an order that disagrees with layouts/{layout_name}.yaml"
+        )
+    missing = [name for name in order if name not in declared]
+    extra = sorted(set(declared) - set(order))
+    if missing or extra:
+        raise SpecError(
+            f"{origin}.blocks must declare exactly the blocks in "
+            f"layouts/{layout_name}.yaml"
+            + (f"; missing {', '.join(missing)}" if missing else "")
+            + (f"; unexpected {', '.join(extra)}" if extra else "")
+        )
+
     blocks: list[Block] = []
-    for index, entry in enumerate(raw.get("blocks") or []):
-        where = f"{origin}.blocks[{index}]"
+    start = 0
+    for name in order:
+        entry = declared[name]
+        where = f"{origin}.blocks.{name}"
         _reject(entry, _BLOCK, where)
-        start, end = _slots(entry.get("slots"), where)
+
+        block_width = entry.get("width")
+        if not isinstance(block_width, int) or isinstance(block_width, bool) or block_width < 1:
+            raise SpecError(
+                f"{where}.width must be a positive integer, got {block_width!r}"
+            )
+        end = start + block_width
         evidence = entry.get("evidence")
         if evidence not in EVIDENCE:
             raise SpecError(
                 f"{where}.evidence must be one of {', '.join(sorted(EVIDENCE))}, "
                 f"got {evidence!r}"
+            )
+
+        pad = entry.get("pad", 0)
+        if not isinstance(pad, int) or isinstance(pad, bool) or pad < 0 or pad >= block_width:
+            raise SpecError(
+                f"{where}.pad must be an integer in 0..{block_width - 1}, got {pad!r}"
             )
 
         source = entry.get("source")
@@ -293,11 +567,16 @@ def _parse_state(raw: Any, origin: str) -> StateSpec:
                     f"({', '.join(sources)})"
                 )
             src_start, src_end = _slots(source.get("columns"), f"{where}.source")
-            if (src_end - src_start) != (end - start):
+            if (src_end - src_start) + pad != block_width:
                 raise SpecError(
-                    f"{where}: {end - start} slots but {src_end - src_start} source "
-                    "columns"
+                    f"{where}: {block_width} slots and pad {pad}, but "
+                    f"{src_end - src_start} source columns"
                 )
+        elif pad:
+            raise SpecError(
+                f"{where}: pad is only meaningful alongside a source; a block with "
+                "no source is already entirely constant"
+            )
         elif evidence not in SOURCELESS_EVIDENCE:
             raise SpecError(
                 f"{where}: a block with no source must be one of "
@@ -306,21 +585,27 @@ def _parse_state(raw: Any, origin: str) -> StateSpec:
 
         blocks.append(
             Block(
-                name=entry.get("name") or f"block_{index}",
+                name=name,
                 start=start,
                 end=end,
                 evidence=evidence,
                 feature=feature,
                 src_start=src_start,
                 src_end=src_end,
+                pad=pad,
                 note=entry.get("note"),
             )
         )
+        start = end
 
+    if start != width:
+        raise SpecError(
+            f"{origin}: block widths sum to {start}, but width says {width}"
+        )
     _check_tiling(blocks, width, origin)
     return StateSpec(
         width=width,
-        layout=raw.get("layout") or "custom",
+        layout=layout_name,
         source_features=sources,
         blocks=tuple(blocks),
     )

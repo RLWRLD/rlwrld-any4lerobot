@@ -61,52 +61,46 @@ lerobot:
         action: action.waist_position
 
     blocks:
-      - name: left_arm
-        slots: [0, 7]
+      left_arm:
+        width: 7
         source: {feature: joint, columns: [0, 7]}
         evidence: measured
 
-      - name: left_hand
-        slots: [7, 8]
+      left_hand:
+        width: 1
         source: {feature: gripper, columns: [0, 1]}
         evidence: measured
         note: a gripper is one value, so the hand block is 1 wide instead of 6
 
-      - name: left_leg
-        slots: [8, 14]
+      left_leg:
+        width: 6
         evidence: constant
 
-      - name: neck
-        slots: [14, 16]
+      neck:
+        width: 3
+        pad: 1
         source: {feature: head, columns: [0, 2]}
         evidence: measured
 
-      - name: neck_pad
-        slots: [16, 17]
-        evidence: constant
-
-      - name: right_arm
-        slots: [17, 24]
+      right_arm:
+        width: 7
         source: {feature: joint, columns: [7, 14]}
         evidence: measured
 
-      - name: right_hand
-        slots: [24, 25]
+      right_hand:
+        width: 1
         source: {feature: gripper, columns: [1, 2]}
         evidence: measured
 
-      - name: right_leg
-        slots: [25, 31]
+      right_leg:
+        width: 6
         evidence: constant
 
-      - name: waist
-        slots: [31, 33]
+      waist:
+        width: 3
+        pad: 1
         source: {feature: waist, columns: [0, 2]}
         evidence: measured
-
-      - name: waist_pad
-        slots: [33, 34]
-        evidence: constant
 
 notes: >-
   20 of 34 slots matched directly, identically across all four parts. The parts are

@@ -36,14 +36,14 @@ lerobot:
     source_features: {}
 
     blocks:
-      - {name: left_arm,   slots: [0, 7],   evidence: declared}
-      - {name: left_hand,  slots: [7, 13],  evidence: declared}
-      - {name: left_leg,   slots: [13, 19], evidence: declared}
-      - {name: neck,       slots: [19, 22], evidence: declared}
-      - {name: right_arm,  slots: [22, 29], evidence: declared}
-      - {name: right_hand, slots: [29, 35], evidence: declared}
-      - {name: right_leg,  slots: [35, 41], evidence: declared}
-      - {name: waist,      slots: [41, 44], evidence: declared}
+      left_arm:   {width: 7, evidence: declared}
+      left_hand:  {width: 6, evidence: declared}
+      left_leg:   {width: 6, evidence: declared}
+      neck:       {width: 3, evidence: declared}
+      right_arm:  {width: 7, evidence: declared}
+      right_hand: {width: 6, evidence: declared}
+      right_leg:  {width: 6, evidence: declared}
+      waist:      {width: 3, evidence: declared}
 
 notes: >-
   Covers neural_robocurate_v1..v3 and march_robocurate_v1..v4, which share this

@@ -29,6 +29,39 @@ delivered:
   # ALIN Lab, ad-hoc, code not kept (Notion 3ac6cbdf-f6f6-80ef-aa98-d85739443184, Q2)
   converted_by: alin_lab
 
+# How the raw files are arranged once the tar shards are unpacked, and how to line
+# the robot clock up with the camera clock. Templates take {id} (the episode id)
+# and {camera} (the source-side directory named under lerobot.video.cameras).
+#
+# The robot side is sampled at ~60 Hz and the camera at ~30 Hz on separate clocks,
+# which is why a clock strategy is needed at all.
+source:
+  format: hdf5_episodes
+  discover: "*.hdf5"
+  paths:
+    episode: "{id}.hdf5"
+    video: "{id}/{camera}/rgb.mp4"
+  tasks:
+    file: metadata.json
+    key: id
+    prompt: prompt
+  clock:
+    strategy: nearest_timestamp_dedup
+    data: timestamp
+    image: "{id}/{camera}/timestamps.json"
+    image_format: "%Y-%m-%dT%H-%M-%S_%f"
+  # where each feature lives inside the hdf5. The emitted LeRobot column names are
+  # the separate matter of lerobot.state.source_features below.
+  features:
+    robot_joints: {state: state/robot, action: action/robot}
+    hand_joints: {state: state/hand, action: action/hand}
+  # the GR1 T1's own joint count, and six values per hand. A GR2 reports 29 joints
+  # and the 12-DoF hand reports 24 values; both mean different things column by
+  # column, so an episode with those widths is skipped rather than reinterpreted.
+  feature_widths:
+    robot_joints: 32
+    hand_joints: 12
+
 lerobot:
   robot_type: ActionNet
   fps: 30
@@ -38,6 +71,8 @@ lerobot:
     cameras:
       # lerobot key <- source camera directory
       primary: top
+    # height, width, channels of the source mp4, before any resize step
+    shape: [800, 1280, 3]
     resize: resize_preserve_aspect_area
     encoding: rldx1_reference
     keeps_original: false
@@ -53,59 +88,64 @@ lerobot:
   state:
     width: 44
     layout: gr1_body_parts
+    # the LeRobot columns the assembled vector copies from -- the names the
+    # delivered dataset carries alongside state/action, not the hdf5 paths
     source_features:
-      robot:
-        state: state/robot
-        action: action/robot
-      hand:
-        state: state/hand
-        action: action/hand
+      robot_joints:
+        state: observation.robot_joints
+        action: action.robot_joints
+      hand_joints:
+        state: observation.hand_joints
+        action: action.hand_joints
 
+    # Widths and sources only -- the order comes from layouts/gr1_body_parts.yaml
+    # and the slot numbers are derived from the two. A mapping rather than a list
+    # so that this file cannot imply an order of its own.
     blocks:
-      - name: left_arm
-        slots: [0, 7]
-        source: {feature: robot, columns: [18, 25]}
+      left_arm:
+        width: 7
+        source: {feature: robot_joints, columns: [18, 25]}
         evidence: measured
         note: shoulder pitch/roll/yaw, elbow, wrist yaw/roll/pitch
 
-      - name: left_hand
-        slots: [7, 13]
-        source: {feature: hand, columns: [0, 6]}
+      left_hand:
+        width: 6
+        source: {feature: hand_joints, columns: [0, 6]}
         evidence: measured
 
-      - name: left_leg
-        slots: [13, 19]
-        source: {feature: robot, columns: [0, 6]}
+      left_leg:
+        width: 6
+        source: {feature: robot_joints, columns: [0, 6]}
         evidence: constant
         note: >-
           hip roll/yaw/pitch and knee are identically zero, ankles hold a fixed
           ~1e-6; the six columns are indistinguishable from each other in the data,
           so the order within the block follows the block structure, not a match
 
-      - name: neck
-        slots: [19, 22]
-        source: {feature: robot, columns: [15, 18]}
+      neck:
+        width: 3
+        source: {feature: robot_joints, columns: [15, 18]}
         evidence: measured
         note: yaw, roll, pitch
 
-      - name: right_arm
-        slots: [22, 29]
-        source: {feature: robot, columns: [25, 32]}
+      right_arm:
+        width: 7
+        source: {feature: robot_joints, columns: [25, 32]}
         evidence: measured
 
-      - name: right_hand
-        slots: [29, 35]
-        source: {feature: hand, columns: [6, 12]}
+      right_hand:
+        width: 6
+        source: {feature: hand_joints, columns: [6, 12]}
         evidence: measured
 
-      - name: right_leg
-        slots: [35, 41]
-        source: {feature: robot, columns: [6, 12]}
+      right_leg:
+        width: 6
+        source: {feature: robot_joints, columns: [6, 12]}
         evidence: constant
 
-      - name: waist
-        slots: [41, 44]
-        source: {feature: robot, columns: [12, 15]}
+      waist:
+        width: 3
+        source: {feature: robot_joints, columns: [12, 15]}
         evidence: measured
         note: yaw, pitch, roll
 

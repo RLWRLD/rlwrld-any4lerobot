@@ -81,7 +81,7 @@ def check_state(spec: StateSpec, df, side: str) -> list[str]:
             cache[path] = columns(df, path)
         source = cache[path]
 
-        for offset in range(block.width):
+        for offset in range(block.sourced_width):
             got = flat[:, block.start + offset]
             want = source[:, block.src_start + offset]
             if not np.allclose(got, want, atol=TOLERANCE, equal_nan=True):
