@@ -144,6 +144,10 @@ celerybeat.pid
 .env
 .venv
 env/
+# ...but this one holds the pipeline's per-machine configs, not a virtualenv.
+# Without this the shipped environments are absent from a fresh clone and
+# lerobot_pipeline/tests/test_env.py fails on a machine that never had them.
+!lerobot_pipeline/configs/env/
 venv/
 env.bak/
 venv.bak/

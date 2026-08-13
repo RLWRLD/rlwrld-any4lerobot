@@ -1,0 +1,14 @@
+# A laptop or a small box: everything under ~/data, one ffmpeg at a time.
+#
+# An environment says where this machine keeps things and how hard it may work.
+# It says nothing about any dataset -- that is dataset_registry's job -- which is
+# why one file covers all 36.
+
+profile: rldx1
+
+raw_root: ~/data/raw
+out_root: ~/data/out
+
+builders:
+  spec: {executor: local, episodes_per_task: 100}
+  agibot: {executor: local}
