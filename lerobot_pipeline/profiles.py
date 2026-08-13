@@ -19,7 +19,7 @@ from typing import Any
 
 PROFILE_DIR = Path(__file__).resolve().parent / "configs" / "profiles"
 
-_TOP_LEVEL = {"state", "video", "dest", "note"}
+_TOP_LEVEL = {"state", "video", "dest", "builders", "note"}
 _STATE = {"build_layout_as"}
 _VIDEO = {"resize", "encoding"}
 _DEST = {"version"}
@@ -66,6 +66,12 @@ def _validate(raw: Any, origin: str) -> dict[str, Any]:
             f"{origin}.state.build_layout_as maps the layout a dataset declares to "
             "the layout to actually build it with; both sides must be layout names"
         )
+
+    builders = raw.get("builders") or {}
+    if not isinstance(builders, Mapping) or not all(
+        isinstance(value, Mapping) for value in builders.values()
+    ):
+        raise ProfileError(f"{origin}.builders must map builder name -> flags")
 
     resize = (raw.get("video") or {}).get("resize")
     if resize is not None and not isinstance(resize, Mapping):

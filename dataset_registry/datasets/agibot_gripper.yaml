@@ -26,6 +26,9 @@ source:
   # agibot2lerobot reads the raw AgiBot hdf5 tree and
   # writes observation.state itself.
   builder: agibot
+  # both subsets are read out of one AgiBotWorld-Beta tree; only
+  # --eef-type separates them
+  raw_dir: AgiBotWorld-Beta
   # agibot2lerobot converts one end-effector type per run and selects the task ids
   # for it; without this the two subsets would come out identical
   args:

@@ -75,8 +75,8 @@ _SOURCE = {"feature", "columns"}
 # How the raw upstream files are arranged, and how to line their clocks up. Read by
 # spec2lerobot; the format and clock names are the closed sets it implements.
 _SOURCE_SPEC = {
-    "builder", "args", "format", "discover", "paths", "tasks", "clock", "features",
-    "feature_widths", "layout", "note",
+    "builder", "args", "raw_dir", "format", "discover", "paths", "tasks", "clock",
+    "features", "feature_widths", "layout", "note",
 }
 
 # Which program turns the raw source into LeRobot. `spec` is the data-driven path in
@@ -235,6 +235,11 @@ class SourceSpec:
     # flags the builder needs that only the dataset knows, e.g. which end-effector
     # subset of AgiBot World this is. Merged into the run config's source.args.
     args: Mapping[str, Any] = field(default_factory=dict)
+    # the directory this dataset occupies inside a collection of raw sources, when
+    # that is not just its own id. Two datasets can share one: the AgiBot dexhand and
+    # gripper subsets are both read out of AgiBotWorld-Beta and differ only by
+    # --eef-type.
+    raw_dir: str | None = None
     format: str | None = None
     discover: str | None = None
     paths: Mapping[str, str] = field(default_factory=dict)
@@ -503,10 +508,14 @@ def _parse_source(raw: Any, origin: str) -> SourceSpec:
     if not isinstance(builder_args, Mapping):
         raise SpecError(f"{origin}.args must be a mapping of flag -> value")
 
+    raw_dir = raw.get("raw_dir")
+    if raw_dir is not None and (not isinstance(raw_dir, str) or not raw_dir):
+        raise SpecError(f"{origin}.raw_dir must be a non-empty string")
+
     if builder != "spec":
         # only the spec-driven path reads the file description; the others carry
         # their own, so demanding one here would be asking for fiction
-        return SourceSpec(builder=builder, args=dict(builder_args))
+        return SourceSpec(builder=builder, args=dict(builder_args), raw_dir=raw_dir)
 
     paths = raw.get("paths") or {}
     _reject(paths, _SOURCE_PATHS, f"{origin}.paths")
@@ -544,6 +553,7 @@ def _parse_source(raw: Any, origin: str) -> SourceSpec:
     return SourceSpec(
         builder=builder,
         args=dict(builder_args),
+        raw_dir=raw_dir,
         format=text(raw, "format", origin),
         discover=text(raw, "discover", origin),
         paths=dict(paths),

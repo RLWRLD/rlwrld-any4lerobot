@@ -140,29 +140,37 @@ def test_a_failing_later_stage_still_cleans_the_work_directory(tmp_path):
 # --- CLI ---------------------------------------------------------------------
 
 
-def test_config_path_is_required():
+def test_an_environment_is_required():
+    """The dataset is a flag and the machine is a file; neither has a default worth
+    guessing, so both have to be said."""
     with pytest.raises(SystemExit):
         parse_args([])
 
 
-def test_parses_the_config_path():
-    assert parse_args(["--config", "a.yaml"]).config == Path("a.yaml")
+def test_parses_the_environment_and_dataset():
+    args = parse_args(["--env", "ec2", "--dataset", "action_net"])
+    assert (args.env, args.dataset) == ("ec2", "action_net")
+
+
+def test_all_rebuilds_the_collection():
+    assert parse_args(["--env", "ec2", "--all"]).all is True
 
 
 def test_overwrite_and_keep_intermediate_default_to_off():
-    args = parse_args(["--config", "a.yaml"])
+    args = parse_args(["--env", "ec2", "--dataset", "action_net"])
     assert args.overwrite is False
     assert args.keep_intermediate is False
 
 
 def test_runtime_overrides_are_exposed_on_the_command_line():
-    args = parse_args(["--config", "a.yaml", "--workers", "4", "--threads-per-ffmpeg", "2"])
+    args = parse_args(["--env", "ec2", "--dataset", "action_net",
+                       "--workers", "4", "--threads-per-ffmpeg", "2"])
     assert (args.workers, args.threads_per_ffmpeg) == (4, 2)
 
 
 def test_workdir_can_be_pointed_at_fast_local_storage():
-    args = parse_args(["--config", "a.yaml", "--workdir", "/scratch"])
-    assert args.workdir == Path("/scratch")
+    args = parse_args(["--env", "ec2", "--dataset", "action_net", "--workdir", "/tmp/w"])
+    assert args.workdir == Path("/tmp/w")
 
 
 def test_a_default_work_directory_is_derived_next_to_the_destination(tmp_path):
@@ -282,22 +290,33 @@ def test_runtime_encoding_overrides_reach_the_transform(tmp_path, monkeypatch):
 def test_expected_errors_are_reported_cleanly_not_as_a_traceback(tmp_path, capsys):
     from lerobot_pipeline.run import main
 
-    config_path = tmp_path / "demo.yaml"
-    config_path.write_text(
-        "name: demo\n"
-        "source:\n  type: lerobot_v21\n  path: /data/in\n"
-        "steps:\n  - type: no_such_step\n"
-        "dest:\n  type: lerobot_v21\n  path: /data/out\n"
+    env_path = tmp_path / "demo.yaml"
+    env_path.write_text(
+        "profile: rldx1\n"
+        f"raw_root: {tmp_path / 'raw'}\n"
+        f"out_root: {tmp_path / 'out'}\n"
     )
 
-    assert main(["--config", str(config_path)]) == 1
+    # a dataset whose columns were never recovered: the layout step refuses to be
+    # built, and that has to read as a message rather than a stack trace
+    assert main(["--env", str(env_path), "--dataset", "neural_robocurate"]) == 1
     message = capsys.readouterr().err
-    assert "no_such_step" in message
+    assert "cannot be laid out" in message
     assert "Traceback" not in message
 
 
-def test_a_missing_config_file_is_reported_cleanly(tmp_path, capsys):
+def test_an_unknown_environment_is_reported_cleanly(tmp_path, capsys):
     from lerobot_pipeline.run import main
 
-    assert main(["--config", str(tmp_path / "nope.yaml")]) == 1
-    assert "nope.yaml" in capsys.readouterr().err
+    assert main(["--env", "no_such_env", "--dataset", "action_net"]) == 1
+    assert "no_such_env" in capsys.readouterr().err
+
+
+def test_an_unknown_dataset_lists_the_available_ones(tmp_path, capsys):
+    from lerobot_pipeline.run import main
+
+    env_path = tmp_path / "demo.yaml"
+    env_path.write_text(
+        f"profile: rldx1\nraw_root: {tmp_path}\nout_root: {tmp_path / 'out'}\n")
+    assert main(["--env", str(env_path), "--dataset", "nope"]) == 1
+    assert "action_net" in capsys.readouterr().err

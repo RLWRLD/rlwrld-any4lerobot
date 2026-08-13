@@ -13,10 +13,10 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
-from lerobot_pipeline.config import ConfigError, load_config, parse_config  # noqa: E402
+from dataset_registry import available  # noqa: E402
+from lerobot_pipeline.config import ConfigError, parse_config  # noqa: E402
 from lerobot_pipeline.converter_args import check, converter_flags  # noqa: E402
-
-CONFIGS = REPO_ROOT / "lerobot_pipeline" / "configs" / "datasets"
+from lerobot_pipeline.env import build_config, load_env  # noqa: E402
 
 
 class TestReadingFlags:
@@ -60,12 +60,10 @@ class TestThroughTheConfig:
                 "dest": {"path": "/out"},
             })
 
-    @pytest.mark.parametrize(
-        "path", sorted(CONFIGS.glob("*.yaml")), ids=lambda p: p.stem
-    )
-    def test_every_shipped_config_passes_its_converter(self, path):
+    @pytest.mark.parametrize("dataset", available())
+    def test_every_shipped_config_passes_its_converter(self, dataset):
         try:
-            load_config(path)
+            build_config(load_env("ec2"), dataset)
         except ConfigError as exc:
             # an unbuildable dataset fails for a different, already-reported reason
             if "cannot be laid out" in str(exc):
@@ -76,11 +74,17 @@ class TestThroughTheConfig:
 class TestBuilderArgs:
     def test_the_spec_supplies_the_flag_only_it_knows(self):
         """agibot2lerobot converts one end-effector type per run. Without this the
-        dexhand and gripper configs would produce the same dataset."""
-        dexhand = load_config(CONFIGS / "agibot_dexhand.yaml")
-        gripper = load_config(CONFIGS / "agibot_gripper.yaml")
-        assert dexhand.source.args["eef_type"] == "dexhand"
-        assert gripper.source.args["eef_type"] == "gripper"
+        dexhand and gripper subsets would produce the same dataset."""
+        env = load_env("ec2")
+        assert build_config(env, "agibot_dexhand").source.args["eef_type"] == "dexhand"
+        assert build_config(env, "agibot_gripper").source.args["eef_type"] == "gripper"
+
+    def test_both_agibot_subsets_read_one_source_tree(self):
+        """They are one AgiBotWorld-Beta tree read twice, so raw_dir has to be a
+        dataset fact rather than raw_root/<id>."""
+        env = load_env("ec2")
+        assert (build_config(env, "agibot_dexhand").source.path
+                == build_config(env, "agibot_gripper").source.path)
 
     def test_the_run_config_can_override_a_builder_arg(self):
         config = parse_config({

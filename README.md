@@ -73,7 +73,7 @@ settings that matter.
 
 - ​**​Preprocessing​**​:
 
-  - [x] [LeRobot Pipeline](./lerobot_pipeline/README.md) — config-driven `source → steps → dest` preprocessing
+  - [x] [LeRobot Pipeline](./lerobot_pipeline/README.md) — config-driven `source → steps → dest` preprocessing; one file per dataset, one per machine
   - [x] [Dataset Registry](./dataset_registry/README.md) — one YAML per dataset: upstream pin, file layout, state layout
   - [x] Aspect-ratio preserving resize (RLDX-style, area- and patch-size bounded)
   - [x] `state_layout` — assemble `observation.state` / `action` from a declared layout

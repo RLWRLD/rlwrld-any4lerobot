@@ -4,7 +4,8 @@ Splitting facts, conventions and run settings into three files keeps each one sm
 and makes a convention switch a one-file edit, but it also means no single file
 answers "what is this run about to do". This does.
 
-    python -m lerobot_pipeline.plan --config lerobot_pipeline/configs/actionnet_rldx1.yaml
+    python -m lerobot_pipeline.plan --env ec2 --dataset action_net
+    python -m lerobot_pipeline.plan --env ec2 --all
 
 It reads no data and writes nothing. The first thing it reports is whether the
 dataset can be rebuilt at all -- a spec with blocks whose source columns were never
@@ -195,31 +196,30 @@ def _slots(spec) -> str:
     return "\n".join(lines).rstrip()
 
 
-CONFIG_DIR = Path(__file__).resolve().parent / "configs" / "datasets"
-
-
-def summarise(paths: list[Path]) -> tuple[str, int]:
+def summarise(env, datasets: list[str]) -> tuple[str, int]:
     """One line per config: can it be rebuilt, by what, and is the video touched."""
     from .registry import compose_video_plans
 
     from dataset_registry import SpecError, load
 
+    from .env import EnvError, build_config
+
     lines = [f"{'dataset':<52} {'builder':<8} {'video':<27} {'raw source':<11} ready"]
     blocked = unlocated = 0
-    for path in paths:
+    for name in datasets:
         try:
-            config = load_config(path)
-        except ConfigError as exc:
-            # an unbuildable dataset fails at load, because the layout step refuses
-            # to be constructed; report the count rather than the whole wall of holes
+            config = build_config(env, name)
+        except (ConfigError, EnvError) as exc:
+            # an unbuildable dataset fails while resolving, because the layout step
+            # refuses to be constructed; report the count rather than the whole wall
             try:
-                spec = load(path.stem)
+                spec = load(name)
                 builder = spec.source.builder if spec.source else "-"
                 count = len(spec.buildable())
             except SpecError:
                 builder, count = "-", 0
-            reason = f"NO ({count})" if count else f"CONFIG ERROR: {str(exc).splitlines()[0]}"
-            lines.append(f"{path.stem:<52} {builder:<8} {'-':<27} {'-':<11} {reason}")
+            reason = f"NO ({count})" if count else f"ERROR: {str(exc).splitlines()[0]}"
+            lines.append(f"{name:<52} {builder:<8} {'-':<27} {'-':<11} {reason}")
             blocked += 1
             continue
 
@@ -245,41 +245,54 @@ def summarise(paths: list[Path]) -> tuple[str, int]:
         verdict = "yes" if not problems else f"NO ({len(problems)})"
         blocked += bool(problems)
         unlocated += located == "NOT FOUND" and not problems
-        lines.append(f"{path.stem:<52} {builder:<8} {video:<27} {located:<11} {verdict}")
+        lines.append(f"{name:<52} {builder:<8} {video:<27} {located:<11} {verdict}")
 
-    ready = len(paths) - blocked
+    ready = len(datasets) - blocked
     lines.append("")
-    lines.append(f"{ready}/{len(paths)} configs resolve with no missing source columns")
+    lines.append(
+        f"{ready}/{len(datasets)} configs resolve with no missing source columns")
     if unlocated:
         lines.append(
             f"but {unlocated} of those have no raw source recorded -- the config is "
             "right and there is nowhere to point source.path yet"
         )
-        lines.append(f"so {ready - unlocated}/{len(paths)} can actually be started today")
+        lines.append(
+            f"so {ready - unlocated}/{len(datasets)} can actually be started today")
     return "\n".join(lines), blocked
 
 
 def main(argv=None) -> int:
+    from dataset_registry import available
+
+    from .env import EnvError, build_config, load_env
+
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", type=Path, default=None)
+    parser.add_argument("--env", required=True, help="an environment name or path")
+    parser.add_argument("--dataset", default=None)
     parser.add_argument("--all", action="store_true",
-                        help=f"summarise every config in {CONFIG_DIR.name}/")
+                        help="summarise every dataset in the registry")
     parser.add_argument(
         "--workdir", type=Path, default=None, help="only affects the paths shown"
     )
     args = parser.parse_args(argv)
 
+    try:
+        env = load_env(args.env)
+    except EnvError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+
     if args.all:
-        text, blocked = summarise(sorted(CONFIG_DIR.glob("*.yaml")))
+        text, blocked = summarise(env, available())
         print(text)
         return 1 if blocked else 0
-    if args.config is None:
-        print("give --config, or --all", file=sys.stderr)
+    if args.dataset is None:
+        print("give --dataset, or --all", file=sys.stderr)
         return 2
 
     try:
-        config = load_config(args.config)
-    except ConfigError as exc:
+        config = build_config(env, args.dataset)
+    except (ConfigError, EnvError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
 
