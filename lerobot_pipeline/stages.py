@@ -30,7 +30,9 @@ _VERSION_SCRIPTS: dict[tuple[str, str], str] = {
 
 # source type -> (script, input flag, output flag)
 _CONVERTERS: dict[str, tuple[str, str, str]] = {
-    "actionnet": ("actionnet2lerobot/actionnet_h5.py", "--src-path", "--output-path"),
+    # spec-driven and dataset-agnostic: it takes --dataset and reads the rest from
+    # the registry. The others below still carry their dataset in their code.
+    "spec": ("spec2lerobot", "--src-path", "--output-path"),
     "agibot": ("agibot2lerobot/agibot_h5.py", "--src-path", "--output-path"),
     "libero": ("libero2lerobot/libero_h5.py", "--src-paths", "--output-path"),
     "openx": ("openx2lerobot/openx_rlds.py", "--raw-dir", "--local-dir"),
@@ -68,7 +70,15 @@ def plan_stages(config: PipelineConfig, workdir: str | Path) -> list[StageSpec]:
         )
         version = CONVERTER_OUTPUT_VERSION
 
-    if config.steps:
+    table_steps = [s for s in config.steps if getattr(s, "kind", None) == "table"]
+    video_steps = [s for s in config.steps if getattr(s, "kind", None) == "video"]
+
+    # Table steps first: they rewrite parquet and hard-link the video, so a failure
+    # costs seconds rather than a re-encode. They must also run before any version
+    # conversion, so the columns are settled before the layout changes.
+    if table_steps:
+        planned.append(("state_layout", {"steps": tuple(table_steps)}))
+    if video_steps:
         planned.append(("transform", {}))
 
     if version != config.dest.type:
@@ -151,9 +161,15 @@ def converter_command(
         )
 
     script, input_flag, output_flag = entry
+    # a package is run with -m so its relative imports resolve; the older
+    # converters are single scripts and are run by path
+    entry_point = (
+        [sys.executable, "-m", script]
+        if not script.endswith(".py")
+        else [sys.executable, str(REPO_ROOT / script)]
+    )
     command = [
-        sys.executable,
-        str(REPO_ROOT / script),
+        *entry_point,
         input_flag,
         str(input_path),
         output_flag,

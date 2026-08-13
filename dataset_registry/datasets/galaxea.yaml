@@ -50,7 +50,7 @@ lerobot:
     # no body-part skeleton: left side, right side, then torso. Note action is 26
     # wide while state is 18 -- the two are not the same vector here.
     width: 18
-    layout: custom
+    layout: galaxea_r1
     source_features:
       arm_left:
         state: observation.joint_position_arm_left
@@ -69,28 +69,28 @@ lerobot:
         action: action.joint_position_torso
 
     blocks:
-      - name: arm_left
-        slots: [0, 6]
+      arm_left:
+        width: 6
         source: {feature: arm_left, columns: [0, 6]}
         evidence: measured
 
-      - name: gripper_left
-        slots: [6, 7]
+      gripper_left:
+        width: 1
         source: {feature: gripper_left, columns: [0, 1]}
         evidence: measured
 
-      - name: arm_right
-        slots: [7, 13]
+      arm_right:
+        width: 6
         source: {feature: arm_right, columns: [0, 6]}
         evidence: measured
 
-      - name: gripper_right
-        slots: [13, 14]
+      gripper_right:
+        width: 1
         source: {feature: gripper_right, columns: [0, 1]}
         evidence: measured
 
-      - name: torso
-        slots: [14, 18]
+      torso:
+        width: 4
         source: {feature: torso, columns: [0, 4]}
         evidence: measured
 
@@ -99,11 +99,11 @@ lerobot:
     # 26 wide against 18. It carries no action.* sub-features either, so there is
     # nothing to match against and the composition is genuinely unknown.
     width: 26
-    layout: unknown
+    layout: unrecovered
     source_features: {}
     blocks:
-      - name: action
-        slots: [0, 26]
+      unrecovered:
+        width: 26
         evidence: unknown
         note: >-
           composition not recovered; the delivered dataset exposes only

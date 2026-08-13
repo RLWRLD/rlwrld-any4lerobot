@@ -1,0 +1,38 @@
+# How the RLDX-1 pre-training collection is built.
+#
+# One file for the whole convention: how state is laid out, how video is sized and
+# encoded, and what version comes out. A dataset spec says what a dataset *is*; a
+# run config says where this run reads and writes; this says how the processing is
+# done. Reproducing the delivered datasets means running everything under this
+# profile.
+#
+# Switching the collection to a different convention later is a second profile
+# alongside this one, not an edit to any dataset spec -- which matters because the
+# existing checkpoint's per-embodiment projector was trained on the slot order
+# gr1_body_parts declares.
+
+state:
+  # Which layout each family is built under. RLDX-1 builds every family under the
+  # layout it was delivered with, so these are identity -- stated rather than
+  # omitted so the whole convention is visible in one place.
+  #
+  # A later profile changes a right-hand side and the entire collection is re-laid
+  # out; no dataset spec is touched, because none of them contain slot numbers.
+  layouts:
+    gr1_body_parts: gr1_body_parts
+    arms_then_hands: arms_then_hands
+    galaxea_r1: galaxea_r1
+
+video:
+  # RLDX takes images at their original aspect ratio and resizing during training
+  # is disabled, so the dataset itself has to carry the target resolution
+  resize:
+    type: resize_preserve_aspect_area
+    max_area: 65536 # 256 ** 2
+    multiple: 32 # image patch size
+  # reproduce how the delivered datasets were encoded rather than using this
+  # pipeline's own defaults -- see configs/encoding/rldx1_reference.yaml
+  encoding: rldx1_reference
+
+dest:
+  version: lerobot_v21

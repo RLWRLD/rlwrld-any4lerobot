@@ -29,6 +29,7 @@ from .stages import (
     version_convert_command,
     version_convert_output,
 )
+from .steps.state_layout import LayoutError
 from .transform import TransformError, link_or_copy, materialize, plan_transform
 from .video_ops import plan_parallelism
 
@@ -134,6 +135,21 @@ def execute_transform(stage: StageSpec, config: PipelineConfig) -> Path:
     return materialize(plan, overwrite=True, parallelism=parallelism)
 
 
+def execute_state_layout(stage: StageSpec, config: PipelineConfig) -> Path:
+    """Apply the table steps: rewrite parquet, hard-link everything else."""
+    produced = stage.input_path
+    steps = stage.detail["steps"]
+    for index, step in enumerate(steps):
+        target = (
+            stage.output_path
+            if index == len(steps) - 1
+            else stage.output_path.parent / f"{stage.output_path.name}_{index:02d}"
+        )
+        step.apply(produced, target)
+        produced = target
+    return produced
+
+
 def execute_version_convert(stage: StageSpec, config: PipelineConfig) -> Path:
     from_version = stage.detail["from"]
     to_version = stage.detail["to"]
@@ -171,6 +187,7 @@ def _run(command: Sequence[str], what: str) -> None:
 
 DEFAULT_EXECUTORS: dict[str, Executor] = {
     "convert": execute_convert,
+    "state_layout": execute_state_layout,
     "transform": execute_transform,
     "version_convert": execute_version_convert,
 }
@@ -178,6 +195,7 @@ DEFAULT_EXECUTORS: dict[str, Executor] = {
 EXPECTED_ERRORS = (
     ConfigError,
     StageError,
+    LayoutError,
     MetadataError,
     TransformError,
     FileExistsError,

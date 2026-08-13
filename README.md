@@ -44,8 +44,9 @@ currently gitignored, so transitive versions are *not* pinned across machines �
 commit the lockfile if you need byte-identical environments.
 
 ```bash
-uv sync --extra actionnet   # or --extra agibot, --extra ray, ...
-uv run python actionnet2lerobot/actionnet_h5.py --help
+uv sync --extra spec2lerobot   # or --extra agibot, --extra ray, ...
+uv run python -m spec2lerobot --help
+uv run pytest
 ```
 
 LeRobot is pinned to a git commit rather than a PyPI release on purpose: the
@@ -73,13 +74,15 @@ settings that matter.
 - ​**​Preprocessing​**​:
 
   - [x] [LeRobot Pipeline](./lerobot_pipeline/README.md) — config-driven `source → steps → dest` preprocessing
+  - [x] [Dataset Registry](./dataset_registry/README.md) — one YAML per dataset: upstream pin, file layout, state layout
   - [x] Aspect-ratio preserving resize (RLDX-style, area- and patch-size bounded)
+  - [x] `state_layout` — assemble `observation.state` / `action` from a declared layout
   - [ ] Frame-level steps (temporal subsampling, trimming)
 
 - ​**​Data Conversion​**​:
 
   - [x] [Generic Converter](./generic_converter/README.md)
-  - [x] [Fourier ActionNet to LeRobot](./actionnet2lerobot/README.md)
+  - [x] [Spec to LeRobot](./spec2lerobot/README.md) — any registry dataset, no per-dataset code (Fourier ActionNet today)
   - [x] [Open X-Embodiment to LeRobot](./openx2lerobot/README.md)
   - [x] [AgiBot-World to LeRobot](./agibot2lerobot/README.md)
   - [x] [RoboMIND to LeRobot](./robomind2lerobot/README.md)

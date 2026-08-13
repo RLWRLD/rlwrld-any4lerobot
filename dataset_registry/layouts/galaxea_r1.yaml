@@ -1,0 +1,14 @@
+# Galaxea R1 has no shared skeleton -- it is a per-robot ordering: each arm
+# followed by its gripper, then the torso. Its delivered modality.json is a single
+# flat block, so these names are ours, chosen to describe the recovered columns.
+#
+# It gets its own file rather than declaring the order inline because the registry
+# has no fallback: order always comes from a layout. If a second dataset turns out
+# to share this ordering it references this file instead of repeating it.
+
+order:
+  - arm_left
+  - gripper_left
+  - arm_right
+  - gripper_right
+  - torso

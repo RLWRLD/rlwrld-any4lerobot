@@ -66,23 +66,23 @@ lerobot:
         action: action.hand_joints
 
     blocks:
-      - name: left_arm
-        slots: [0, 7]
+      left_arm:
+        width: 7
         source: {feature: arm, columns: [0, 7]}
         evidence: declared
 
-      - name: right_arm
-        slots: [7, 14]
+      right_arm:
+        width: 7
         source: {feature: arm, columns: [7, 14]}
         evidence: declared
 
-      - name: left_hand
-        slots: [14, 21]
+      left_hand:
+        width: 7
         source: {feature: hand, columns: [0, 7]}
         evidence: declared
 
-      - name: right_hand
-        slots: [21, 28]
+      right_hand:
+        width: 7
         source: {feature: hand, columns: [7, 14]}
         evidence: declared
 

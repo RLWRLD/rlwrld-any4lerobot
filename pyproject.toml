@@ -18,7 +18,7 @@ dependencies = [
 [project.optional-dependencies]
 # Converters that read HDF5 sources.
 hdf5 = ["h5py"]
-actionnet = ["h5py"]
+spec2lerobot = ["h5py", "pyyaml"]
 agibot = ["h5py"]
 libero = ["h5py"]
 robocasa = ["h5py"]
@@ -30,6 +30,9 @@ ray = ["datatrove[ray]>=0.6.0"]
 # for `datasets<4.0.0`, which no longer has a solution -- the pinned lerobot requires
 # datasets>=4.8.0. The script itself only imports `datasets.Dataset`, so it is run in
 # this same environment; the README predates that lerobot pin.
+
+[dependency-groups]
+dev = ["pytest>=8", "h5py"]
 
 [tool.uv]
 # A collection of scripts, not an importable distribution: nothing to build.

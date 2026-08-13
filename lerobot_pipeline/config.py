@@ -17,7 +17,8 @@ from .registry import UnknownStepError, build_step
 
 LEROBOT_SOURCES = ("lerobot_v21", "lerobot_v30")
 CONVERTER_SOURCES = (
-    "actionnet",
+    # spec-driven: which dataset comes from the registry, not from the source type
+    "spec",
     "agibot",
     "libero",
     "openx",
@@ -27,7 +28,7 @@ CONVERTER_SOURCES = (
 SOURCE_TYPES = LEROBOT_SOURCES + CONVERTER_SOURCES
 DEST_TYPES = LEROBOT_SOURCES
 
-_TOP_LEVEL_KEYS = {"name", "source", "steps", "dest", "runtime"}
+_TOP_LEVEL_KEYS = {"name", "dataset", "profile", "source", "steps", "dest", "runtime"}
 _SOURCE_KEYS = {"type", "path", "args"}
 _DEST_KEYS = {"type", "path"}
 _RUNTIME_KEYS = {"workers", "threads_per_ffmpeg", "preset", "crf", "encoding"}
@@ -74,6 +75,11 @@ class PipelineConfig:
     dest: DestConfig
     steps: tuple[Any, ...]
     runtime: RuntimeConfig
+    # the registry entry this run builds, when the config names one. Carries the
+    # source layout, the state layout and the upstream identity.
+    dataset: Any = None
+    # the processing convention the run was resolved under, for reporting
+    profile: str | None = None
 
 
 def load_config(path: str | Path) -> PipelineConfig:
@@ -100,6 +106,12 @@ def parse_config(raw: Mapping[str, Any], base_dir: Path | None = None) -> Pipeli
     if not isinstance(name, str) or not name.strip():
         raise ConfigError("'name' must be a non-empty string")
 
+    profile_name = raw.get("profile")
+    profile = _load_profile(profile_name)
+    spec = _load_spec(raw.get("dataset"), profile)
+
+    raw = _apply_profile(raw, profile, spec)
+
     source = _parse_source(_require(raw, "source", "config"), base_dir)
     dest = _parse_dest(_require(raw, "dest", "config"), base_dir)
     steps = _parse_steps(raw.get("steps") or [])
@@ -112,8 +124,83 @@ def parse_config(raw: Mapping[str, Any], base_dir: Path | None = None) -> Pipeli
         )
 
     return PipelineConfig(
-        name=name, source=source, dest=dest, steps=steps, runtime=runtime
+        name=name,
+        source=source,
+        dest=dest,
+        steps=steps,
+        runtime=runtime,
+        dataset=spec,
+        profile=profile_name if isinstance(profile_name, str) else None,
     )
+
+
+def _load_profile(name: Any) -> dict[str, Any]:
+    if name is None:
+        return {}
+    from .profiles import ProfileError, load_profile
+
+    try:
+        return load_profile(name)
+    except ProfileError as exc:
+        raise ConfigError(f"profile: {exc}") from exc
+
+
+def _load_spec(name: Any, profile: Mapping[str, Any]) -> Any:
+    """The registry entry, built under whatever layouts the profile asks for."""
+    if name is None:
+        return None
+    if not isinstance(name, str):
+        raise ConfigError(f"'dataset' must be a dataset name, got {name!r}")
+
+    from dataset_registry import SpecError, load
+
+    layouts = (profile.get("state") or {}).get("layouts") or {}
+    try:
+        return load(name, layouts=layouts)
+    except SpecError as exc:
+        raise ConfigError(f"dataset: {exc}") from exc
+
+
+def _apply_profile(
+    raw: Mapping[str, Any], profile: Mapping[str, Any], spec: Any
+) -> dict[str, Any]:
+    """Fill in whatever the run config left to the convention.
+
+    Anything written in the run config wins: a profile is a default, so a one-off
+    run can differ from the collection without a second profile file. What a profile
+    supplies is the video step, the encoder settings, the output version, and -- when
+    a dataset is named -- the source type and the state_layout step.
+    """
+    filled = dict(raw)
+
+    if spec is not None:
+        source = dict(filled.get("source") or {})
+        source.setdefault("type", "spec" if spec.source else "lerobot_v21")
+        if source["type"] == "spec":
+            # the converter is dataset-agnostic; which dataset is a flag
+            source["args"] = {"dataset": spec.id, **(source.get("args") or {})}
+        filled["source"] = source
+
+    if "steps" not in filled:
+        steps: list[Any] = []
+        if spec is not None:
+            # the already-resolved spec, so the step sees the profile's layouts
+            steps.append({"type": "state_layout", "spec": spec})
+        resize = (profile.get("video") or {}).get("resize")
+        if resize:
+            steps.append(dict(resize))
+        if steps:
+            filled["steps"] = steps
+
+    version = (profile.get("dest") or {}).get("version")
+    if version and "type" not in (filled.get("dest") or {}):
+        filled["dest"] = {**(filled.get("dest") or {}), "type": version}
+
+    encoding = (profile.get("video") or {}).get("encoding")
+    if encoding and "encoding" not in (filled.get("runtime") or {}):
+        filled["runtime"] = {**(filled.get("runtime") or {}), "encoding": encoding}
+
+    return filled
 
 
 def _parse_source(raw: Any, base_dir: Path | None) -> SourceConfig:

@@ -94,3 +94,18 @@ def compose_video_plans(
     if not filters:
         return None
     return VideoPlan(tuple(filters), current)
+
+
+@runtime_checkable
+class TableStep(Protocol):
+    """A step that rewrites parquet columns and leaves the video alone.
+
+    Distinct from a frame step, which changes how many frames there are and so has
+    to re-cut the video too. A table step preserves the row count, which is what
+    lets the runner hard-link every mp4 straight through -- the reason this is the
+    kind that exists so far and the frame kind is still reserved.
+    """
+
+    kind: str
+
+    def apply(self, root, out) -> None: ...

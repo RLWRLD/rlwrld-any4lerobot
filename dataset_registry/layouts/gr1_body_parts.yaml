@@ -1,0 +1,21 @@
+# The humanoid skeleton the RLDX-1 collection uses most: eight body-part blocks,
+# left side before right, alphabetical within each side.
+#
+# Shared by action_net, agibot (dexhand and gripper), neural_robocurate,
+# march_robocurate and gen_all_lerobot_merged_clean. Recovered from delivered data
+# for the first two and declared outright by the others' meta/modality.json, which
+# is what makes it a convention rather than a coincidence -- see
+# docs/vla-pretrain-state-action-layout.md.
+#
+# Widths are per robot and live in each dataset spec. Only the order is here, so
+# switching the collection to a different ordering is an edit to one file.
+
+order:
+  - left_arm
+  - left_hand
+  - left_leg
+  - neck
+  - right_arm
+  - right_hand
+  - right_leg
+  - waist
