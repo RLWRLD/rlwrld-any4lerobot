@@ -204,8 +204,8 @@ def summarise(paths: list[Path]) -> tuple[str, int]:
 
     from dataset_registry import SpecError, load
 
-    lines = [f"{'dataset':<52} {'builder':<8} {'video':<27} ready"]
-    blocked = 0
+    lines = [f"{'dataset':<52} {'builder':<8} {'video':<27} {'raw source':<11} ready"]
+    blocked = unlocated = 0
     for path in paths:
         try:
             config = load_config(path)
@@ -219,7 +219,7 @@ def summarise(paths: list[Path]) -> tuple[str, int]:
             except SpecError:
                 builder, count = "-", 0
             reason = f"NO ({count})" if count else f"CONFIG ERROR: {str(exc).splitlines()[0]}"
-            lines.append(f"{path.stem:<52} {builder:<8} {'-':<27} {reason}")
+            lines.append(f"{path.stem:<52} {builder:<8} {'-':<27} {'-':<11} {reason}")
             blocked += 1
             continue
 
@@ -239,12 +239,23 @@ def summarise(paths: list[Path]) -> tuple[str, int]:
         else:
             video = "re-encoded (size unverified)"
 
+        # a correct config still needs somewhere to point source.path
+        located = "located" if (spec and (spec.huggingface or spec.foundry_uri)) \
+            else "NOT FOUND"
         verdict = "yes" if not problems else f"NO ({len(problems)})"
         blocked += bool(problems)
-        lines.append(f"{path.stem:<52} {builder:<8} {video:<27} {verdict}")
+        unlocated += located == "NOT FOUND" and not problems
+        lines.append(f"{path.stem:<52} {builder:<8} {video:<27} {located:<11} {verdict}")
 
+    ready = len(paths) - blocked
     lines.append("")
-    lines.append(f"{len(paths) - blocked}/{len(paths)} ready to rebuild")
+    lines.append(f"{ready}/{len(paths)} configs resolve with no missing source columns")
+    if unlocated:
+        lines.append(
+            f"but {unlocated} of those have no raw source recorded -- the config is "
+            "right and there is nowhere to point source.path yet"
+        )
+        lines.append(f"so {ready - unlocated}/{len(paths)} can actually be started today")
     return "\n".join(lines), blocked
 
 
