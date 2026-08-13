@@ -1,0 +1,32 @@
+# A large single instance with fast local storage.
+#
+# Sources are staged under /scratch/raw and output goes to /scratch/out. Everything
+# else -- how a dataset is read, how its state is laid out, how its video is
+# handled -- comes from the dataset spec and the profile, so this file does not
+# grow when a dataset is added.
+
+profile: rldx1
+
+raw_root: /scratch/raw
+out_root: /scratch/out
+# how far each dataset has got; survives a restart, so a run resumes
+state_root: /scratch/state
+
+batch:
+  # How many datasets a stage processes together. A single small dataset does not
+  # keep a large machine busy -- work is parallelised per file, so workers beyond
+  # the file count sit idle, and 14 of the 36 datasets have under a thousand
+  # episodes. Anything already carrying target_episodes runs on its own.
+  max_datasets: 3
+  target_episodes: 768
+
+builders:
+  # one temporary dataset per 100 episodes, distributed across cores by datatrove
+  spec: {executor: local, episodes_per_task: 100}
+  agibot: {executor: local, episodes_per_task: 100}
+
+runtime:
+  # left to the pipeline, which sizes them from the core count and the file count;
+  # set them here to pin a run instead
+  workers: null
+  threads_per_ffmpeg: null

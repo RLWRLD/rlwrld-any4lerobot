@@ -342,6 +342,16 @@ class DatasetSpec:
         return (self.raw.get("delivered") or {}).get("path")
 
     @property
+    def delivered_episodes(self) -> int:
+        """How many episodes the delivered copy holds.
+
+        Stands in for how much parallel work a rebuild carries, because the
+        transform parallelises per file and files are roughly episodes times
+        cameras. 0 when the delivered copy did not record it.
+        """
+        return (self.raw.get("delivered") or {}).get("episodes") or 0
+
+    @property
     def delivered_video(self) -> Mapping[str, Mapping[str, Any]]:
         """Per camera, what the delivered copy actually is: geometry and codec.
 

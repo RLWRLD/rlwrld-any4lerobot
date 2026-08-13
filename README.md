@@ -67,9 +67,14 @@ machine needs one installed — `apt-get install ffmpeg` on Ubuntu.
   - [ ] Dataset Sampling
   - [ ] Dataset Merging
 
-The end-to-end flow is **download → preprocess → upload**. Downloading needs no code
-in this repo — see [Downloading source data](#-downloading-source-data) for the
-settings that matter.
+The end-to-end flow is **download → preprocess → upload**, and
+[the orchestrator](./orchestrator/README.md) runs all three unattended. The transfers
+themselves need no code here — see [Downloading source data](#-downloading-source-data)
+for the settings that matter.
+
+- ​**​Orchestration​**​:
+
+  - [x] [Orchestrator](./orchestrator/README.md) — `fetch → build → publish` over the whole registry, resumable, with the source deleted only once it is built
 
 - ​**​Preprocessing​**​:
 
@@ -109,6 +114,9 @@ settings that matter.
 No code here for this — the AWS CLI is as fast as anything we could write, once it is
 configured. **The defaults are not**: `aws s3 cp` out of the box reached 1.4 Gbps on a
 100 Gbps instance, about 3% of the link.
+
+Configure the machine once as below; [the orchestrator](./orchestrator/README.md) then
+drives `aws s3 sync` for you, per dataset, in both directions.
 
 ```bash
 aws configure set default.s3.preferred_transfer_client crt

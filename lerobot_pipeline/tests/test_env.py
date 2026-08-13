@@ -114,3 +114,33 @@ class TestCoversTheCollection:
                     / f"{name}.yaml").read_text()
             named = [d for d in available() if d in body]
             assert not named, f"{name}.yaml mentions {named}"
+
+
+class TestOrchestration:
+    """What the orchestrator needs from a machine: where progress is recorded, and
+    how many datasets this machine can usefully process at once."""
+
+    def test_the_shipped_environments_declare_a_state_root(self):
+        assert load_env("ec2").state_root is not None
+
+    def test_a_state_root_is_a_path(self, env_file):
+        env = load_env(env_file("state_root: /scratch/state\n"))
+        assert env.state_root == Path("/scratch/state")
+
+    def test_batch_limits_default_when_unset(self, env_file):
+        env = load_env(env_file("raw_root: /raw\n"))
+        assert env.max_datasets >= 1
+        assert env.target_episodes >= 1
+
+    def test_batch_limits_come_from_the_environment(self, env_file):
+        env = load_env(env_file("batch: {max_datasets: 2, target_episodes: 500}\n"))
+        assert (env.max_datasets, env.target_episodes) == (2, 500)
+
+    def test_an_unknown_batch_key_is_rejected(self, env_file):
+        with pytest.raises(EnvError, match="nonsense"):
+            load_env(env_file("batch: {nonsense: 1}\n"))
+
+    def test_a_dataset_this_machine_stages_by_hand_is_marked_as_such(self, env_file):
+        env = load_env(env_file("raw_root: /raw\npaths: {action_net: /mnt/staged}\n"))
+        assert env.is_staged(load("action_net")) is True
+        assert env.is_staged(load("galaxea")) is False

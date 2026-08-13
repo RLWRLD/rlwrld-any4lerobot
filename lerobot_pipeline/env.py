@@ -28,8 +28,25 @@ from typing import Any
 
 ENV_DIR = Path(__file__).resolve().parent / "configs" / "env"
 
-_TOP_LEVEL = {"name", "profile", "raw_root", "out_root", "paths", "builders", "runtime"}
+_TOP_LEVEL = {
+    "name",
+    "profile",
+    "raw_root",
+    "out_root",
+    "state_root",
+    "paths",
+    "builders",
+    "batch",
+    "runtime",
+}
 _RUNTIME = {"workers", "threads_per_ffmpeg", "preset", "crf", "encoding"}
+_BATCH = {"max_datasets", "target_episodes"}
+
+# Deliberately modest: enough to keep a small dataset from leaving a machine idle,
+# not so much that a mistake in one dataset takes two others down with it. Both are
+# properties of the machine, so both are overridable per environment.
+_DEFAULT_MAX_DATASETS = 3
+_DEFAULT_TARGET_EPISODES = 768
 
 
 class EnvError(ValueError):
@@ -42,12 +59,31 @@ class Environment:
     profile: str | None = None
     raw_root: Path | None = None
     out_root: Path | None = None
+    # where the orchestrator records how far each dataset has got
+    state_root: Path | None = None
     # dataset id -> an explicit raw path, for sources this machine keeps somewhere
     # that does not follow raw_root/<dir>
     paths: Mapping[str, str] = field(default_factory=dict)
     # builder name -> flags this machine wants for it
     builders: Mapping[str, Mapping[str, Any]] = field(default_factory=dict)
+    batch: Mapping[str, Any] = field(default_factory=dict)
     runtime: Mapping[str, Any] = field(default_factory=dict)
+
+    @property
+    def max_datasets(self) -> int:
+        return int(self.batch.get("max_datasets") or _DEFAULT_MAX_DATASETS)
+
+    @property
+    def target_episodes(self) -> int:
+        return int(self.batch.get("target_episodes") or _DEFAULT_TARGET_EPISODES)
+
+    def is_staged(self, spec) -> bool:
+        """Whether this machine keeps ``spec``'s source somewhere it was put by hand.
+
+        Such a source was not downloaded by the pipeline, so the pipeline must not
+        delete it -- and, before that, must not try to fetch over it.
+        """
+        return spec.id in self.paths
 
     def raw_path(self, spec) -> Path:
         """Where this machine keeps ``spec``'s raw source.
@@ -117,13 +153,25 @@ def load_env(source: str | Path) -> Environment:
     ):
         raise EnvError(f"{path}.builders must map builder name -> flags")
 
+    batch = raw.get("batch") or {}
+    if not isinstance(batch, Mapping):
+        raise EnvError(f"{path}.batch must be a mapping")
+    unknown = sorted(set(batch) - _BATCH)
+    if unknown:
+        raise EnvError(f"{path}.batch: unknown key(s) {', '.join(unknown)}")
+
+    def directory(key: str) -> Path | None:
+        return Path(raw[key]).expanduser() if raw.get(key) else None
+
     return Environment(
         name=raw.get("name") or path.stem,
         profile=raw.get("profile"),
-        raw_root=Path(raw["raw_root"]).expanduser() if raw.get("raw_root") else None,
-        out_root=Path(raw["out_root"]).expanduser() if raw.get("out_root") else None,
+        raw_root=directory("raw_root"),
+        out_root=directory("out_root"),
+        state_root=directory("state_root"),
         paths=dict(raw.get("paths") or {}),
         builders={name: dict(flags) for name, flags in builders.items()},
+        batch=dict(batch),
         runtime=dict(runtime),
     )
 
