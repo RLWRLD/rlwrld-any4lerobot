@@ -36,6 +36,10 @@ lerobot:
     cameras:
       egocentric: {}
       egocentric_resized: {}
+    # H.264 High with a 250-frame GOP is the rldx1_reference profile, which
+    # only our encoder produces -- so the delivered copy was re-encoded, and
+    # reproducing it means running the profile's resize step
+    resize: resize_preserve_aspect_area
     encoding: rldx1_reference
     # one camera is over the area bound: the untouched original is kept
     # beside the resized copy

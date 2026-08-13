@@ -45,6 +45,10 @@ lerobot:
       image_2: {}
       image_0: {}
       image_3: {}
+    # H.264 High with a 250-frame GOP is the rldx1_reference profile, which
+    # only our encoder produces -- so the delivered copy was re-encoded, and
+    # reproducing it means running the profile's resize step
+    resize: resize_preserve_aspect_area
     encoding: rldx1_reference
     keeps_original: false
 

@@ -41,6 +41,11 @@ lerobot:
     cameras:
       wrist_image: {}
       image: {}
+    # AV1 with a two-frame GOP is LeRobot's own writer default, which
+    # survives only if nothing re-encoded the file. So this dataset was
+    # never resized, and running a video step over it would produce
+    # something the delivered copy is not.
+    resize: null
     encoding: lerobot_av1_default
     keeps_original: false
 

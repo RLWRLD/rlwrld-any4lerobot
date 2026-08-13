@@ -24,6 +24,10 @@ source:
   # agibot2lerobot reads the raw AgiBot hdf5 tree and
   # writes observation.state itself.
   builder: agibot
+  # agibot2lerobot converts one end-effector type per run and selects the task ids
+  # for it; without this the two subsets would come out identical
+  args:
+    eef_type: dexhand
 
 lerobot:
   robot_type: Agibot

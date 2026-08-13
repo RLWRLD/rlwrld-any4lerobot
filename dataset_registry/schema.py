@@ -75,7 +75,7 @@ _SOURCE = {"feature", "columns"}
 # How the raw upstream files are arranged, and how to line their clocks up. Read by
 # spec2lerobot; the format and clock names are the closed sets it implements.
 _SOURCE_SPEC = {
-    "builder", "format", "discover", "paths", "tasks", "clock", "features",
+    "builder", "args", "format", "discover", "paths", "tasks", "clock", "features",
     "feature_widths", "layout", "note",
 }
 
@@ -232,6 +232,9 @@ class SourceSpec:
     """
 
     builder: str = "spec"
+    # flags the builder needs that only the dataset knows, e.g. which end-effector
+    # subset of AgiBot World this is. Merged into the run config's source.args.
+    args: Mapping[str, Any] = field(default_factory=dict)
     format: str | None = None
     discover: str | None = None
     paths: Mapping[str, str] = field(default_factory=dict)
@@ -370,6 +373,19 @@ class DatasetSpec:
         return ((self.raw.get("lerobot") or {}).get("video") or {}) or {}
 
     @property
+    def is_resized(self) -> bool:
+        """Whether the delivered copy was resized, and so whether a rebuild should be.
+
+        A fact about the dataset rather than a choice: it was read back from the
+        delivered encoding, where AV1 with a two-frame GOP means LeRobot's own writer
+        output survived untouched. Running a resize over a dataset that never had one
+        re-encodes video that was meant to pass straight through, and what comes out
+        is not the dataset being reproduced. The profile decides *how* to resize;
+        this decides *whether*.
+        """
+        return bool(self._video.get("resize"))
+
+    @property
     def fps(self) -> int | None:
         return (self.raw.get("lerobot") or {}).get("fps")
 
@@ -483,10 +499,14 @@ def _parse_source(raw: Any, origin: str) -> SourceSpec:
             f"{origin}.builder must be one of {', '.join(sorted(BUILDERS))}, "
             f"got {builder!r}"
         )
+    builder_args = raw.get("args") or {}
+    if not isinstance(builder_args, Mapping):
+        raise SpecError(f"{origin}.args must be a mapping of flag -> value")
+
     if builder != "spec":
         # only the spec-driven path reads the file description; the others carry
         # their own, so demanding one here would be asking for fiction
-        return SourceSpec(builder=builder)
+        return SourceSpec(builder=builder, args=dict(builder_args))
 
     paths = raw.get("paths") or {}
     _reject(paths, _SOURCE_PATHS, f"{origin}.paths")
@@ -523,6 +543,7 @@ def _parse_source(raw: Any, origin: str) -> SourceSpec:
 
     return SourceSpec(
         builder=builder,
+        args=dict(builder_args),
         format=text(raw, "format", origin),
         discover=text(raw, "discover", origin),
         paths=dict(paths),
