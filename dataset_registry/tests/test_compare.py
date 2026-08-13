@@ -37,9 +37,11 @@ def write_dataset(root: Path, rows=ROWS, episodes=2, nudge=None, prompts=None):
 
     lines = []
     for index in range(episodes):
+        # draw a fixed size and slice, so that a shorter episode really is a prefix
+        # of the longer one rather than a different draw
         rng = np.random.default_rng(index)
-        state = rng.random((rows, WIDTH)).astype(np.float32)
-        action = rng.random((rows, WIDTH)).astype(np.float32)
+        state = rng.random((ROWS, WIDTH)).astype(np.float32)[:rows]
+        action = rng.random((ROWS, WIDTH)).astype(np.float32)[:rows]
         if nudge is not None and index == 0:
             state[0, nudge] = np.float32(state[0, nudge] + 1.0)
         pd.DataFrame(
@@ -73,11 +75,29 @@ class TestVectors:
         assert not reports[0].ok and reports[1].ok
         assert "17" in reports[0].columns["observation.state"]
 
-    def test_a_different_row_count_is_reported_as_clock_alignment(self, spec, tmp_path):
+    def test_a_trimmed_tail_is_tolerated_and_the_prefix_still_checked(self, spec, tmp_path):
+        """One row short with every shared row identical is a boundary effect, not a
+        different frame selection -- exactly the case the delivered copy is expected
+        to land in, since the script that produced it no longer exists."""
         a = write_dataset(tmp_path / "a", rows=ROWS - 1)
         b = write_dataset(tmp_path / "b")
+        report0 = run(spec, a, b, episodes=1, check_video=False)[0]
+        assert report0.ok
+        assert report0.compared_rows == ROWS - 1
+        assert report0.first_divergence is None
+
+    def test_a_large_row_difference_is_a_wrong_strategy(self, spec, tmp_path):
+        a = write_dataset(tmp_path / "a", rows=ROWS - 9)
+        b = write_dataset(tmp_path / "b")
         problems = run(spec, a, b, episodes=1, check_video=False)[0].problems
-        assert any("clock alignment" in p for p in problems)
+        assert any("clock strategy" in p for p in problems)
+
+    def test_divergence_row_separates_a_trim_from_a_reshuffle(self, spec, tmp_path):
+        """Where the values first disagree is the diagnosis: a trimmed tail leaves
+        the shared rows perfect, a wrong strategy diverges partway through."""
+        a = write_dataset(tmp_path / "a", nudge=17)
+        b = write_dataset(tmp_path / "b")
+        assert run(spec, a, b, episodes=1, check_video=False)[0].first_divergence == 0
 
 
 class TestAlignment:

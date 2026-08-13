@@ -4,10 +4,17 @@
 
 The two are held to different standards, because they can be:
 
-* **state and action must be identical.** Every slot is a float32 copied out of the
-  source, so a rebuild that reads the same bytes and lines the clocks up the same
-  way produces the same numbers exactly. A difference here is a real difference in
-  what the dataset says, and the tool reports it as a failure, not a tolerance.
+* **state and action must be identical, row for row.** Every slot is a float32
+  copied out of the source, so a rebuild that reads the same bytes and lines the
+  clocks up the same way produces the same numbers exactly. A difference in the
+  values is a real difference, reported as a failure rather than a tolerance.
+* **the row count may differ slightly.** Which rows survive is decided by the clock
+  strategy, and the delivered copy was produced by a script that no longer exists,
+  so an episode landing a frame or two short is expected. Up to ``--row-tolerance``
+  rows of difference is accepted, and the overlapping prefix is still compared in
+  full -- which is the interesting part: if every shared row matches, the difference
+  is a trimmed tail, and if they diverge partway the two are keeping *different*
+  frames and the strategy is wrong.
 * **video must match in geometry, frame count and codec settings; its bytes will
   not match.** Two ffmpeg builds with the same flags do not emit the same file, so
   the size is reported as a ratio and judged loosely. If the geometry or the frame
@@ -35,6 +42,11 @@ from .schema import DatasetSpec, available, load
 # again" against "we encoded something else"
 SIZE_TOLERANCE = 0.15
 
+# Rows the clock strategy may differ by before it counts as a wrong strategy rather
+# than a boundary effect. The two upstream filters trim the tail of an episode, and
+# exactly where they land depends on floating-point comparisons of timestamps.
+ROW_TOLERANCE = 2
+
 
 class CompareError(RuntimeError):
     pass
@@ -45,6 +57,9 @@ class EpisodeReport:
     index: int
     rows_rebuilt: int | None = None
     rows_delivered: int | None = None
+    # rows compared when the two lengths differ, and where they first diverge
+    compared_rows: int | None = None
+    first_divergence: int | None = None
     prompt_matches: bool | None = None
     columns: dict[str, str] = field(default_factory=dict)
     video: dict[str, str] = field(default_factory=dict)
@@ -101,36 +116,54 @@ def probe(path: Path) -> dict[str, Any]:
     return stream
 
 
-def compare_vectors(rebuilt, delivered, keys: list[str]) -> tuple[dict, list[str]]:
-    """State and action, slot by slot. Exact -- no tolerance."""
+def compare_vectors(
+    rebuilt, delivered, keys: list[str], rows: int
+) -> tuple[dict, list[str], int | None]:
+    """State and action over the first ``rows`` rows, slot by slot. Exact.
+
+    Returns the first row index at which any vector diverges, which separates the
+    two ways a rebuild can be wrong: a trimmed tail leaves the shared rows perfect,
+    while a wrong clock strategy diverges partway through.
+    """
     import numpy as np
 
     summary: dict[str, str] = {}
     problems: list[str] = []
+    first_divergence: int | None = None
+
     for key in keys:
         if key not in rebuilt.columns or key not in delivered.columns:
             missing = "rebuilt" if key not in rebuilt.columns else "delivered"
             problems.append(f"{key} missing from the {missing} dataset")
             continue
-        a = np.stack([np.atleast_1d(v) for v in rebuilt[key].to_numpy()])
-        b = np.stack([np.atleast_1d(v) for v in delivered[key].to_numpy()])
-        if a.shape != b.shape:
-            problems.append(f"{key}: shape {a.shape} vs delivered {b.shape}")
-            summary[key] = f"shape {a.shape} != {b.shape}"
+        a = np.stack([np.atleast_1d(v) for v in rebuilt[key].to_numpy()])[:rows]
+        b = np.stack([np.atleast_1d(v) for v in delivered[key].to_numpy()])[:rows]
+        if a.shape[1] != b.shape[1]:
+            problems.append(f"{key}: {a.shape[1]} wide against delivered {b.shape[1]}")
+            summary[key] = f"width {a.shape[1]} != {b.shape[1]}"
             continue
         if np.array_equal(a, b):
             summary[key] = f"identical {a.shape}"
             continue
-        differing = sorted(set(np.nonzero(~np.isclose(a, b, rtol=0, atol=0))[1].tolist()))
+
+        unequal = a != b
+        differing = sorted(set(np.nonzero(unequal)[1].tolist()))
+        row = int(np.nonzero(unequal.any(axis=1))[0][0])
+        first_divergence = row if first_divergence is None else min(first_divergence, row)
         worst = float(np.max(np.abs(a - b)))
-        summary[key] = f"DIFFERS in slots {differing[:12]} (max |delta| {worst:.3e})"
-        problems.append(f"{key}: {len(differing)} slot(s) differ, max |delta| {worst:.3e}")
-    return summary, problems
+        summary[key] = (f"DIFFERS from row {row} in slots {differing[:12]} "
+                        f"(max |delta| {worst:.3e})")
+        problems.append(
+            f"{key}: {len(differing)} slot(s) differ from row {row}, "
+            f"max |delta| {worst:.3e}"
+        )
+    return summary, problems, first_divergence
 
 
 def compare_episode(
     spec: DatasetSpec, rebuilt: Path, delivered: Path, index: int,
     rebuilt_prompts: dict, delivered_prompts: dict, check_video: bool,
+    row_tolerance: int = ROW_TOLERANCE,
 ) -> EpisodeReport:
     import pandas as pd
 
@@ -156,16 +189,20 @@ def compare_episode(
             )
             return report
 
-    if len(a) != len(b):
+    delta = len(a) - len(b)
+    if abs(delta) > row_tolerance:
         report.problems.append(
-            f"{len(a)} rows against {len(b)} delivered -- the clock alignment kept a "
-            "different number of frames"
+            f"{len(a)} rows against {len(b)} delivered ({delta:+d}) -- beyond the "
+            f"{row_tolerance}-row tolerance, so the clock strategy is keeping "
+            "different frames rather than trimming differently"
         )
         return report
 
+    rows = min(len(a), len(b))
+    report.compared_rows = rows
     keys = [k for k in ("observation.state", "action") if spec.vector(
         "state" if k == "observation.state" else "action") is not None]
-    report.columns, problems = compare_vectors(a, b, keys)
+    report.columns, problems, report.first_divergence = compare_vectors(a, b, keys, rows)
     report.problems += problems
 
     if check_video:
@@ -212,13 +249,13 @@ def compare_video(rebuilt: Path, delivered: Path, index: int) -> tuple[dict, lis
 
 def run(
     spec: DatasetSpec, rebuilt: Path, delivered: Path,
-    episodes: int, check_video: bool,
+    episodes: int, check_video: bool, row_tolerance: int = ROW_TOLERANCE,
 ) -> list[EpisodeReport]:
     rebuilt_prompts = episode_prompts(rebuilt)
     delivered_prompts = episode_prompts(delivered)
     return [
         compare_episode(spec, rebuilt, delivered, index,
-                        rebuilt_prompts, delivered_prompts, check_video)
+                        rebuilt_prompts, delivered_prompts, check_video, row_tolerance)
         for index in range(episodes)
     ]
 
@@ -227,8 +264,11 @@ def report(reports: list[EpisodeReport]) -> str:
     lines = []
     for r in reports:
         mark = "ok  " if r.ok else "FAIL"
-        rows = (f"{r.rows_rebuilt} rows" if r.rows_rebuilt == r.rows_delivered
-                else f"{r.rows_rebuilt} vs {r.rows_delivered} rows")
+        if r.rows_rebuilt == r.rows_delivered:
+            rows = f"{r.rows_rebuilt} rows"
+        else:
+            delta = (r.rows_rebuilt or 0) - (r.rows_delivered or 0)
+            rows = f"{r.rows_rebuilt} vs {r.rows_delivered} rows ({delta:+d})"
         lines.append(f"[{mark}] episode {r.index:>5}  {rows}")
         for key, value in r.columns.items():
             lines.append(f"         {key:<20} {value}")
@@ -238,10 +278,18 @@ def report(reports: list[EpisodeReport]) -> str:
             lines.append(f"         ! {problem}")
 
     failed = [r for r in reports if not r.ok]
+    short = [r for r in reports if r.rows_rebuilt != r.rows_delivered and r.ok]
     lines.append("")
     lines.append(f"{len(reports) - len(failed)}/{len(reports)} episodes reproduce "
                  "the delivered copy" + ("" if not failed else
                  f"; {len(failed)} differ"))
+    if short:
+        # the distinction that matters: same frames, trimmed differently, versus
+        # different frames kept
+        lines.append(
+            f"{len(short)} of those have a different row count but identical values "
+            "in every shared row -- a trimmed tail, not a different frame selection"
+        )
     return "\n".join(lines)
 
 
@@ -254,6 +302,9 @@ def main(argv=None) -> int:
     parser.add_argument("--episodes", type=int, default=8)
     parser.add_argument("--no-video", action="store_true",
                         help="compare only the vectors; skips ffprobe")
+    parser.add_argument("--row-tolerance", type=int, default=ROW_TOLERANCE,
+                        help="rows an episode may differ by before it counts as a "
+                             "wrong clock strategy rather than a trimmed tail")
     args = parser.parse_args(argv)
 
     spec = load(args.dataset)
@@ -266,7 +317,8 @@ def main(argv=None) -> int:
         print(f"delivered dataset not found: {delivered}", file=sys.stderr)
         return 2
 
-    reports = run(spec, args.rebuilt, delivered, args.episodes, not args.no_video)
+    reports = run(spec, args.rebuilt, delivered, args.episodes, not args.no_video,
+                  args.row_tolerance)
     print(report(reports))
     return 1 if any(not r.ok for r in reports) else 0
 
