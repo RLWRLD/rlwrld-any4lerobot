@@ -1,0 +1,61 @@
+id: dobbe
+name: "DobbE"
+
+# Not yet traced to an upstream release. Recorded from the delivered copy only,
+# which is why every block below is `declared` and the dataset is not buildable.
+upstream:
+  commercial_use: null
+
+delivered:
+  path: /data/taeyoung/data/vla_pretrain_dataset/openx_lerobot/dobbe
+  origin: /storage1/sjw_dataset/dataset
+  codebase_version: v2.1
+  episodes: 5208
+  frames: 1139911
+  # what the delivered copy actually is, per camera -- the target a
+  # rebuild is checked against
+  video:
+    wrist_image: {shape: [256, 256, 3], codec: av1, profile: main, gop: 2, bframes: 0}
+  converted_by: alin_lab
+
+lerobot:
+  robot_type: hello_stretch
+  fps: 3
+  embodiment_tag: dobbe
+
+  video:
+    # source-side geometry is unknown: this dataset has not been traced to an
+    # upstream release, so only its delivered form is recorded (see delivered.video)
+    cameras:
+      wrist_image: {}
+    encoding: lerobot_av1_default
+    keeps_original: false
+
+  # how the training stack slices the flat vectors, from the delivered
+  # meta/modality.json
+  modality:
+    state: {"end_effector_position": {"start": 0, "end": 3}, "end_effector_rotation": {"start": 3, "end": 6}, "gripper_position": {"start": 7, "end": 8}}
+    action: {"end_effector_position": {"start": 0, "end": 3, "absolute": false}, "end_effector_rotation": {"start": 3, "end": 6, "absolute": false}, "gripper_close": {"start": 6, "end": 7, "dtype": "int64", "range": [0, 1]}}
+
+  state:
+    width: 8
+    layout: oxe_eef_position_eef_rotation_unused_1_gripper
+    source_features: {}
+    blocks:
+      end_effector_position: {width: 3, evidence: declared}
+      end_effector_rotation: {width: 3, evidence: declared}
+      unused_1: {width: 1, evidence: declared}  # padding in the 8-wide OXE vector
+      gripper_position: {width: 1, evidence: declared}
+
+  action:
+    # 7 wide against a 8-wide state; composition not recovered
+    width: 7
+    layout: unrecovered
+    source_features: {}
+    blocks:
+      unrecovered: {width: 7, evidence: unknown}
+
+notes: >-
+  Read from the delivered copy at openx_lerobot/dobbe. Block boundaries are declared by its
+  own meta/modality.json; no sub-feature vectors are carried, so nothing was
+  measured and the columns cannot be traced without the upstream source.

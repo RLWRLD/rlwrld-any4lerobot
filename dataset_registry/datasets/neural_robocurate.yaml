@@ -12,6 +12,10 @@ delivered:
   codebase_version: v2.1
   episodes: 85174
   frames: 7921182
+  # what the delivered copy actually is, per camera -- the target a
+  # rebuild is checked against
+  video:
+    ego_view: {shape: [192, 320, 3], codec: h264, profile: high, gop: 250, bframes: 2}
   converted_by: alin_lab
 
 lerobot:
@@ -21,7 +25,7 @@ lerobot:
 
   video:
     cameras:
-      ego_view: ego_view
+      ego_view: {source: ego_view}
     resize: resize_preserve_aspect_area
     encoding: rldx1_reference
     keeps_original: false

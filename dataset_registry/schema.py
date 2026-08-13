@@ -59,9 +59,15 @@ _TOP_LEVEL = {
 _UPSTREAM = {"huggingface", "revision", "homepage", "license", "commercial_use"}
 _MIRROR = {"kind", "uri", "layout", "objects", "bytes"}
 MIRROR_KINDS = {"foundry", "naver", "other"}
-_DELIVERED = {"path", "origin", "codebase_version", "episodes", "frames", "converted_by"}
-_LEROBOT = {"robot_type", "fps", "embodiment_tag", "video", "state", "action", "features"}
-_VIDEO = {"cameras", "shape", "resize", "encoding", "keeps_original"}
+_DELIVERED = {
+    "path", "origin", "codebase_version", "episodes", "frames", "converted_by", "video",
+}
+_LEROBOT = {
+    "robot_type", "fps", "embodiment_tag", "video", "state", "action", "features",
+    "modality",
+}
+_VIDEO = {"cameras", "resize", "encoding", "keeps_original"}
+_CAMERA = {"source", "shape"}
 _STATE = {"width", "layout", "source_features", "blocks"}
 _BLOCK = {"width", "pad", "source", "evidence", "note"}
 _SOURCE = {"feature", "columns"}
@@ -305,22 +311,40 @@ class DatasetSpec:
         return (self.raw.get("delivered") or {}).get("path")
 
     @property
+    def delivered_video(self) -> Mapping[str, Mapping[str, Any]]:
+        """Per camera, what the delivered copy actually is: geometry and codec.
+
+        Kept apart from ``lerobot.video.cameras``, which describes the *source*.
+        A rebuild is checked by comparing the two, so conflating them would make the
+        check compare a value with itself.
+        """
+        return (self.raw.get("delivered") or {}).get("video") or {}
+
+    @property
     def embodiment_tag(self) -> str | None:
         return (self.raw.get("lerobot") or {}).get("embodiment_tag")
 
     @property
-    def cameras(self) -> Mapping[str, Any]:
+    def cameras(self) -> Mapping[str, Mapping[str, Any]]:
+        """LeRobot camera key -> ``{"source": <dir in the raw source>, "shape": [h, w, c]}``.
+
+        Cameras differ in size within one dataset -- humanoid_everyday carries a
+        640x480 original beside a 256x192 resize -- so the shape belongs to the
+        camera, not to the dataset.
+        """
         return self._video.get("cameras") or {}
+
+    def camera_source(self, key: str) -> str:
+        """The directory this camera has in the raw source; defaults to its own name."""
+        return (self.cameras.get(key) or {}).get("source") or key
+
+    def camera_shape(self, key: str) -> tuple[int, int, int] | None:
+        shape = (self.cameras.get(key) or {}).get("shape")
+        return tuple(shape) if shape else None
 
     @property
     def _video(self) -> Mapping[str, Any]:
         return ((self.raw.get("lerobot") or {}).get("video") or {}) or {}
-
-    @property
-    def video_shape(self) -> tuple[int, int, int] | None:
-        """``(height, width, channels)`` of the source video, before any resize."""
-        shape = self._video.get("shape")
-        return tuple(shape) if shape else None
 
     @property
     def fps(self) -> int | None:
@@ -329,6 +353,19 @@ class DatasetSpec:
     @property
     def robot_type(self) -> str | None:
         return (self.raw.get("lerobot") or {}).get("robot_type")
+
+    @property
+    def modality(self) -> Mapping[str, Any] | None:
+        """How the training stack slices the flat vectors, if the delivered dataset
+        declares it.
+
+        Distinct from ``state.blocks``, which records where each slot's *value* comes
+        from. The two disagree often: action_net's provenance is eight body-part
+        blocks but its modality.json is one flat 0..44 block, because the training
+        config asks it for ``modality_keys=["state"]``. Provenance is how to build
+        the vector; modality is how the model reads it.
+        """
+        return (self.raw.get("lerobot") or {}).get("modality")
 
 
 def available() -> list[str]:
@@ -374,7 +411,16 @@ def parse(
 
     lerobot = raw.get("lerobot") or {}
     _reject(lerobot, _LEROBOT, f"{origin}.lerobot")
-    _reject(lerobot.get("video") or {}, _VIDEO, f"{origin}.lerobot.video")
+    video = lerobot.get("video") or {}
+    _reject(video, _VIDEO, f"{origin}.lerobot.video")
+    for key, camera in (video.get("cameras") or {}).items():
+        where = f"{origin}.lerobot.video.cameras.{key}"
+        _reject(camera, _CAMERA, where)
+        shape = camera.get("shape")
+        if shape is not None and (
+            not isinstance(shape, Sequence) or isinstance(shape, str) or len(shape) != 3
+        ):
+            raise SpecError(f"{where}.shape must be [height, width, channels]")
 
     state_raw = lerobot.get("state")
     action_raw = lerobot.get("action")

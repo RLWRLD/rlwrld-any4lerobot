@@ -185,10 +185,16 @@ def write_modality(spec, root: str | Path) -> Path:
     flat block even though the columns are in body-part order, because the training
     config asks for ``modality_keys=["state"]``; that is reproduced here.
     """
+    declared = spec.modality or {}
     modality: dict[str, Any] = {}
     for side, key in (("state", STATE_KEY), ("action", ACTION_KEY)):
         vector = spec.vector(side)
         if vector is None:
+            continue
+        if side in declared:
+            # the delivered dataset states how it is sliced; that is not derivable
+            # from provenance, which is a different question
+            modality[side] = declared[side]
             continue
         block: dict[str, Any] = {"start": 0, "end": vector.width}
         if side == "action":

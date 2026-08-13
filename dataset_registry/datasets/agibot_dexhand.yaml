@@ -14,6 +14,10 @@ delivered:
   codebase_version: v2.1
   episodes: 36425
   frames: 8011584
+  # what the delivered copy actually is, per camera -- the target a
+  # rebuild is checked against
+  video:
+    primary: {shape: [192, 256, 3], codec: h264, profile: high, gop: 250, bframes: 2}
   converted_by: alin_lab
 
 lerobot:
@@ -23,7 +27,7 @@ lerobot:
 
   video:
     cameras:
-      primary: head
+      primary: {source: head}
     resize: resize_preserve_aspect_area
     encoding: rldx1_reference
     keeps_original: false

@@ -21,6 +21,11 @@ delivered:
   codebase_version: "2.1"
   episodes: 4064
   frames: 1779287
+  # what the delivered copy actually is, per camera -- the target a
+  # rebuild is checked against
+  video:
+    egocentric: {shape: [480, 640, 3], codec: h264, profile: high, gop: 250, bframes: 2}
+    egocentric_resized: {shape: [192, 256, 3], codec: h264, profile: high, gop: 250, bframes: 2}
   converted_by: alin_lab
 
 lerobot:
@@ -30,8 +35,8 @@ lerobot:
 
   video:
     cameras:
-      egocentric: egocentric
-      egocentric_resized: egocentric
+      egocentric: {source: egocentric}
+      egocentric_resized: {source: egocentric}
     resize: resize_preserve_aspect_area
     encoding: rldx1_reference
     # the only dataset in the collection that keeps the untouched original

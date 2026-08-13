@@ -42,11 +42,11 @@ class Hdf5EpisodeReader:
         # lerobot video key -> source-side directory, e.g. observation.images.primary
         # -> "top". One camera carries the clock; the rest follow it.
         self.cameras = {
-            f"observation.images.{key}": value for key, value in spec.cameras.items()
+            f"observation.images.{key}": spec.camera_source(key) for key in spec.cameras
         }
         if not self.cameras:
             raise FormatError(f"{spec.id}: lerobot.video.cameras is empty")
-        self.primary_camera = next(iter(spec.cameras.values()))
+        self.primary_camera = next(iter(self.cameras.values()))
 
     # -- discovery ------------------------------------------------------------
 

@@ -14,6 +14,12 @@ delivered:
   codebase_version: v2.1
   episodes: 59137
   frames: 16028434
+  # what the delivered copy actually is, per camera -- the target a
+  # rebuild is checked against
+  video:
+    primary: {shape: [192, 256, 3], codec: h264, profile: high, gop: 250, bframes: 2}
+    wrist_left: {shape: [192, 256, 3], codec: h264, profile: high, gop: 250, bframes: 2}
+    wrist_right: {shape: [192, 256, 3], codec: h264, profile: high, gop: 250, bframes: 2}
   converted_by: alin_lab
 
 lerobot:
@@ -23,9 +29,9 @@ lerobot:
 
   video:
     cameras:
-      primary: head
-      wrist_left: hand_left
-      wrist_right: hand_right
+      primary: {source: head}
+      wrist_left: {source: hand_left}
+      wrist_right: {source: hand_right}
     resize: resize_preserve_aspect_area
     encoding: rldx1_reference
     keeps_original: false

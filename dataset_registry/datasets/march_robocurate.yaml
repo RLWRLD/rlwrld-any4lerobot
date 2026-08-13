@@ -1,0 +1,60 @@
+id: march_robocurate
+name: "March RoboCurate (GR1 neural trajectory)"
+
+# Not yet traced to an upstream release. Recorded from the delivered copy only,
+# which is why every block below is `declared` and the dataset is not buildable.
+upstream:
+  commercial_use: null
+
+delivered:
+  path: /data/taeyoung/data/vla_pretrain_dataset/robocurate/march_robocurate_v1
+  origin: /storage1/sjw_dataset/dataset
+  episodes: 85174
+  frames: 7921182
+  # what the delivered copy actually is, per camera -- the target a
+  # rebuild is checked against
+  video:
+    ego_view: {shape: [192, 320, 3], codec: h264, profile: high, gop: 250, bframes: 2}
+  converted_by: alin_lab
+
+lerobot:
+  robot_type: dream
+  fps: 16
+  embodiment_tag: march_robocurate
+
+  video:
+    # source-side geometry is unknown: this dataset has not been traced to an
+    # upstream release, so only its delivered form is recorded (see delivered.video)
+    cameras:
+      ego_view: {}
+    encoding: rldx1_reference
+    keeps_original: false
+
+  features:
+    - annotation.human.coarse_action
+
+  # how the training stack slices the flat vectors, from the delivered
+  # meta/modality.json
+  modality:
+    state: {"left_arm": {"start": 0, "end": 7}, "left_hand": {"start": 7, "end": 13}, "left_leg": {"start": 13, "end": 19}, "neck": {"start": 19, "end": 22}, "right_arm": {"start": 22, "end": 29}, "right_hand": {"start": 29, "end": 35}, "right_leg": {"start": 35, "end": 41}, "waist": {"start": 41, "end": 44}}
+    action: {"left_arm": {"start": 0, "end": 7}, "left_hand": {"start": 7, "end": 13}, "left_leg": {"start": 13, "end": 19}, "neck": {"start": 19, "end": 22}, "right_arm": {"start": 22, "end": 29}, "right_hand": {"start": 29, "end": 35}, "right_leg": {"start": 35, "end": 41}, "waist": {"start": 41, "end": 44}}
+
+  state:
+    width: 44
+    layout: gr1_body_parts
+    source_features: {}
+    blocks:
+      left_arm: {width: 7, evidence: declared}
+      left_hand: {width: 6, evidence: declared}
+      left_leg: {width: 6, evidence: declared}
+      neck: {width: 3, evidence: declared}
+      right_arm: {width: 7, evidence: declared}
+      right_hand: {width: 6, evidence: declared}
+      right_leg: {width: 6, evidence: declared}
+      waist: {width: 3, evidence: declared}
+
+notes: >-
+  Read from the delivered copy at robocurate/march_robocurate_v1. Block boundaries are declared by its
+  own meta/modality.json; no sub-feature vectors are carried, so nothing was
+  measured and the columns cannot be traced without the upstream source.
+  Split across 4 parts on disk: march_robocurate_v1, march_robocurate_v2, march_robocurate_v3, march_robocurate_v4.

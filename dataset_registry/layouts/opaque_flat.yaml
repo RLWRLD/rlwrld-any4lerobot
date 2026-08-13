@@ -1,0 +1,6 @@
+# A single unnamed block covering the whole vector. Several delivered
+# datasets slice their state this way -- the provenance is richer, but the
+# training stack is handed one flat block.
+
+order:
+  - state
