@@ -1,10 +1,23 @@
 id: berkeley_autolab_ur5
 name: "Berkeley AUTOLab UR5"
 
-# Not yet traced to an upstream release. Recorded from the delivered copy only,
-# which is why every block below is `declared` and the dataset is not buildable.
+# Not traced to an upstream release, so every block below is `declared` -- read
+# back from the delivered copy rather than measured against a source vector.
+# The dataset is still rebuildable: openx2lerobot writes observation.state
+# itself from OXE_DATASET_CONFIGS, so there is no layout here for a source
+# column to satisfy.
 upstream:
   commercial_use: null
+
+mirrors:
+  - kind: foundry
+    uri: s3://rlwrld-foundry-data/external/berkeley_autolab_ur5/
+    # stops above 0.1.0/ on purpose: `aws s3 sync <prefix>/ <dir>` copies
+    # what is under the prefix, and tfds needs that version directory to
+    # still be there as <data_dir>/berkeley_autolab_ur5/0.1.0/
+    layout: rlds
+    objects: 464
+    bytes: 82022972521
 
 delivered:
   path: /data/taeyoung/data/vla_pretrain_dataset/openx_lerobot/berkeley_autolab_ur5
