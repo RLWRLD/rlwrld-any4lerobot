@@ -51,6 +51,11 @@ SOURCE_LAYOUTS = {
     "tar_gz_per_task",  # one *.tar.gz per task, LeRobot inside
     "hf_repo",  # an unpacked HuggingFace dataset repo
     "lerobot",  # a plain LeRobot dataset tree
+    # a TFDS builder directory: dataset_info.json, features.json and
+    # *.tfrecord-XXXXX-of-XXXXX, under <name>/<version>/. openx_rlds.py reads the
+    # dataset name and version straight off that path, so the shape is load-bearing
+    # rather than incidental.
+    "rlds",
 }
 
 _TOP_LEVEL = {

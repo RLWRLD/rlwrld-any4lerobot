@@ -248,3 +248,46 @@ def test_every_spec_reports_how_many_episodes_were_delivered():
 
     assert all(isinstance(count, int) and count > 0 for count in counts.values())
     assert counts["action_net"] == 30120
+
+
+class TestOpenXMirrors:
+    """The OXE sources are RLDS builder directories in the foundry bucket. Without
+    a mirror the orchestrator has no address to fetch from and reports the dataset
+    as skipped, so a missing one is silently 'not today' rather than an error."""
+
+    def openx(self):
+        return [
+            spec
+            for spec in (load(name) for name in available())
+            if spec.source and spec.source.builder == "openx"
+        ]
+
+    def test_every_openx_dataset_names_the_mirror_it_is_fetched_from(self):
+        missing = [spec.id for spec in self.openx() if not spec.foundry_uri]
+        assert missing == []
+
+    def test_an_openx_mirror_is_an_rlds_builder_directory(self):
+        layouts = {
+            spec.id: spec.mirror("foundry").get("layout") for spec in self.openx()
+        }
+        assert set(layouts.values()) == {"rlds"}
+
+    def test_an_openx_mirror_records_what_is_actually_there(self):
+        for spec in self.openx():
+            mirror = spec.mirror("foundry")
+            assert mirror.get("objects", 0) > 0, spec.id
+            assert mirror.get("bytes", 0) > 0, spec.id
+
+    def test_an_openx_mirror_uri_stops_above_the_tfds_version(self):
+        """The version directory has to survive the transfer.
+
+        `aws s3 sync <prefix>/ <dir>` copies what is *under* the prefix, so a mirror
+        uri ending in `.../cmu_stretch/0.1.0/` lands the tfrecords directly in
+        `raw/cmu_stretch/` and flattens the version away. openx_rlds.py then reads
+        `--raw-dir raw/cmu_stretch` as data_dir=raw, name=cmu_stretch, version="",
+        and tfds looks for `raw/cmu_stretch/<version>/` -- which is no longer there.
+        Stopping the uri one level higher keeps that directory.
+        """
+        for spec in self.openx():
+            tail = spec.foundry_uri.rstrip("/").split("/")[-1]
+            assert tail == spec.id, f"{spec.id}: {spec.foundry_uri}"

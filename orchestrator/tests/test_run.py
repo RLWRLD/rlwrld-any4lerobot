@@ -103,10 +103,12 @@ def test_fetch_records_the_path_it_created_so_it_can_be_reclaimed(env, steps):
 
 
 def test_fetch_skips_a_dataset_with_no_mirror_rather_than_failing(env, steps):
-    """33 of 36 have no mirror yet. That is data not delivered, not a broken run."""
+    """oneuniverse_simul is derived data with no upstream to mirror, so it will
+    never have an address to fetch from. That is data not delivered, not a broken
+    run, and the whole collection must not stop for it."""
     sync = FakeSync()
 
-    outcome = fetch(env, load("droid"), steps, sync=sync)
+    outcome = fetch(env, load("oneuniverse_simul"), steps, sync=sync)
 
     assert outcome.status == "skipped"
     assert sync.calls == []
