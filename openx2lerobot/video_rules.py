@@ -75,8 +75,19 @@ def target_shape(
 def resize_frame(frame, shape: tuple[int, int]):
     """Downscale ``frame`` to ``shape``, centre-cropping whatever the scale leaves over.
 
-    ``INTER_AREA`` because every one of these is a downscale, which is the case it is
-    for; the crop is centred to match the ``crop`` filter the transform stage builds.
+    Bicubic, because that is what ffmpeg's ``scale`` filter uses by default and the
+    transform stage resizes with ``scale``. The two paths have to agree: the same
+    rule applied in two places must land on the same picture, or which path a dataset
+    takes would change what it is.
+
+    It is also what the delivered copies were made with, as far as their size can
+    say. Measured on ucsd_kitchen against a 17,652 KB delivered copy: INTER_AREA
+    15,072 KB (0.85x), INTER_LINEAR 16,800 (0.95x), INTER_CUBIC 18,176 (1.03x),
+    INTER_LANCZOS4 18,228 (1.03x). Area averaging is the odd one out -- it is a
+    stronger low-pass, so the frame it hands the encoder is smoother and compresses
+    further than the delivered copy does.
+
+    The crop is centred to match the ``crop`` filter the transform stage builds.
     """
     import cv2
 
@@ -87,7 +98,7 @@ def resize_frame(frame, shape: tuple[int, int]):
     scale = max(height / frame.shape[0], width / frame.shape[1])
     scaled_h = max(height, round(frame.shape[0] * scale))
     scaled_w = max(width, round(frame.shape[1] * scale))
-    frame = cv2.resize(frame, (scaled_w, scaled_h), interpolation=cv2.INTER_AREA)
+    frame = cv2.resize(frame, (scaled_w, scaled_h), interpolation=cv2.INTER_CUBIC)
 
     top = (scaled_h - height) // 2
     left = (scaled_w - width) // 2
