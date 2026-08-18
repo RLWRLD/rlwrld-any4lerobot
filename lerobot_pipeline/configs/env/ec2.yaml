@@ -21,8 +21,14 @@ batch:
   target_episodes: 768
 
 builders:
-  # RLDS splits by episode, so one dataset can use the whole instance
-  openx: {executor: local, episodes_per_task: 100}
+  # RLDS splits by episode, so one dataset can use the whole instance. The chunk is
+  # small on purpose: a task is a chunk, and a chunk count below the worker count
+  # leaves cores idle -- austin_sirius is 559 episodes, which is 6 tasks at 100 and
+  # 23 at 25. Measured at 25: 600s on one worker against 112s on 48.
+  #
+  # workers is half the box because two datasets are converted at a time, so one
+  # fetches while the other builds.
+  openx: {executor: local, episodes_per_task: 25, workers: 24}
   # one temporary dataset per 100 episodes, distributed across cores by datatrove
   spec: {executor: local, episodes_per_task: 100}
   agibot: {executor: local, episodes_per_task: 100}
