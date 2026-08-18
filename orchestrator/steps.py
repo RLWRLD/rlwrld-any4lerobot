@@ -93,15 +93,25 @@ class Steps:
             return None
 
     def done(self, dataset: str, step: str, **expected: Any) -> bool:
-        """Whether ``step`` succeeded *and* the inputs it recorded still hold.
+        """Whether ``step`` succeeded, what it made is still there, and its inputs hold.
 
-        The caller names what matters: ``fetch`` cares that the mirror is the same
-        one, ``build`` that the spec and profile are unchanged. A dataset spec that
-        has been edited since makes its build stale without anyone having to
-        remember to clear anything.
+        The caller names the inputs that matter: ``fetch`` cares that the mirror is
+        the same one, ``build`` that the spec and profile are unchanged. A dataset
+        spec that has been edited since makes its build stale without anyone having
+        to remember to clear anything.
+
+        The output is checked too, because a record outliving what it describes is
+        the normal case here rather than an odd one: ``reclaim`` deletes a source as
+        soon as its build succeeds and leaves the fetch record saying ok. A later run
+        that needs that source again would be told it was already there and would
+        convert nothing. A step that claims no paths -- a hand-staged source, which
+        the pipeline did not create -- has nothing to have gone missing and stays
+        done.
         """
         record = self.read(dataset, step)
         if record is None or record.status != "ok":
+            return False
+        if not all(Path(path).exists() for path in record.created):
             return False
         return all(getattr(record, key) == value for key, value in expected.items())
 

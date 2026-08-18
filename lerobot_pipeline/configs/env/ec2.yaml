@@ -37,8 +37,8 @@ builders:
   openx:
     executor: local
     episodes_per_task: 25
-    workers: 44
-    image_writer_process: 1
+    workers: 64
+    image_writer_process: 0
     image_writer_threads: 4
   # one temporary dataset per 100 episodes, distributed across cores by datatrove
   spec: {executor: local, episodes_per_task: 100}

@@ -147,3 +147,52 @@ def test_an_unknown_status_is_rejected(steps):
 
 def test_the_step_order_is_fetch_build_publish():
     assert STEPS == ("fetch", "build", "publish")
+
+
+# --- a step is only done while what it made is still there --------------------
+
+
+def test_a_step_whose_output_was_deleted_is_not_done(steps, tmp_path):
+    """`reclaim` deletes a source once its build has succeeded, and leaves the fetch
+    record saying ok. Anything asking again is then told the source is already there
+    when it is not -- which is how a rebuild came to run against a missing
+    directory."""
+    gone = tmp_path / "raw" / "taco_play"
+    steps.write(ok("fetch", created=(str(gone),)))
+
+    assert not steps.done("action_net", "fetch")
+
+
+def test_a_step_is_done_while_its_output_is_there(steps, tmp_path):
+    here = tmp_path / "raw" / "taco_play"
+    here.mkdir(parents=True)
+    steps.write(ok("fetch", created=(str(here),)))
+
+    assert steps.done("action_net", "fetch")
+
+
+def test_a_step_that_created_nothing_is_still_done(steps):
+    """A hand-staged source is fetched by nobody, so the record claims no paths and
+    there is nothing to have gone missing."""
+    steps.write(ok("fetch", created=()))
+
+    assert steps.done("action_net", "fetch")
+
+
+def test_every_recorded_path_has_to_survive_not_just_one(steps, tmp_path):
+    here = tmp_path / "a"
+    here.mkdir()
+    steps.write(ok("fetch", created=(str(here), str(tmp_path / "b"))))
+
+    assert not steps.done("action_net", "fetch")
+
+
+def test_a_vanished_build_leaves_its_source_alone(steps, tmp_path):
+    """The source may only go once the build that consumed it is real. If the build
+    output has been removed the source is needed again, not reclaimable."""
+    source = tmp_path / "raw" / "a"
+    source.mkdir(parents=True)
+    steps.write(ok("fetch", created=(str(source),)))
+    steps.write(ok("build", created=(str(tmp_path / "out" / "a"),)))
+
+    assert steps.reclaimable("action_net", "fetch") == ()

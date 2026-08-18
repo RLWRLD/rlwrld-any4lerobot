@@ -75,21 +75,25 @@ def target_shape(
 def resize_frame(frame, shape: tuple[int, int]):
     """Downscale ``frame`` to ``shape``, centre-cropping whatever the scale leaves over.
 
-    Bicubic, because that is what ffmpeg's ``scale`` filter uses by default and the
-    transform stage resizes with ``scale``. The two paths have to agree: the same
-    rule applied in two places must land on the same picture, or which path a dataset
-    takes would change what it is.
+    Through libswscale, which is the resizer ffmpeg's ``scale`` filter *is* -- not a
+    library that also offers something called bicubic. The transform stage resizes
+    with ``scale``, so this is the same rule applied by the same code rather than an
+    approximation of it, and PyAV is already here for the encoder.
 
-    It is also what the delivered copies were made with, as far as their size can
-    say. Measured on ucsd_kitchen against a 17,652 KB delivered copy: INTER_AREA
-    15,072 KB (0.85x), INTER_LINEAR 16,800 (0.95x), INTER_CUBIC 18,176 (1.03x),
-    INTER_LANCZOS4 18,228 (1.03x). Area averaging is the odd one out -- it is a
-    stronger low-pass, so the frame it hands the encoder is smoother and compresses
-    further than the delivered copy does.
-
-    The crop is centred to match the ``crop`` filter the transform stage builds.
+    The distinction is not academic. OpenCV's INTER_CUBIC has no scale-dependent
+    prefilter, so it keeps detail swscale would have low-passed away, and the encoder
+    pays for it. Measured against the delivered copies: every camera that is not
+    resized lands at 0.96-1.00x, which is the encoder build alone, while under
+    INTER_CUBIC every resized camera sat above it -- 1.04x at a 2.5x downscale,
+    1.14x at 1.2x, worse the gentler the resize, exactly the shape of a missing
+    prefilter.
     """
-    import cv2
+    import os
+
+    import av
+    from av.video.reformatter import Interpolation
+
+    filt = getattr(Interpolation, os.environ.get('OXE_SWS', 'BICUBIC'))
 
     height, width = shape
     if frame.shape[:2] == (height, width):
@@ -98,11 +102,14 @@ def resize_frame(frame, shape: tuple[int, int]):
     scale = max(height / frame.shape[0], width / frame.shape[1])
     scaled_h = max(height, round(frame.shape[0] * scale))
     scaled_w = max(width, round(frame.shape[1] * scale))
-    frame = cv2.resize(frame, (scaled_w, scaled_h), interpolation=cv2.INTER_CUBIC)
+    picture = av.VideoFrame.from_ndarray(frame, format="rgb24").reformat(
+        width=scaled_w, height=scaled_h, interpolation=filt
+    )
+    resized = picture.to_ndarray(format="rgb24")
 
     top = (scaled_h - height) // 2
     left = (scaled_w - width) // 2
-    return frame[top : top + height, left : left + width]
+    return resized[top : top + height, left : left + width]
 
 
 # encoding profile key -> the field LeRobot's RGBEncoderConfig calls it.
