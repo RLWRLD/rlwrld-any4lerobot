@@ -26,9 +26,16 @@ builders:
   # leaves cores idle -- austin_sirius is 559 episodes, which is 6 tasks at 100 and
   # 23 at 25. Measured at 25: 600s on one worker against 112s on 48.
   #
-  # workers is half the box because two datasets are converted at a time, so one
-  # fetches while the other builds.
-  openx: {executor: local, episodes_per_task: 25, workers: 24}
+  # The image writer is turned down to one process because the parallelism has moved
+  # up a level: every worker used to spawn five of them, which on 24 workers is 144
+  # processes each holding TensorFlow, and 96 GB of RAM does not survive that. One
+  # writer per task, many tasks.
+  openx:
+    executor: local
+    episodes_per_task: 25
+    workers: 32
+    image_writer_process: 1
+    image_writer_threads: 4
   # one temporary dataset per 100 episodes, distributed across cores by datatrove
   spec: {executor: local, episodes_per_task: 100}
   agibot: {executor: local, episodes_per_task: 100}
