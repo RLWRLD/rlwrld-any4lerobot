@@ -3,18 +3,24 @@
 # Roughly a third of the delivered collection is AV1 with a two-frame keyframe
 # interval and no B-frames -- toto, viola, jaco_play, roboturk, stanford_hydra,
 # the berkeley_* sets, cmu_stretch, dlr_edan, dobbe, nyu_franka, taco_play,
-# ucsd_kitchen, utaustin_mutex, austin_* and oneuniverse. Those were never
-# re-encoded: they came out of their original conversion already small enough for
-# the area bound, so no resize step ran and LeRobot's writer defaults survived.
+# ucsd_kitchen, utaustin_mutex, austin_* and oneuniverse. Those came straight out of
+# LeRobot's writer and were never passed through ffmpeg afterwards.
+#
+# That is not the same as never resized. Measured 2026-08-18: ucsd_kitchen's RLDS
+# source is 640x480 and its delivered copy is 256x192, exactly what the rldx1 resize
+# makes of it -- yet it still carries these settings, because openx2lerobot resizes
+# the frames and then calls the writer. So this profile says how the video was
+# encoded and nothing about whether it was resized; the dataset spec says that.
 #
 # The very short GOP is deliberate on LeRobot's part: training samples random
 # frames, and a long keyframe interval makes every read walk back to the last one.
 # It costs a lot of space -- compare toto's 3.4 MB episode against action_net's
 # 0.6 MB -- which is why the re-encoded datasets use rldx1_reference instead.
 #
-# Reproducing one of these datasets means *not* running a video step at all. This
-# profile exists so that "keep what LeRobot produced" is a name rather than an
-# omission.
+# Reproducing one of these means resizing before the write rather than transcoding
+# after it -- which is why the openx builder is handed this profile and the resize
+# rule as flags, instead of a transform stage running over its output. This profile
+# exists so that "keep what LeRobot produced" is a name rather than an omission.
 
 codec: libsvtav1
 preset: null

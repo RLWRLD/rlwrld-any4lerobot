@@ -2,8 +2,10 @@ from pathlib import Path
 
 import pytest
 
+from lerobot_pipeline import run as run_module
 from lerobot_pipeline.config import parse_config
 from lerobot_pipeline.run import parse_args, run_pipeline
+from lerobot_pipeline.stages import StageSpec
 
 
 def _config(tmp_path, source_type="lerobot_v21", dest_type="lerobot_v21", steps=None):
@@ -320,3 +322,77 @@ def test_an_unknown_dataset_lists_the_available_ones(tmp_path, capsys):
         f"profile: rldx1\nraw_root: {tmp_path}\nout_root: {tmp_path / 'out'}\n")
     assert main(["--env", str(env_path), "--dataset", "nope"]) == 1
     assert "action_net" in capsys.readouterr().err
+
+
+# --- where a converter actually wrote --------------------------------------
+
+
+def _converted(root: Path) -> Path:
+    (root / "meta").mkdir(parents=True)
+    (root / "meta" / "info.json").write_text("{}")
+    return root
+
+
+def _convert_stage(tmp_path):
+    return StageSpec(
+        kind="convert",
+        input_path=tmp_path / "in",
+        output_path=tmp_path / "00_convert",
+        detail={"source_type": "openx", "args": {}},
+    )
+
+
+def test_convert_follows_a_converter_that_wrote_a_directory_of_its_own(
+    tmp_path, monkeypatch
+):
+    """openx_rlds.py writes <local-dir>/<name>_<version>_lerobot, not <local-dir>."""
+    stage = _convert_stage(tmp_path)
+    monkeypatch.setattr(
+        run_module,
+        "_run",
+        lambda command, what: _converted(stage.output_path / "cmu_stretch__lerobot"),
+    )
+
+    produced = run_module.execute_convert(stage, _config(tmp_path, "openx"))
+
+    assert produced == stage.output_path / "cmu_stretch__lerobot"
+
+
+def test_convert_leaves_the_output_path_alone_when_the_dataset_is_already_there(
+    tmp_path, monkeypatch
+):
+    stage = _convert_stage(tmp_path)
+    monkeypatch.setattr(
+        run_module, "_run", lambda command, what: _converted(stage.output_path)
+    )
+
+    assert run_module.execute_convert(stage, _config(tmp_path, "openx")) == stage.output_path
+
+
+def test_convert_does_not_guess_between_two_datasets(tmp_path, monkeypatch):
+    """Two candidates is a converter doing something unexpected -- report the flag
+    that was passed and let the next stage fail on it, rather than pick one."""
+    stage = _convert_stage(tmp_path)
+
+    def two(command, what):
+        _converted(stage.output_path / "a_lerobot")
+        _converted(stage.output_path / "b_lerobot")
+
+    monkeypatch.setattr(run_module, "_run", two)
+
+    assert run_module.execute_convert(stage, _config(tmp_path, "openx")) == stage.output_path
+
+
+def test_a_workdir_left_by_an_earlier_failure_is_cleared_first(tmp_path):
+    """A stale stage directory must not be mistaken for this run's output."""
+    workdir = tmp_path / "work"
+    (workdir / "00_convert" / "leftover_lerobot" / "meta").mkdir(parents=True)
+
+    run_pipeline(
+        _config(tmp_path, "openx", "lerobot_v21"),
+        workdir=workdir,
+        executors=_recorder([]),
+        keep_intermediate=True,
+    )
+
+    assert not (workdir / "00_convert" / "leftover_lerobot").exists()

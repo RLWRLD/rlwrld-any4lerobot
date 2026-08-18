@@ -79,6 +79,10 @@ def run_pipeline(
     if missing:
         raise KeyError(f"no executor registered for stage(s): {', '.join(missing)}")
 
+    # A workdir left behind by an earlier failure is not a resume point: its stage
+    # directories would be read as this run's output, and a converter that drops a
+    # dataset into one of them would leave two side by side.
+    shutil.rmtree(workdir, ignore_errors=True)
     workdir.mkdir(parents=True, exist_ok=True)
     produced = config.source.path
     try:
@@ -106,6 +110,24 @@ def run_pipeline(
 # --- stage executors ---------------------------------------------------------
 
 
+def dataset_root(path: Path) -> Path:
+    """Where the dataset actually is, once a converter has written under ``path``.
+
+    Not every converter treats its output flag as the dataset root.
+    ``openx_rlds.py`` treats ``--local-dir`` as a directory to drop a dataset *into*
+    and writes ``<local-dir>/<name>_<version>_lerobot``, so a stage that returned the
+    flag it passed would hand the next stage a directory with no ``meta`` in it.
+
+    A dataset is recognised by its ``meta`` directory. Anything else -- nothing
+    written, or more than one candidate -- is left alone for the next stage to fail
+    on, because guessing between two datasets is worse than the error.
+    """
+    if (path / "meta").is_dir() or not path.is_dir():
+        return path
+    written = [child for child in sorted(path.iterdir()) if (child / "meta").is_dir()]
+    return written[0] if len(written) == 1 else path
+
+
 def execute_convert(stage: StageSpec, config: PipelineConfig) -> Path:
     command = converter_command(
         source_type=stage.detail["source_type"],
@@ -114,7 +136,7 @@ def execute_convert(stage: StageSpec, config: PipelineConfig) -> Path:
         args=stage.detail.get("args") or {},
     )
     _run(command, f"converter for {stage.detail['source_type']}")
-    return stage.output_path
+    return dataset_root(stage.output_path)
 
 
 def execute_transform(stage: StageSpec, config: PipelineConfig) -> Path:

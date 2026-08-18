@@ -48,8 +48,7 @@ lerobot:
   embodiment_tag: bc_z
 
   video:
-    # source-side geometry is unknown: this dataset has not been traced to an
-    # upstream release, so only its delivered form is recorded (see delivered.video)
+    # measured from the RLDS mirror's own features.json, per camera
     cameras:
       primary: {}
     # H.264 High with a 250-frame GOP is the rldx1_reference profile, which

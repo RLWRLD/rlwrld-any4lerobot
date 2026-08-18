@@ -16,6 +16,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from dataset_registry import load  # noqa: E402
+from dataset_registry import compare  # noqa: E402
 from dataset_registry.compare import (  # noqa: E402
     SIZE_TOLERANCE,
     compare_episode,
@@ -178,3 +179,39 @@ class TestKeyframeInterval:
         source = Path(compare_episode.__globals__["__file__"]).read_text()
         fields = source.split('for field_name in (')[1].split('):')[0]
         assert '"gop"' in fields
+
+
+# --- pairing episodes by what is in them -------------------------------------
+
+
+class TestPairDigests:
+    def test_a_permutation_is_paired_back_up(self):
+        """openx2lerobot writes in tfds read order, the delivered copy is in another
+        -- every episode is present, none of them at the same index."""
+        rebuilt = {"a": [0], "b": [1], "c": [2]}
+        delivered = {"a": [2], "b": [0], "c": [1]}
+
+        assert compare.pair_digests(rebuilt, delivered) == {0: 2, 1: 0, 2: 1}
+
+    def test_repeated_episodes_are_paired_in_index_order(self):
+        """Two of ucsd_kitchen's 150 episodes carry identical vectors; there is no
+        way to tell them apart, so pair them in a fixed order rather than at random."""
+        assert compare.pair_digests({"a": [3, 1]}, {"a": [9, 4]}) == {1: 4, 3: 9}
+
+    def test_an_episode_the_delivered_copy_does_not_have_is_left_unpaired(self):
+        assert compare.pair_digests({"a": [0], "b": [1]}, {"a": [0]}) == {0: 0}
+
+    def test_a_different_number_of_copies_is_not_guessed_at(self):
+        """One rebuilt episode against two delivered ones has no honest pairing."""
+        assert compare.pair_digests({"a": [0]}, {"a": [0, 1]}) == {}
+
+
+class TestUnpairedReport:
+    def test_it_fails_the_run(self):
+        assert not compare.unpaired_report(3).ok
+
+    def test_it_is_not_counted_as_an_episode(self):
+        text = compare.report([compare.unpaired_report(3)])
+
+        assert "0/0 episodes" in text
+        assert "3 rebuilt episode(s)" in text

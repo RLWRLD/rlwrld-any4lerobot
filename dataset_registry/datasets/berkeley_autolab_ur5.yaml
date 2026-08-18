@@ -49,16 +49,16 @@ lerobot:
   embodiment_tag: berkeley_autolab_ur5
 
   video:
-    # source-side geometry is unknown: this dataset has not been traced to an
-    # upstream release, so only its delivered form is recorded (see delivered.video)
+    # measured from the RLDS mirror's own features.json, per camera
     cameras:
-      image: {}
-      hand_image: {}
-    # AV1 with a two-frame GOP is LeRobot's own writer default, which
-    # survives only if nothing re-encoded the file. So this dataset was
-    # never resized, and running a video step over it would produce
-    # something the delivered copy is not.
-    resize: null
+      image: {shape: [480, 640, 3]}
+      hand_image: {shape: [480, 640, 3]}
+    # The delivered size is exactly what the rldx1 resize makes of the source size
+    # above -- checked for every OXE camera whose delivered shape is recorded, and it
+    # holds for all of them. The AV1/GOP2 encoding does not contradict that:
+    # openx2lerobot resizes the frames and then calls LeRobot's writer, so the
+    # writer's fingerprint survives a resize.
+    resize: resize_preserve_aspect_area
     encoding: lerobot_av1_default
     keeps_original: false
 

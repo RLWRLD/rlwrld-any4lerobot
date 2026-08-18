@@ -32,6 +32,7 @@ the run.
 """
 
 import argparse
+import hashlib
 import json
 import subprocess
 import sys
@@ -58,6 +59,9 @@ class CompareError(RuntimeError):
 @dataclass
 class EpisodeReport:
     index: int
+    # which delivered episode this one was compared against; the same index unless
+    # the run aligned by content
+    delivered_index: int | None = None
     rows_rebuilt: int | None = None
     rows_delivered: int | None = None
     # rows compared when the two lengths differ, and where they first diverge
@@ -85,6 +89,58 @@ def episode_prompts(root: Path) -> dict[int, str]:
         tasks = entry.get("tasks") or []
         out[entry["episode_index"]] = tasks[0] if tasks else ""
     return out
+
+
+def episode_digests(root: Path) -> dict[str, list[int]]:
+    """state+action bytes of every episode -> the indices that carry them.
+
+    A list, not an index, because an episode can genuinely repeat: two of the 150
+    ucsd_kitchen episodes are identical vectors.
+    """
+    import pandas as pd
+
+    out: dict[str, list[int]] = {}
+    for path in sorted(root.glob("data/**/*.parquet")):
+        frame = pd.read_parquet(path)
+        for index, rows in frame.groupby("episode_index"):
+            rows = rows.sort_values("frame_index")
+            digest = hashlib.sha256()
+            for column in ("observation.state", "action"):
+                if column not in rows:
+                    continue
+                for value in rows[column]:
+                    digest.update(bytes(memoryview(value.astype("float32"))))
+            out.setdefault(digest.hexdigest(), []).append(int(index))
+    return out
+
+
+def pair_digests(
+    a: dict[str, list[int]], b: dict[str, list[int]]
+) -> dict[int, int]:
+    """Rebuilt episode index -> the delivered index holding the same vectors.
+
+    openx2lerobot writes episodes in tfds read order, which is not the order the
+    delivered copies were written in, so the two agree on every episode and on none
+    of the positions. Pairing on the vectors themselves says whether the *contents*
+    reproduce; it deliberately says nothing about the order, which is what comparing
+    by position is for.
+
+    Episodes whose vectors appear a different number of times on the two sides are
+    left unpaired rather than matched arbitrarily.
+    """
+    pairs: dict[int, int] = {}
+    for digest, rebuilt_indices in a.items():
+        delivered_indices = b.get(digest)
+        if not delivered_indices or len(delivered_indices) != len(rebuilt_indices):
+            continue
+        for one, other in zip(sorted(rebuilt_indices), sorted(delivered_indices)):
+            pairs[one] = other
+    return pairs
+
+
+def pair_by_content(rebuilt: Path, delivered: Path) -> dict[int, int]:
+    """:func:`pair_digests` over two datasets on disk."""
+    return pair_digests(episode_digests(rebuilt), episode_digests(delivered))
 
 
 def episode_parquet(root: Path, index: int) -> Path | None:
@@ -203,16 +259,17 @@ def compare_vectors(
 def compare_episode(
     spec: DatasetSpec, rebuilt: Path, delivered: Path, index: int,
     rebuilt_prompts: dict, delivered_prompts: dict, check_video: bool,
-    row_tolerance: int = ROW_TOLERANCE,
+    row_tolerance: int = ROW_TOLERANCE, delivered_index: int | None = None,
 ) -> EpisodeReport:
     import pandas as pd
 
-    report = EpisodeReport(index=index)
+    other = index if delivered_index is None else delivered_index
+    report = EpisodeReport(index=index, delivered_index=other)
 
-    a_path, b_path = episode_parquet(rebuilt, index), episode_parquet(delivered, index)
+    a_path, b_path = episode_parquet(rebuilt, index), episode_parquet(delivered, other)
     if a_path is None or b_path is None:
         report.problems.append(
-            f"episode {index} is missing from the "
+            f"episode {index if a_path is None else other} is missing from the "
             f"{'rebuilt' if a_path is None else 'delivered'} dataset"
         )
         return report
@@ -220,8 +277,8 @@ def compare_episode(
     a, b = pd.read_parquet(a_path), pd.read_parquet(b_path)
     report.rows_rebuilt, report.rows_delivered = len(a), len(b)
 
-    if index in rebuilt_prompts and index in delivered_prompts:
-        report.prompt_matches = rebuilt_prompts[index] == delivered_prompts[index]
+    if index in rebuilt_prompts and other in delivered_prompts:
+        report.prompt_matches = rebuilt_prompts[index] == delivered_prompts[other]
         if not report.prompt_matches:
             report.problems.append(
                 "episode alignment is wrong: this pair has different task prompts, "
@@ -246,13 +303,16 @@ def compare_episode(
     report.problems += problems
 
     if check_video:
-        report.video, problems = compare_video(rebuilt, delivered, index)
+        report.video, problems = compare_video(rebuilt, delivered, index, other)
         report.problems += problems
     return report
 
 
-def compare_video(rebuilt: Path, delivered: Path, index: int) -> tuple[dict, list[str]]:
-    videos_a, videos_b = episode_videos(rebuilt, index), episode_videos(delivered, index)
+def compare_video(
+    rebuilt: Path, delivered: Path, index: int, delivered_index: int | None = None
+) -> tuple[dict, list[str]]:
+    other = index if delivered_index is None else delivered_index
+    videos_a, videos_b = episode_videos(rebuilt, index), episode_videos(delivered, other)
     summary: dict[str, str] = {}
     problems: list[str] = []
 
@@ -288,29 +348,81 @@ def compare_video(rebuilt: Path, delivered: Path, index: int) -> tuple[dict, lis
     return summary, problems
 
 
+ALIGNMENTS = ("position", "content")
+
+
 def run(
     spec: DatasetSpec, rebuilt: Path, delivered: Path,
     episodes: int, check_video: bool, row_tolerance: int = ROW_TOLERANCE,
+    align: str = "position",
 ) -> list[EpisodeReport]:
+    """Compare ``episodes`` episodes, pairing them the way ``align`` says.
+
+    ``position`` is the stronger question -- it asks whether the same episode is in
+    the same place -- and is the default for that reason. ``content`` drops the order
+    and asks only whether the episodes themselves reproduce, which is the right
+    question for a converter that does not control the order it writes in.
+    """
+    if align not in ALIGNMENTS:
+        raise CompareError(f"unknown alignment {align!r}; use one of {', '.join(ALIGNMENTS)}")
+
     rebuilt_prompts = episode_prompts(rebuilt)
     delivered_prompts = episode_prompts(delivered)
-    return [
+
+    pairs: dict[int, int] = {}
+    unpaired = 0
+    if align == "content":
+        rebuilt_digests = episode_digests(rebuilt)
+        pairs = pair_digests(rebuilt_digests, episode_digests(delivered))
+        unpaired = sum(len(v) for v in rebuilt_digests.values()) - len(pairs)
+        chosen = sorted(pairs)[:episodes]
+    else:
+        chosen = list(range(episodes))
+
+    reports = [
         compare_episode(spec, rebuilt, delivered, index,
-                        rebuilt_prompts, delivered_prompts, check_video, row_tolerance)
-        for index in range(episodes)
+                        rebuilt_prompts, delivered_prompts, check_video, row_tolerance,
+                        delivered_index=pairs.get(index))
+        for index in chosen
     ]
+    if unpaired:
+        reports.append(unpaired_report(unpaired))
+    return reports
+
+
+def unpaired_report(count: int) -> EpisodeReport:
+    """A finding about the datasets as a whole rather than about one episode.
+
+    It rides along as a report so that it counts towards the exit status: episodes
+    the delivered copy simply does not contain are a failure to reproduce, even when
+    every episode that *was* compared came out identical.
+    """
+    report = EpisodeReport(index=-1)
+    report.problems.append(
+        f"{count} rebuilt episode(s) have vectors that appear nowhere in the "
+        "delivered copy, so they were not compared"
+    )
+    return report
 
 
 def report(reports: list[EpisodeReport]) -> str:
     lines = []
     for r in reports:
         mark = "ok  " if r.ok else "FAIL"
+        if r.index < 0:
+            lines += [f"[{mark}] {problem}" for problem in r.problems]
+            continue
         if r.rows_rebuilt == r.rows_delivered:
             rows = f"{r.rows_rebuilt} rows"
         else:
             delta = (r.rows_rebuilt or 0) - (r.rows_delivered or 0)
             rows = f"{r.rows_rebuilt} vs {r.rows_delivered} rows ({delta:+d})"
-        lines.append(f"[{mark}] episode {r.index:>5}  {rows}")
+        where = (
+            f"{r.index:>5}"
+            if r.delivered_index is None or r.delivered_index == r.index
+            else f"{r.index:>5}->{r.delivered_index}"
+        )
+        lines.append(f"[{mark}] episode {where}  {rows}")
         for key, value in r.columns.items():
             lines.append(f"         {key:<20} {value}")
         for key, value in r.video.items():
@@ -318,10 +430,11 @@ def report(reports: list[EpisodeReport]) -> str:
         for problem in r.problems:
             lines.append(f"         ! {problem}")
 
-    failed = [r for r in reports if not r.ok]
-    short = [r for r in reports if r.rows_rebuilt != r.rows_delivered and r.ok]
+    episodes = [r for r in reports if r.index >= 0]
+    failed = [r for r in episodes if not r.ok]
+    short = [r for r in episodes if r.rows_rebuilt != r.rows_delivered and r.ok]
     lines.append("")
-    lines.append(f"{len(reports) - len(failed)}/{len(reports)} episodes reproduce "
+    lines.append(f"{len(episodes) - len(failed)}/{len(episodes)} episodes reproduce "
                  "the delivered copy" + ("" if not failed else
                  f"; {len(failed)} differ"))
     if short:
@@ -343,6 +456,10 @@ def main(argv=None) -> int:
     parser.add_argument("--episodes", type=int, default=8)
     parser.add_argument("--no-video", action="store_true",
                         help="compare only the vectors; skips ffprobe")
+    parser.add_argument("--align", choices=ALIGNMENTS, default="position",
+                        help="how to pair episodes: by index (default), or by their "
+                             "own state/action bytes when the rebuild does not "
+                             "control the order it writes in")
     parser.add_argument("--row-tolerance", type=int, default=ROW_TOLERANCE,
                         help="rows an episode may differ by before it counts as a "
                              "wrong clock strategy rather than a trimmed tail")
@@ -359,7 +476,7 @@ def main(argv=None) -> int:
         return 2
 
     reports = run(spec, args.rebuilt, delivered, args.episodes, not args.no_video,
-                  args.row_tolerance)
+                  args.row_tolerance, align=args.align)
     print(report(reports))
     return 1 if any(not r.ok for r in reports) else 0
 

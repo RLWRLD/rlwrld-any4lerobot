@@ -393,15 +393,30 @@ class DatasetSpec:
         return ((self.raw.get("lerobot") or {}).get("video") or {}) or {}
 
     @property
+    def encoding(self) -> str | Mapping[str, Any] | None:
+        """How the delivered copy was encoded, read back from its own video.
+
+        A fact about the dataset, like ``is_resized``: the OXE sources were not all
+        encoded the same way, and which one a dataset carries decides whether its
+        rebuild can be written in one pass or has to be transcoded.
+        """
+        return self._video.get("encoding")
+
+    @property
     def is_resized(self) -> bool:
         """Whether the delivered copy was resized, and so whether a rebuild should be.
 
-        A fact about the dataset rather than a choice: it was read back from the
-        delivered encoding, where AV1 with a two-frame GOP means LeRobot's own writer
-        output survived untouched. Running a resize over a dataset that never had one
-        re-encodes video that was meant to pass straight through, and what comes out
-        is not the dataset being reproduced. The profile decides *how* to resize;
-        this decides *whether*.
+        A fact about the dataset rather than a choice. Where the source geometry is
+        recorded it is measured: the delivered size against the source size settles
+        it outright. Where it is not, the delivered encoding is the only evidence,
+        and it is weak -- AV1 with a two-frame GOP means LeRobot's writer produced
+        the file, which rules out a later ffmpeg pass but not a resize before the
+        write. ucsd_kitchen is both: AV1/GOP2 and a 640x480 source delivered at
+        256x192.
+
+        Running a resize over a dataset that never had one changes video that was
+        meant to pass through, and what comes out is not the dataset being
+        reproduced. The profile decides *how* to resize; this decides *whether*.
         """
         return bool(self._video.get("resize"))
 

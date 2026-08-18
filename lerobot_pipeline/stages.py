@@ -42,6 +42,13 @@ _CONVERTERS: dict[str, tuple[str, str, str]] = {
 
 CONVERTER_OUTPUT_VERSION = "lerobot_v30"
 
+# Converters that encode the video themselves, out of the frames they decode,
+# rather than passing an existing file through. For these the resize belongs to the
+# converter: doing it afterwards would decode and re-encode what the converter just
+# wrote, and two lossy generations is not what the delivered datasets are. They take
+# the same resize rule a transform stage would, as a flag.
+ENCODES_ITS_OWN_VIDEO = frozenset({"openx"})
+
 
 class StageError(ValueError):
     """Raised when a pipeline cannot be assembled from the config."""
@@ -137,13 +144,13 @@ def version_convert_command(
 def version_convert_output(from_version: str, to_version: str, root: Path) -> Path:
     """Where the version conversion script leaves its result.
 
-    The two scripts disagree: v21->v30 swaps the converted dataset into ``root``
-    (keeping the original at ``{root}_old``), while v30->v21 writes a sibling.
+    Both scripts build a sibling and then swap it into ``root``, keeping the input
+    beside it under a suffixed name (``{root}_old`` one way, ``{root}_v3.0`` the
+    other). So the result is at ``root`` either way -- the sibling the v30->v21
+    script writes is an intermediate that no longer exists when it returns.
     """
-    if (from_version, to_version) == ("lerobot_v21", "lerobot_v30"):
+    if (from_version, to_version) in _VERSION_SCRIPTS:
         return root
-    if (from_version, to_version) == ("lerobot_v30", "lerobot_v21"):
-        return root.parent / f"{root.name}_v2.1"
     raise StageError(f"no version conversion from {from_version} to {to_version}")
 
 
