@@ -28,12 +28,16 @@ builders:
   #
   # The image writer is turned down to one process because the parallelism has moved
   # up a level: every worker used to spawn five of them, which on 24 workers is 144
-  # processes each holding TensorFlow, and 96 GB of RAM does not survive that. One
-  # writer per task, many tasks.
+  # processes each holding TensorFlow. One writer per task, many tasks.
+  #
+  # workers is bounded by memory, not by cores. A task holds a TensorFlow runtime,
+  # measured at about 3 GB, so 32 of them exhausted a 96 GB machine before this file
+  # named a machine with 192. Read it as "how many 3 GB tasks fit", and check the
+  # headroom before raising it.
   openx:
     executor: local
     episodes_per_task: 25
-    workers: 32
+    workers: 44
     image_writer_process: 1
     image_writer_threads: 4
   # one temporary dataset per 100 episodes, distributed across cores by datatrove
