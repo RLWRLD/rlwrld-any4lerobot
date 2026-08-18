@@ -33,9 +33,10 @@ import tqdm
 from datasets import Dataset
 from huggingface_hub import snapshot_download
 from lerobot.datasets.io_utils import (
+    INFO_PATH,
     load_info,
     load_tasks,
-    write_info,
+    write_json,
 )
 from lerobot.datasets.utils import (
     DEFAULT_CHUNK_SIZE,
@@ -113,13 +114,24 @@ def convert_tasks(root: Path, new_root: Path) -> None:
             )
 
 
+def read_info(root: Path) -> dict[str, Any]:
+    """v3.0's ``info.json`` as a plain dict.
+
+    ``load_info`` returns lerobot's ``DatasetInfo``, which models the v3.0 schema and
+    only the v3.0 schema: it has no ``total_chunks`` or ``total_videos`` field, and
+    assigning one raises. v2.1 needs both, so the conversion edits a dict and writes
+    that, rather than trying to hold a v2.1 file in a v3.0 type.
+    """
+    return load_info(root).to_dict()
+
+
 def convert_info(
     root: Path,
     new_root: Path,
     episode_records: list[dict[str, Any]],
     video_keys: list[str],
 ) -> None:
-    info = load_info(root)
+    info = read_info(root)
     logging.info("Converting info.json metadata to v2.1 schema")
 
     total_episodes = info.get("total_episodes") or len(episode_records)
@@ -148,7 +160,7 @@ def convert_info(
     )
     info["total_videos"] = total_episodes * len(video_keys)
 
-    write_info(info, new_root)
+    write_json(info, new_root / INFO_PATH)
 
 
 def _group_episodes_by_data_file(
@@ -502,7 +514,7 @@ def convert_dataset(
     episode_records = load_episode_records(root)
     video_keys = [
         key
-        for key, ft in load_info(root)["features"].items()
+        for key, ft in read_info(root)["features"].items()
         if ft.get("dtype") == "video"
     ]
 

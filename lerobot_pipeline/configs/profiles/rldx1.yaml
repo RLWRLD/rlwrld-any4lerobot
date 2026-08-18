@@ -53,3 +53,8 @@ builders:
   openx:
     # emit mp4 rather than a folder of images, which is what every delivered copy is
     use_videos: true
+    # No encoding here: the OXE sources were not all encoded the same way. Most carry
+    # LeRobot's own AV1, nine carry the H.264 only ffmpeg produces, and which one a
+    # dataset is comes from its own spec. That choice also decides where the resize
+    # happens -- written straight at the new size when the converter can produce the
+    # encoding, transcoded afterwards when it cannot -- so neither is set here.

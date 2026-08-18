@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pytest
@@ -128,3 +129,46 @@ def test_load_config_reads_yaml_from_disk(tmp_path):
     cfg = load_config(path)
     assert cfg.name == "demo"
     assert cfg.steps[0].max_area == 65536
+
+
+# --- video work the converter does itself ------------------------------------
+
+
+def _resolved(dataset: str):
+    from lerobot_pipeline.env import Environment, build_config
+
+    env = Environment(name="t", profile="rldx1", raw_root=Path("/raw"), out_root=Path("/out"))
+    return build_config(env, dataset)
+
+
+def test_openx_is_handed_the_resize_rule_instead_of_a_transform_stage():
+    """openx2lerobot encodes the video itself, so a transform stage afterwards would
+    re-encode what it just wrote. The rule goes to the converter instead."""
+    config = _resolved("ucsd_kitchen_dataset_converted_externally_to_rlds")
+
+    assert json.loads(config.source.args["resize"])["type"] == "resize_preserve_aspect_area"
+    assert [getattr(step, "kind", None) for step in config.steps] == []
+
+
+def test_the_resize_reaches_the_converter_with_the_profile_s_parameters():
+    """A bare step name would take the step's own defaults; the profile's numbers are
+    the ones the collection was built with."""
+    config = _resolved("ucsd_kitchen_dataset_converted_externally_to_rlds")
+
+    assert json.loads(config.source.args["resize"]) == {
+        "type": "resize_preserve_aspect_area",
+        "max_area": 65536,
+        "multiple": 32,
+    }
+
+
+def test_openx_encodes_with_what_the_delivered_oxe_copies_carry():
+    assert _resolved("cmu_stretch").source.args["encoding"] == "lerobot_av1_default"
+
+
+def test_a_converter_that_passes_video_through_still_gets_a_transform_stage():
+    """action_net is hdf5 with mp4 already in it -- there the resize is a transcode."""
+    config = _resolved("action_net")
+
+    assert "resize" not in config.source.args
+    assert "video" in [getattr(step, "kind", None) for step in config.steps]

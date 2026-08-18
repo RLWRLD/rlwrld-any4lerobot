@@ -34,6 +34,29 @@ _FIELDS: dict[str, type] = {
 }
 
 
+# What LeRobot's own video writer does, for the settings it has no knob for. It
+# emits no B-frames, pins no profile and leaves scene-cut detection alone. A rule
+# asking for exactly that is already met; a rule asking for anything else -- three
+# B-frames, High profile -- describes an ffmpeg command line and can only be applied
+# by the transform stage.
+_WRITER_LEAVES_AS = {"profile": None, "bframes": 0, "sc_threshold": None}
+
+
+def unwritable_settings(overrides: Mapping[str, Any] | None) -> list[str]:
+    """The settings in ``overrides`` that LeRobot's writer cannot be asked for.
+
+    Empty means a converter can write this encoding itself, which decides where the
+    resize happens: before the write, or as a transcode afterwards.
+    """
+    if not overrides:
+        return []
+    return sorted(
+        f"{key}={overrides[key]!r}"
+        for key, writer in _WRITER_LEAVES_AS.items()
+        if key in overrides and overrides[key] != writer
+    )
+
+
 class EncodingProfileError(ValueError):
     """Raised for an unknown profile name or a malformed profile file."""
 

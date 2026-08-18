@@ -131,8 +131,10 @@ def test_v21_to_v30_leaves_the_result_at_the_same_root():
     assert version_convert_output("lerobot_v21", "lerobot_v30", Path("/w/ds")) == Path("/w/ds")
 
 
-def test_v30_to_v21_leaves_the_result_in_a_sibling_directory():
-    assert version_convert_output("lerobot_v30", "lerobot_v21", Path("/w/ds")) == Path("/w/ds_v2.1")
+def test_v30_to_v21_also_leaves_the_result_at_the_same_root():
+    """It builds ``{root}_v2.1`` and then swaps that into ``root``, so by the time
+    the script returns the sibling is gone and only ``root`` holds the result."""
+    assert version_convert_output("lerobot_v30", "lerobot_v21", Path("/w/ds")) == Path("/w/ds")
 
 
 def test_an_unsupported_version_hop_is_rejected():

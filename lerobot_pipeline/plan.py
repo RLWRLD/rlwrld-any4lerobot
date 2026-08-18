@@ -13,6 +13,7 @@ recovered fails here rather than after two days of encoding.
 """
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -84,13 +85,54 @@ def _stages(config: PipelineConfig, workdir: Path | None) -> str:
     return "\n".join(lines)
 
 
+def video_work(config: PipelineConfig) -> tuple[list, str]:
+    """The video steps this run applies, and where they are applied.
+
+    Two places, because two kinds of converter. One takes an existing mp4 and the
+    resize is a transform stage over its output; the other decodes frames and encodes
+    them itself, and there the resize is a flag it is handed, because a stage
+    afterwards would re-encode what it just wrote. The steps are the same objects
+    either way -- only the moment differs -- so anything reporting on the video has
+    to ask here rather than read ``config.steps`` and conclude there is nothing.
+    """
+    from .registry import build_step
+
+    staged = [s for s in config.steps if getattr(s, "kind", None) == "video"]
+    if staged:
+        return staged, "transform stage"
+
+    rule = (config.source.args or {}).get("resize")
+    if not rule:
+        return [], ""
+    if isinstance(rule, str):
+        rule = json.loads(rule)
+    return [build_step(dict(rule))], "converter"
+
+
+def encoding_used(config: PipelineConfig):
+    """The encoder settings that will actually be applied.
+
+    A converter that writes the video itself is handed its own encoding, which is not
+    the profile's ``video.encoding`` -- the RLDX-1 collection was built with two, split
+    by builder.
+    """
+    from .encoding import load_profile
+
+    own = (config.source.args or {}).get("encoding")
+    if own:
+        return load_profile(own)
+    return config.runtime.encoding
+
+
 def _video(config: PipelineConfig) -> str:
     from .registry import compose_video_plans
 
-    steps = [s for s in config.steps if getattr(s, "kind", None) == "video"]
+    steps, where = video_work(config)
     lines = ["video"]
     if not steps:
         lines.append("  (no video step; frames pass through unchanged)")
+    else:
+        lines.append(f"  applied by the {where}")
     for step in steps:
         params = {
             key: value
@@ -99,37 +141,39 @@ def _video(config: PipelineConfig) -> str:
         }
         lines.append(f"  {step.config_name}  {params}")
 
-    touched = _per_camera(config, steps, compose_video_plans)
+    touched = _per_camera(config, steps, compose_video_plans, where)
     lines += touched
-    encoding = config.runtime.encoding
-    note = "" if any("re-encode" in line for line in touched) else \
-        "  (not applied: nothing is re-encoded)"
+    encoding = encoding_used(config)
+    note = "" if steps else "  (not applied: nothing is re-encoded)"
     lines.append(f"  encoding  {dict(encoding) if encoding else 'inherited from source'}"
                  f"{note}")
     return "\n".join(lines)
 
 
-def _per_camera(config: PipelineConfig, steps, compose) -> list[str]:
-    """Per camera, whether the delivered copy was re-encoded -- and what this run does.
+def _per_camera(config: PipelineConfig, steps, compose, where: str = "") -> list[str]:
+    """Per camera, how the delivered copy was written -- and what this run does.
 
-    The evidence is the delivered *codec*, not the delivered geometry. Geometry
-    cannot settle it: a dataset whose delivered frames are already on the grid may
-    have arrived that way or been resized to it, and using the delivered size as a
-    stand-in for the source size assumes the answer.
+    Two pieces of evidence, and they answer different questions.
 
-    The codec does settle it. AV1 with a two-frame GOP is LeRobot's own writer
-    default, which survives only if nothing re-encoded the file; H.264 High with a
-    250-frame GOP is the rldx1_reference profile, which only our encoder produces.
-    So a third of the collection is known to have been passed through untouched,
-    whatever its dimensions.
+    The delivered *codec* says which writer produced the file. AV1 with a two-frame
+    GOP is LeRobot's own default; H.264 High with a 250-frame GOP is the
+    rldx1_reference profile, which only our ffmpeg path produces. That is all it
+    says. It does *not* say the frames were never resized: openx2lerobot resizes and
+    then calls LeRobot's writer, so ucsd_kitchen is AV1/GOP2 at 256x192 from a
+    640x480 source.
 
-    Where the source geometry is recorded the resize is also computed, which is the
-    stronger check: it must land exactly on the delivered size.
+    The delivered *geometry* against the recorded source geometry is what settles
+    the resize, and it is the stronger check: the computed resize must land exactly
+    on the delivered size. Where the source geometry is not recorded, this run's
+    resize cannot be predicted and the line says so rather than guessing.
     """
     spec = config.dataset
     if spec is None or not steps:
         return []
 
+    # a converter writes the frames at the new size; a transform stage decodes an
+    # existing file and encodes it again, which is a second lossy generation
+    written = "written at that size" if where == "converter" else "re-encoded"
     lines = []
     for key in spec.cameras:
         delivered = spec.delivered_video.get(key) or {}
@@ -137,9 +181,9 @@ def _per_camera(config: PipelineConfig, steps, compose) -> list[str]:
         target = tuple(delivered["shape"][:2]) if delivered.get("shape") else None
 
         if codec == "av1" and gop == 2:
-            was = "never re-encoded (AV1/GOP2 is LeRobot's own writer)"
+            was = "delivered by LeRobot's own writer (AV1/GOP2)"
         elif codec == "h264" and gop == 250:
-            was = "re-encoded with rldx1_reference (H.264/GOP250 is ours)"
+            was = "delivered by our ffmpeg path (H.264/GOP250, rldx1_reference)"
         else:
             was = f"delivered as {codec}/GOP{gop}; provenance unclear"
 
@@ -155,8 +199,8 @@ def _per_camera(config: PipelineConfig, steps, compose) -> list[str]:
         height, width = shape[0], shape[1]
         plan = compose(steps, f"observation.images.{key}", (height, width))
         if plan is None:
-            lines.append(f"  {key:<22} {width}x{height} unchanged -> hard-linked; "
-                         f"{was}")
+            lines.append(f"  {key:<22} {width}x{height} unchanged -> passed "
+                         f"through; {was}")
             continue
         out_h, out_w = plan.out_shape
         verdict = ""
@@ -164,7 +208,7 @@ def _per_camera(config: PipelineConfig, steps, compose) -> list[str]:
             verdict = (" == delivered" if (out_h, out_w) == target
                        else f" != delivered {target[1]}x{target[0]}  MISMATCH")
         lines.append(f"  {key:<22} {width}x{height} -> {out_w}x{out_h}{verdict}, "
-                     f"re-encoded; {was}")
+                     f"{written}; {was}")
     return lines
 
 
@@ -226,18 +270,18 @@ def summarise(env, datasets: list[str]) -> tuple[str, int]:
         spec = config.dataset
         builder = (spec.source.builder if spec and spec.source else "-")
         problems = spec.buildable() if spec else []
-        steps = [s for s in config.steps if getattr(s, "kind", None) == "video"]
-        touched = _per_camera(config, steps, compose_video_plans)
+        steps, where = video_work(config)
+        touched = _per_camera(config, steps, compose_video_plans, where)
         if not touched:
             video = "no video step"
         elif any("MISMATCH" in line for line in touched):
             video = "resize MISMATCHES delivered"
         elif any("== delivered" in line for line in touched):
-            video = "re-encoded, size confirmed"
-        elif any("never re-encoded" in line for line in touched):
-            video = "delivered untouched (AV1)"
+            video = "resize confirmed against delivered"
+        elif any("passed through" in line for line in touched):
+            video = "unchanged, passed through"
         else:
-            video = "re-encoded (size unverified)"
+            video = "resized (size unverified)"
 
         # a correct config still needs somewhere to point source.path
         located = "located" if (spec and (spec.huggingface or spec.foundry_uri)) \

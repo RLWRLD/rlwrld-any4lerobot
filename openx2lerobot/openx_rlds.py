@@ -41,6 +41,7 @@ from lerobot.datasets.lerobot_dataset import LeRobotDataset
 from lerobot.utils.constants import HF_LEROBOT_HOME
 from oxe_utils.configs import OXE_DATASET_CONFIGS, ActionEncoding, StateEncoding
 from oxe_utils.transforms import OXE_STANDARDIZATION_TRANSFORMS
+from video_rules import parse_rule, resize_frame, rgb_encoder, target_shape
 
 np.set_printoptions(precision=2)
 
@@ -80,7 +81,9 @@ def transform_raw_dataset(episode, dataset_name):
     return episode
 
 
-def generate_features_from_raw(builder: tfds.core.DatasetBuilder, use_videos: bool = True):
+def generate_features_from_raw(
+    builder: tfds.core.DatasetBuilder, use_videos: bool = True, resize=None
+):
     dataset_name = Path(builder.data_dir).parent.name
 
     state_names = [f"motor_{i}" for i in range(8)]
@@ -135,7 +138,8 @@ def generate_features_from_raw(builder: tfds.core.DatasetBuilder, use_videos: bo
     features = {
         f"observation.images.{key}": {
             "dtype": "video" if use_videos else "image",
-            "shape": value.shape,
+            # the size after the resize rule, because that is what gets written
+            "shape": (*target_shape(resize, key, tuple(value.shape[:2])), value.shape[2]),
             "names": ["height", "width", "rgb"],
         }
         for key, value in obs.items()
@@ -144,12 +148,29 @@ def generate_features_from_raw(builder: tfds.core.DatasetBuilder, use_videos: bo
     return {**features, **DEFAULT_FEATURES}
 
 
-def save_as_lerobot_dataset(lerobot_dataset: LeRobotDataset, raw_dataset: tf.data.Dataset, **kwargs):
+def camera_shapes(features) -> dict[str, tuple[int, int]]:
+    """Video key -> the ``(height, width)`` its frames are written at."""
+    return {
+        key: tuple(value["shape"][:2])
+        for key, value in features.items()
+        if key.startswith("observation.images.")
+    }
+
+
+def save_as_lerobot_dataset(
+    lerobot_dataset: LeRobotDataset,
+    raw_dataset: tf.data.Dataset,
+    shapes: dict[str, tuple[int, int]] | None = None,
+    **kwargs,
+):
+    shapes = shapes or {}
     for episode in raw_dataset.as_numpy_iterator():
         traj = episode["steps"]
         for i in range(traj["action"].shape[0]):
             image_dict = {
-                f"observation.images.{key}": value[i]
+                f"observation.images.{key}": _sized(
+                    value[i], shapes.get(f"observation.images.{key}")
+                )
                 for key, value in traj["observation"].items()
                 if "depth" not in key and any(x in key for x in ["image", "rgb"])
             }
@@ -164,6 +185,10 @@ def save_as_lerobot_dataset(lerobot_dataset: LeRobotDataset, raw_dataset: tf.dat
         lerobot_dataset.save_episode()
 
 
+def _sized(frame, shape):
+    return frame if shape is None else resize_frame(frame, shape)
+
+
 def create_lerobot_dataset(
     raw_dir: Path,
     repo_id: str = None,
@@ -175,6 +200,8 @@ def create_lerobot_dataset(
     image_writer_process: int = 5,
     image_writer_threads: int = 10,
     keep_images: bool = True,
+    resize=None,
+    encoding=None,
 ):
     last_part = raw_dir.name
     if re.match(r"^\d+\.\d+\.\d+$", last_part):
@@ -193,7 +220,8 @@ def create_lerobot_dataset(
         shutil.rmtree(local_dir)
 
     builder = tfds.builder(dataset_name, data_dir=data_dir, version=version)
-    features = generate_features_from_raw(builder, use_videos)
+    resize = parse_rule(resize)
+    features = generate_features_from_raw(builder, use_videos, resize=resize)
     filter_fn = lambda e: e["success"] if dataset_name == "kuka" else True
     raw_dataset = (
         builder.as_dataset(split="train")
@@ -223,9 +251,15 @@ def create_lerobot_dataset(
         features=features,
         image_writer_threads=image_writer_threads,
         image_writer_processes=image_writer_process,
+        rgb_encoder=rgb_encoder(encoding),
     )
 
-    save_as_lerobot_dataset(lerobot_dataset, raw_dataset, keep_images=keep_images)
+    save_as_lerobot_dataset(
+        lerobot_dataset,
+        raw_dataset,
+        shapes=camera_shapes(features),
+        keep_images=keep_images,
+    )
 
     if push_to_hub:
         assert repo_id is not None
@@ -283,6 +317,27 @@ def main():
         "--use-videos",
         action="store_true",
         help="Convert each episode of the raw dataset to an mp4 video. This option allows 60 times lower disk space consumption and 25 faster loading time during training.",
+    )
+    parser.add_argument(
+        "--resize",
+        type=str,
+        default=None,
+        help=(
+            "How to size frames before they are written: a step name "
+            "(`resize_preserve_aspect_area`) or the JSON of one with its parameters. "
+            "Resizing happens here rather than in a later stage because this "
+            "converter encodes the video itself -- see video_rules.py."
+        ),
+    )
+    parser.add_argument(
+        "--encoding",
+        type=str,
+        default=None,
+        help=(
+            "How to encode the video: the name of a profile in "
+            "lerobot_pipeline/configs/encoding, or the JSON of one. Default: "
+            "LeRobot's own writer settings."
+        ),
     )
     parser.add_argument(
         "--image-writer-process",

@@ -49,8 +49,7 @@ lerobot:
   embodiment_tag: iamlab_cmu_pickup_insert_converted_externally_to_rlds
 
   video:
-    # source-side geometry is unknown: this dataset has not been traced to an
-    # upstream release, so only its delivered form is recorded (see delivered.video)
+    # measured from the RLDS mirror's own features.json, per camera
     cameras:
       wrist: {}
       primary: {}

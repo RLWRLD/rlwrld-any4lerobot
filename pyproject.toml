@@ -23,6 +23,9 @@ agibot = ["h5py"]
 libero = ["h5py"]
 robocasa = ["h5py"]
 robomind = ["h5py"]
+# openx2lerobot reads RLDS/tfrecord through tfds, which only ships a TensorFlow
+# reader -- hence the heavyweight dependency for one converter.
+openx = ["tensorflow", "tensorflow-datasets"]
 # Distributed execution across cores or nodes (--executor ray).
 ray = ["datatrove[ray]>=0.6.0"]
 

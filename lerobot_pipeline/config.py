@@ -8,6 +8,7 @@ ignored, because a silently dropped key means a run that looks successful but
 did the wrong thing.
 """
 
+import json
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -199,6 +200,10 @@ def _apply_profile(
         if source["type"] == "spec":
             # the spec-driven converter is dataset-agnostic; which dataset is a flag
             args["dataset"] = spec.id
+        if _converter_writes_the_video(source["type"], spec.encoding):
+            # a converter that writes the video is told how, by the dataset rather
+            # than by the profile: the OXE sources carry two different encodings
+            args["encoding"] = spec.encoding
         # the run config still wins, so a one-off run can override
         source["args"] = {**args, **(source.get("args") or {})}
         filled["source"] = source
@@ -215,7 +220,14 @@ def _apply_profile(
         # the spec says whether this dataset is resized at all; the profile says how
         resize = (profile.get("video") or {}).get("resize")
         if resize and (spec is None or spec.is_resized):
-            steps.append(dict(resize))
+            if _converter_writes_the_video(
+                filled["source"]["type"], spec.encoding if spec else None
+            ):
+                # resolved rather than named, so the converter gets the profile's
+                # parameters and not the step's own defaults
+                filled["source"]["args"].setdefault("resize", json.dumps(dict(resize)))
+            else:
+                steps.append(dict(resize))
         if steps:
             filled["steps"] = steps
 
@@ -228,6 +240,26 @@ def _apply_profile(
         filled["runtime"] = {**(filled.get("runtime") or {}), "encoding": encoding}
 
     return filled
+
+
+def _converter_writes_the_video(source_type: str, encoding) -> bool:
+    """Whether this converter both encodes the video and can produce this encoding.
+
+    Two conditions, and both matter. The converter has to be one that writes video
+    out of frames rather than passing a file through -- and the encoding the dataset
+    was delivered in has to be one LeRobot's writer can be asked for. The OXE sources
+    split on the second: most carry LeRobot's own AV1, but nine of them carry H.264
+    with three B-frames, which only ffmpeg produces. Those keep their transcode.
+
+    When it holds, the resize is handed to the converter and no transform stage runs,
+    so the frames are encoded once instead of encoded, decoded and encoded again.
+    """
+    from .encoding import load_profile, unwritable_settings
+    from .stages import ENCODES_ITS_OWN_VIDEO
+
+    if source_type not in ENCODES_ITS_OWN_VIDEO or not encoding:
+        return False
+    return not unwritable_settings(load_profile(encoding))
 
 
 def _parse_source(raw: Any, base_dir: Path | None) -> SourceConfig:
