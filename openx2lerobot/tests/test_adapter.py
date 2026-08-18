@@ -89,3 +89,32 @@ class TestLoadTasks:
     ):
         with pytest.raises(ValueError):
             _adapter(tmp_path, episodes=0).load_tasks()
+
+
+class TestLocalConfig:
+    """How the conversion's workers are sized and started."""
+
+    def test_minus_one_workers_fills_the_machine(self):
+        from generic_converter.pipeline import local_config
+
+        config = local_config(task_count=10, workers=-1, cpus_per_task=1)
+
+        assert config["tasks"] == 10
+        assert config["workers"] >= 1
+
+    def test_a_worker_count_is_taken_as_given(self):
+        from generic_converter.pipeline import local_config
+
+        assert local_config(10, 4, 1)["workers"] == 4
+
+    def test_the_start_method_is_left_to_datatrove_unless_asked_for(self):
+        from generic_converter.pipeline import local_config
+
+        assert "start_method" not in local_config(10, 4, 1)
+
+    def test_a_named_start_method_reaches_the_executor(self):
+        """openx asks for spawn: it has TensorFlow loaded, and workers forked from
+        that can inherit a lock held by a thread they do not have."""
+        from generic_converter.pipeline import local_config
+
+        assert local_config(10, 4, 1, "spawn")["start_method"] == "spawn"

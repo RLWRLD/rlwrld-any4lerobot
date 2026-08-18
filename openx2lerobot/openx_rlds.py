@@ -227,6 +227,11 @@ def create_lerobot_dataset(
         hub_repo_id=repo_id,
         push_to_hub=push_to_hub,
         extra_tags=("openx",) if dataset_name in OXE_DATASET_CONFIGS else (),
+        # spawn, not the forkserver datatrove defaults to: this process has already
+        # imported TensorFlow, and workers forked from that state can inherit a lock
+        # held by a thread they do not have. It does not fail, it waits -- one run
+        # held a 48-core instance for fifteen hours without starting a task.
+        start_method="spawn",
     )
 
 
