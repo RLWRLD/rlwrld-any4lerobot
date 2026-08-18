@@ -29,19 +29,19 @@ Example:
 """
 
 import argparse
-import re
 import shutil
-from functools import partial
 from pathlib import Path
 
 import numpy as np
 import tensorflow as tf
 import tensorflow_datasets as tfds
-from lerobot.datasets.lerobot_dataset import LeRobotDataset
 from lerobot.utils.constants import HF_LEROBOT_HOME
+
+from adapter import OpenXAdapter, read_raw_dir
+from generic_converter import run_converter
 from oxe_utils.configs import OXE_DATASET_CONFIGS, ActionEncoding, StateEncoding
 from oxe_utils.transforms import OXE_STANDARDIZATION_TRANSFORMS
-from video_rules import parse_rule, resize_frame, rgb_encoder, target_shape
+from video_rules import resize_frame, target_shape
 
 np.set_printoptions(precision=2)
 
@@ -157,36 +157,16 @@ def camera_shapes(features) -> dict[str, tuple[int, int]]:
     }
 
 
-def save_as_lerobot_dataset(
-    lerobot_dataset: LeRobotDataset,
-    raw_dataset: tf.data.Dataset,
-    shapes: dict[str, tuple[int, int]] | None = None,
-    **kwargs,
-):
-    shapes = shapes or {}
-    for episode in raw_dataset.as_numpy_iterator():
-        traj = episode["steps"]
-        for i in range(traj["action"].shape[0]):
-            image_dict = {
-                f"observation.images.{key}": _sized(
-                    value[i], shapes.get(f"observation.images.{key}")
-                )
-                for key, value in traj["observation"].items()
-                if "depth" not in key and any(x in key for x in ["image", "rgb"])
-            }
-            lerobot_dataset.add_frame(
-                {
-                    **image_dict,
-                    "observation.state": traj["proprio"][i],
-                    "action": traj["action"][i],
-                    "task": traj["task"][0].decode(),
-                },
-            )
-        lerobot_dataset.save_episode()
-
-
-def _sized(frame, shape):
-    return frame if shape is None else resize_frame(frame, shape)
+def frame_images(observation, index: int, shapes: dict[str, tuple[int, int]]):
+    """One frame's camera images, keyed and sized the way they will be written."""
+    out = {}
+    for key, value in observation.items():
+        if "depth" in key or not any(x in key for x in ["image", "rgb"]):
+            continue
+        name = f"observation.images.{key}"
+        shape = shapes.get(name)
+        out[name] = value[index] if shape is None else resize_frame(value[index], shape)
+    return out
 
 
 def create_lerobot_dataset(
@@ -199,81 +179,55 @@ def create_lerobot_dataset(
     use_videos: bool = True,
     image_writer_process: int = 5,
     image_writer_threads: int = 10,
-    keep_images: bool = True,
     resize=None,
     encoding=None,
-):
-    last_part = raw_dir.name
-    if re.match(r"^\d+\.\d+\.\d+$", last_part):
-        version = last_part
-        dataset_name = raw_dir.parent.name
-        data_dir = raw_dir.parent.parent
-    else:
-        version = ""
-        dataset_name = last_part
-        data_dir = raw_dir.parent
+    executor: str = "local",
+    workers: int = -1,
+    cpus_per_task: int = 1,
+    tasks_per_job: int = 1,
+    episodes_per_task: int = 100,
+    max_episodes: int | None = None,
+    resume_dir: Path | None = None,
+    debug: bool = False,
+) -> Path:
+    """Convert one RLDS source, a chunk of episodes per task.
 
+    A single-process run is ``--workers 1``: the same code path, one task at a time.
+    There is no separate serial implementation to keep in step with this one.
+    """
+    dataset_name, version, _ = read_raw_dir(raw_dir)
     if local_dir is None:
         local_dir = Path(HF_LEROBOT_HOME)
-    local_dir /= f"{dataset_name}_{version}_lerobot"
-    if local_dir.exists():
-        shutil.rmtree(local_dir)
+    output_path = local_dir / f"{dataset_name}_{version}_lerobot"
+    if output_path.exists():
+        shutil.rmtree(output_path)
 
-    builder = tfds.builder(dataset_name, data_dir=data_dir, version=version)
-    resize = parse_rule(resize)
-    features = generate_features_from_raw(builder, use_videos, resize=resize)
-    filter_fn = lambda e: e["success"] if dataset_name == "kuka" else True
-    raw_dataset = (
-        builder.as_dataset(split="train")
-        .filter(filter_fn)
-        .map(partial(transform_raw_dataset, dataset_name=dataset_name))
-    )
-
-    if fps is None:
-        if dataset_name in OXE_DATASET_CONFIGS:
-            fps = OXE_DATASET_CONFIGS[dataset_name]["control_frequency"]
-        else:
-            fps = 10
-
-    if robot_type is None:
-        if dataset_name in OXE_DATASET_CONFIGS:
-            robot_type = OXE_DATASET_CONFIGS[dataset_name]["robot_type"]
-            robot_type = robot_type.lower().replace(" ", "_").replace("-", "_")
-        else:
-            robot_type = "unknown"
-
-    lerobot_dataset = LeRobotDataset.create(
-        repo_id=repo_id,
+    adapter = OpenXAdapter(
+        raw_dir=raw_dir,
+        output_path=output_path,
+        episodes_per_task=episodes_per_task,
+        resize=resize,
+        encoding=encoding,
+        fps=fps,
         robot_type=robot_type,
-        root=local_dir,
-        fps=int(fps),
         use_videos=use_videos,
-        features=features,
+        image_writer_process=image_writer_process,
         image_writer_threads=image_writer_threads,
-        image_writer_processes=image_writer_process,
-        rgb_encoder=rgb_encoder(encoding),
+        max_episodes=max_episodes,
     )
-
-    save_as_lerobot_dataset(
-        lerobot_dataset,
-        raw_dataset,
-        shapes=camera_shapes(features),
-        keep_images=keep_images,
+    return run_converter(
+        adapter=adapter,
+        executor=executor,
+        cpus_per_task=cpus_per_task,
+        tasks_per_job=tasks_per_job,
+        workers=workers,
+        resume_dir=resume_dir,
+        debug=debug,
+        local_repo_id=repo_id,
+        hub_repo_id=repo_id,
+        push_to_hub=push_to_hub,
+        extra_tags=("openx",) if dataset_name in OXE_DATASET_CONFIGS else (),
     )
-
-    if push_to_hub:
-        assert repo_id is not None
-        tags = ["LeRobot", dataset_name, "rlds"]
-        if dataset_name in OXE_DATASET_CONFIGS:
-            tags.append("openx")
-        if robot_type != "unknown":
-            tags.append(robot_type)
-        lerobot_dataset.push_to_hub(
-            tags=tags,
-            private=False,
-            push_videos=True,
-            license="apache-2.0",
-        )
 
 
 def main():
@@ -339,6 +293,34 @@ def main():
             "LeRobot's own writer settings."
         ),
     )
+    parser.add_argument(
+        "--executor",
+        choices=["local", "ray"],
+        default="local",
+        help="local spreads tasks across this machine's cores; ray across a cluster",
+    )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=-1,
+        help="concurrent tasks; -1 fills the machine. 1 is a single-process run.",
+    )
+    parser.add_argument("--cpus-per-task", type=int, default=1)
+    parser.add_argument("--tasks-per-job", type=int, default=1)
+    parser.add_argument(
+        "--episodes-per-task",
+        type=int,
+        default=100,
+        help="episodes per temporary dataset; one task per chunk",
+    )
+    parser.add_argument(
+        "--max-episodes",
+        type=int,
+        default=None,
+        help="convert only the first N episodes; for smoke tests",
+    )
+    parser.add_argument("--resume-dir", type=Path, default=None)
+    parser.add_argument("--debug", action="store_true")
     parser.add_argument(
         "--image-writer-process",
         type=int,

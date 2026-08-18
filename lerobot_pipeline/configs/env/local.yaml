@@ -17,5 +17,7 @@ batch:
   target_episodes: 1
 
 builders:
+  # one dataset at a time here, but still across this box's cores
+  openx: {executor: local, episodes_per_task: 100}
   spec: {executor: local, episodes_per_task: 100}
   agibot: {executor: local}

@@ -21,6 +21,8 @@ batch:
   target_episodes: 768
 
 builders:
+  # RLDS splits by episode, so one dataset can use the whole instance
+  openx: {executor: local, episodes_per_task: 100}
   # one temporary dataset per 100 episodes, distributed across cores by datatrove
   spec: {executor: local, episodes_per_task: 100}
   agibot: {executor: local, episodes_per_task: 100}
