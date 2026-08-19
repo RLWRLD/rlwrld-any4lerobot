@@ -76,7 +76,7 @@ lerobot:
       # lerobot key -> where it lives in the source, and its size before any resize
       primary: {source: top, shape: [800, 1280, 3]}
     resize: resize_preserve_aspect_area
-    encoding: rldx1_reference
+    encoding: h264_crf21
     keeps_original: false
 
   features:

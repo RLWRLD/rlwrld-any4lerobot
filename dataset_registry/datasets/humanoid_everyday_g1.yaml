@@ -44,7 +44,7 @@ lerobot:
       egocentric: {source: egocentric}
       egocentric_resized: {source: egocentric}
     resize: resize_preserve_aspect_area
-    encoding: rldx1_reference
+    encoding: h264_crf18_fast
     # the only dataset in the collection that keeps the untouched original
     # (egocentric, 640x480) beside the resized copy (egocentric_resized, 256x192)
     keeps_original: true
