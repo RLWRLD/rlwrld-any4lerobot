@@ -1,7 +1,9 @@
+import json
 from pathlib import Path
 
 import pytest
 
+import adapter
 from adapter import OpenXAdapter, episode_chunks, read_raw_dir
 
 
@@ -118,3 +120,48 @@ class TestLocalConfig:
         from generic_converter.pipeline import local_config
 
         assert local_config(10, 4, 1, "spawn")["start_method"] == "spawn"
+
+
+class TestFileFormat:
+    """Which reader a mirror needs, read before a run rather than during one.
+
+    tfds writes two formats and offers a different API for each: tfrecord through
+    as_dataset, array_record through as_data_source, and asking for the wrong one
+    fails with an assertion about download_and_prepare that says nothing about the
+    format. bc_z's mirror is array_record -- 1024 shards of it -- so a run that finds
+    out late has already fetched 56 GB.
+    """
+
+    def _info(self, root: Path, file_format: str | None):
+        root.mkdir(parents=True, exist_ok=True)
+        payload = {"name": "demo", "version": "1.0.0"}
+        if file_format is not None:
+            payload["fileFormat"] = file_format
+        (root / "dataset_info.json").write_text(json.dumps(payload))
+        return root
+
+    def test_a_tfrecord_mirror_says_so(self, tmp_path):
+        root = self._info(tmp_path / "demo" / "1.0.0", "tfrecord")
+        assert adapter.file_format(root) == "tfrecord"
+
+    def test_an_array_record_mirror_says_so(self, tmp_path):
+        root = self._info(tmp_path / "demo" / "1.0.0", "array_record")
+        assert adapter.file_format(root) == "array_record"
+
+    def test_an_older_mirror_without_the_field_reads_as_tfrecord(self, tmp_path):
+        """The field arrived after the format did; absent means the original one."""
+        root = self._info(tmp_path / "demo" / "1.0.0", None)
+        assert adapter.file_format(root) == "tfrecord"
+
+    def test_no_metadata_at_all_is_not_guessed_at(self, tmp_path):
+        assert adapter.file_format(tmp_path / "nothing") is None
+
+    def test_planning_refuses_an_array_record_mirror_by_name(self, tmp_path):
+        """Not "call download_and_prepare" 56 GB later. The converter cannot read this
+        format yet, so the run should stop at planning with the format named."""
+        raw = tmp_path / "bc_z" / "1.0.1"
+        self._info(raw, "array_record")
+        subject = OpenXAdapter(raw_dir=raw, output_path=tmp_path / "out")
+
+        with pytest.raises(NotImplementedError, match="array_record"):
+            subject.load_tasks()
