@@ -312,8 +312,9 @@ def viola_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def berkeley_autolab_ur5_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
-    # flip wrist_image from bgr to rgb
-    trajectory["observation"]["hand_image"] = trajectory["observation"]["hand_image"][..., ::-1]
+    # The bgr->rgb flip these datasets used to do here now lives in
+    # video_rules.BGR_CAMERAS, so that whether to flip is a rule a run is given
+    # rather than something the standardisation decides for it.
 
     trajectory["observation"]["state"] = trajectory["observation"]["robot_state"][:, 6:14]
     trajectory["observation"]["depth"] = trajectory["observation"].pop("image_with_depth")
@@ -404,9 +405,9 @@ def nyu_rot_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def stanford_hydra_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
-    # flip image & wrist_image from bgr to rgb
-    trajectory["observation"]["image"] = trajectory["observation"]["image"][..., ::-1]
-    trajectory["observation"]["wrist_image"] = trajectory["observation"]["wrist_image"][..., ::-1]
+    # The bgr->rgb flip these datasets used to do here now lives in
+    # video_rules.BGR_CAMERAS, so that whether to flip is a rule a run is given
+    # rather than something the standardisation decides for it.
 
     # invert gripper action, +1 = open, 0 = close
     trajectory["action"] = tf.concat(
@@ -726,9 +727,9 @@ def uiuc_d3field_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]
 
 
 def utaustin_mutex_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
-    # flip image & wrist_image from bgr to rgb
-    trajectory["observation"]["image"] = trajectory["observation"]["image"][..., ::-1]
-    trajectory["observation"]["wrist_image"] = trajectory["observation"]["wrist_image"][..., ::-1]
+    # The bgr->rgb flip these datasets used to do here now lives in
+    # video_rules.BGR_CAMERAS, so that whether to flip is a rule a run is given
+    # rather than something the standardisation decides for it.
 
     trajectory["observation"]["state"] = trajectory["observation"]["state"][:, :8]
 
@@ -748,9 +749,9 @@ def utaustin_mutex_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, An
 
 
 def berkeley_fanuc_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
-    # flip image & wrist_image from bgr to rgb
-    trajectory["observation"]["image"] = trajectory["observation"]["image"][..., ::-1]
-    trajectory["observation"]["wrist_image"] = trajectory["observation"]["wrist_image"][..., ::-1]
+    # The bgr->rgb flip these datasets used to do here now lives in
+    # video_rules.BGR_CAMERAS, so that whether to flip is a rule a run is given
+    # rather than something the standardisation decides for it.
 
     trajectory["observation"]["joint_state"] = trajectory["observation"]["state"][:, :6]
     trajectory["observation"]["gripper_state"] = trajectory["observation"]["state"][:, 6:7]
@@ -826,11 +827,9 @@ def gnm_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def fmb_dataset_transform(trajectory: Dict[str, Any]) -> Dict[str, Any]:
-    # flip image from bgr to rgb
-    trajectory["observation"]["image_wrist_1"] = trajectory["observation"]["image_wrist_1"][..., ::-1]
-    trajectory["observation"]["image_wrist_2"] = trajectory["observation"]["image_wrist_2"][..., ::-1]
-    trajectory["observation"]["image_side_1"] = trajectory["observation"]["image_side_1"][..., ::-1]
-    trajectory["observation"]["image_side_2"] = trajectory["observation"]["image_side_2"][..., ::-1]
+    # The bgr->rgb flip these datasets used to do here now lives in
+    # video_rules.BGR_CAMERAS, so that whether to flip is a rule a run is given
+    # rather than something the standardisation decides for it.
     
     # every input feature is batched, ie has leading batch dimension
     trajectory["observation"]["proprio"] = tf.concat(

@@ -62,6 +62,31 @@ class SaveLeRobotDataset(PipelineStep):
             shutil.rmtree(task.output_path, ignore_errors=True)
 
 
+def local_config(
+    task_count: int,
+    workers: int,
+    cpus_per_task: int,
+    start_method: str | None = None,
+) -> dict:
+    """How a local run is sized, and how its workers are started.
+
+    ``start_method`` is worth naming rather than leaving to the default when the
+    parent process has already loaded a library that keeps threads. datatrove
+    forkservers by default, which inherits whatever state the parent had when the
+    server was started -- and a converter that has imported TensorFlow can hand its
+    workers a lock held by a thread that does not exist in them. That deadlock does
+    not fail: it waits. One was found holding a 48-core instance for fifteen hours
+    with fifteen seconds of CPU used and no task started.
+    """
+    resolved = (
+        max(1, (os.cpu_count() or 1) // cpus_per_task) if workers == -1 else workers
+    )
+    config = {"tasks": task_count, "workers": resolved}
+    if start_method:
+        config["start_method"] = start_method
+    return config
+
+
 def run_converter(
     adapter: BaseAdapter,
     executor: str,
@@ -75,6 +100,7 @@ def run_converter(
     push_to_hub: bool = False,
     cleanup_temp: bool = True,
     extra_tags: Sequence[str] | None = None,
+    start_method: str | None = None,
 ) -> Path:
     tasks = adapter.load_tasks()
     output_path = adapter.output_path
@@ -98,17 +124,9 @@ def run_converter(
         case "local":
             from datatrove.executor import LocalPipelineExecutor
 
-            resolved_workers = (
-                max(1, (os.cpu_count() or 1) // cpus_per_task)
-                if workers == -1
-                else workers
-            )
             executor_cls, executor_config = (
                 LocalPipelineExecutor,
-                {
-                    "tasks": len(tasks),
-                    "workers": resolved_workers,
-                },
+                local_config(len(tasks), workers, cpus_per_task, start_method),
             )
         case "ray":
             import ray

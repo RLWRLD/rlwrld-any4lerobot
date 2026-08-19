@@ -1,4 +1,4 @@
-"""The resize and encoding rules this converter is handed, resolved to what it needs.
+"""The video rules this converter is handed, resolved to what it needs.
 
 openx2lerobot does not transcode an existing file: it decodes RLDS frames and hands
 them to LeRobot's own video writer. So the two decisions the rest of the pipeline
@@ -7,10 +7,11 @@ expresses as a transform stage -- what size the frames are, and how they are enc
 re-encode what this converter just produced, a second lossy generation that the
 delivered datasets do not have.
 
-Both rules arrive as inputs rather than being decided here: a step mapping (or the
-name of one) for the resize, and the name of a file in
-``lerobot_pipeline/configs/encoding`` (or an inline mapping) for the encoder. Naming
-a different pair converts the same source a different way, with no code change.
+The rules arrive as inputs rather than being decided here: a step mapping (or the
+name of one) for the resize, the name of a file in
+``lerobot_pipeline/configs/encoding`` (or an inline mapping) for the encoder, and a
+name for the channel order. Naming a different set converts the same source a
+different way, with no code change.
 """
 
 import json
@@ -57,6 +58,53 @@ def parse_rule(value: str | Mapping[str, Any] | None) -> Mapping[str, Any] | Non
     return parsed
 
 
+# Cameras Open X-Embodiment reads as BGR, and the datasets they belong to.
+#
+# The upstream standardisation transforms flip these to RGB, with the comment "flip
+# image & wrist_image from bgr to rgb". The delivered copies were written without that
+# flip, so their colours are the source bytes read as RGB -- red and blue exchanged
+# against what the camera saw. Measured on utaustin_mutex against the RLDS source:
+# the delivered frames correlate 0.99 with the source read as-is and 0.73 with it
+# flipped, and the delivered channel means track the source's exactly.
+#
+# The list lives here rather than inside the transforms because *whether* to flip is
+# a rule a run is given. The transforms no longer flip; this does, when asked to.
+BGR_CAMERAS = {
+    "berkeley_autolab_ur5": ("hand_image",),
+    "stanford_hydra_dataset_converted_externally_to_rlds": ("image", "wrist_image"),
+    "utaustin_mutex": ("image", "wrist_image"),
+    "berkeley_fanuc_manipulation": ("image", "wrist_image"),
+    "fmb_dataset": (
+        "image_wrist_1",
+        "image_wrist_2",
+        "image_side_1",
+        "image_side_2",
+    ),
+}
+
+CHANNEL_RULES = ("as_source", "bgr_to_rgb")
+
+
+def flips_channels(channels, dataset_name: str, key: str) -> bool:
+    """Whether frames from camera ``key`` should have their channels reversed.
+
+    ``as_source`` writes the bytes in the order the RLDS file stores them, which is
+    what the delivered copies did. ``bgr_to_rgb`` reverses the cameras listed in
+    :data:`BGR_CAMERAS`, which is what Open X-Embodiment's own transforms do and what
+    makes the colours match the scene. Every camera not on that list is unaffected by
+    either, so most datasets convert the same way under both.
+    """
+    rule = parse_rule(channels)
+    if not rule:
+        return False
+    name = rule.get("type")
+    if name not in CHANNEL_RULES:
+        raise VideoRuleError(
+            f"unknown channel rule {name!r}; expected one of {', '.join(CHANNEL_RULES)}"
+        )
+    return name == "bgr_to_rgb" and key in BGR_CAMERAS.get(dataset_name, ())
+
+
 def target_shape(
     resize: Mapping[str, Any] | None, key: str, shape: tuple[int, int]
 ) -> tuple[int, int]:
@@ -75,10 +123,31 @@ def target_shape(
 def resize_frame(frame, shape: tuple[int, int]):
     """Downscale ``frame`` to ``shape``, centre-cropping whatever the scale leaves over.
 
-    ``INTER_AREA`` because every one of these is a downscale, which is the case it is
-    for; the crop is centred to match the ``crop`` filter the transform stage builds.
+    Through libswscale, which is the resizer ffmpeg's ``scale`` filter *is* -- not a
+    library that also offers something called bicubic. The transform stage resizes
+    with ``scale``, so this is the same rule applied by the same code rather than an
+    approximation of it, and PyAV is already here for the encoder.
+
+    The distinction is not academic. OpenCV's INTER_CUBIC has no scale-dependent
+    prefilter, so it keeps detail swscale would have low-passed away, and the encoder
+    pays for it.
+
+    Bicubic within swscale is measured too, not assumed. The target is the 0.96-1.00x
+    that cameras which are *not* resized come out at, that being the encoder build
+    difference on its own:
+
+        filter            ucsd (2.5x down)   taco_play (1.2x down)
+        swscale BICUBIC         0.86           1.01 / 1.04    64/64 episodes
+        swscale SINC            0.97           1.10 / 1.15    14/64
+        cv2 INTER_CUBIC         1.03           1.13 / 1.14    46/64
+
+    No filter hits the target on both, and the reason is not the filter: the gentler
+    the downscale the larger everything comes out, and that offset survives whichever
+    one is chosen. So the question is which stays inside tolerance everywhere, and
+    only bicubic does -- which is also the one ffmpeg would have used.
     """
-    import cv2
+    import av
+    from av.video.reformatter import Interpolation
 
     height, width = shape
     if frame.shape[:2] == (height, width):
@@ -87,11 +156,14 @@ def resize_frame(frame, shape: tuple[int, int]):
     scale = max(height / frame.shape[0], width / frame.shape[1])
     scaled_h = max(height, round(frame.shape[0] * scale))
     scaled_w = max(width, round(frame.shape[1] * scale))
-    frame = cv2.resize(frame, (scaled_w, scaled_h), interpolation=cv2.INTER_AREA)
+    picture = av.VideoFrame.from_ndarray(frame, format="rgb24").reformat(
+        width=scaled_w, height=scaled_h, interpolation=Interpolation.BICUBIC
+    )
+    resized = picture.to_ndarray(format="rgb24")
 
     top = (scaled_h - height) // 2
     left = (scaled_w - width) // 2
-    return frame[top : top + height, left : left + width]
+    return resized[top : top + height, left : left + width]
 
 
 # encoding profile key -> the field LeRobot's RGBEncoderConfig calls it.

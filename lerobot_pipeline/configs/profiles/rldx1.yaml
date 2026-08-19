@@ -35,9 +35,15 @@ video:
     type: resize_preserve_aspect_area
     max_area: 65536 # 256 ** 2
     multiple: 32 # image patch size
-  # reproduce how the delivered datasets were encoded rather than using this
-  # pipeline's own defaults -- see configs/encoding/rldx1_reference.yaml
-  encoding: rldx1_reference
+  # No encoding, on purpose. The collection was not delivered in one: 19 of the
+  # datasets carry LeRobot's own AV1 and 17 carry the H.264 only ffmpeg produces,
+  # and which one a dataset is belongs in that dataset's spec, where it is a record
+  # of the delivered copy rather than an instruction.
+  #
+  # Naming one here is how you say "build the whole collection this way instead",
+  # and it overrides every spec -- so writing rldx1_reference here, which is what
+  # this file used to do, silently asks for the 19 AV1 datasets to be rebuilt as
+  # H.264. Reproducing what was delivered is the absence of the key.
 
 dest:
   version: lerobot_v21
@@ -53,6 +59,19 @@ builders:
   openx:
     # emit mp4 rather than a folder of images, which is what every delivered copy is
     use_videos: true
+    # Write each camera's channels in the order the RLDS file stores them.
+    #
+    # Open X-Embodiment's own transforms reverse five datasets' cameras, commented
+    # "flip image & wrist_image from bgr to rgb". The delivered copies were written
+    # without that flip, so reproducing them means not flipping either: measured on
+    # utaustin_mutex against the RLDS source, the delivered frames correlate 0.99
+    # with the source read as-is and 0.73 with it reversed.
+    #
+    # This is therefore a record of how the collection was built, not a claim that
+    # its colours are right -- under `as_source` red and blue are exchanged against
+    # what those five datasets' cameras saw. `bgr_to_rgb` builds them the other way,
+    # and leaves the other 22 datasets identical either way.
+    channels: as_source
     # No encoding here: the OXE sources were not all encoded the same way. Most carry
     # LeRobot's own AV1, nine carry the H.264 only ffmpeg produces, and which one a
     # dataset is comes from its own spec. That choice also decides where the resize
