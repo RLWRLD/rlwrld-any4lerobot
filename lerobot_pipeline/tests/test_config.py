@@ -172,3 +172,80 @@ def test_a_converter_that_passes_video_through_still_gets_a_transform_stage():
 
     assert "resize" not in config.source.args
     assert "video" in [getattr(step, "kind", None) for step in config.steps]
+
+
+# --- asking for an encoding other than the delivered one ----------------------
+
+
+def _asked_for(dataset: str, encoding):
+    """``dataset`` built under an explicit encoding instead of the delivered one."""
+    return parse_config(
+        {
+            "name": dataset,
+            "dataset": dataset,
+            "profile": "rldx1",
+            "source": {"path": "/raw"},
+            "dest": {"path": "/out"},
+            "runtime": {"encoding": encoding},
+        }
+    )
+
+
+def test_an_asked_for_encoding_reaches_the_converter():
+    """The delivered encoding records what a source *is*; asking for a different one
+    is an instruction, and an instruction that only reaches half the collection is
+    worse than none. bridge_orig is delivered as H.264, which the converter cannot
+    write -- asked for AV1, it can, so the converter does the work."""
+    config = _asked_for("bridge_orig", "lerobot_av1_default")
+
+    assert config.source.args["encoding"] == "lerobot_av1_default"
+    assert [getattr(step, "kind", None) for step in config.steps] == []
+
+
+def test_an_asked_for_encoding_the_writer_cannot_produce_moves_work_to_the_stage():
+    """The other direction: cmu_stretch is delivered as AV1 and normally written by
+    the converter, but H.264 with B-frames is an ffmpeg command line, so asking for
+    it has to hand the video back to the transform stage."""
+    config = _asked_for("cmu_stretch", "rldx1_reference")
+
+    assert "encoding" not in config.source.args
+    assert "video" in [getattr(step, "kind", None) for step in config.steps]
+
+
+def test_the_asked_for_encoding_is_the_one_reported_as_applied():
+    from lerobot_pipeline.plan import encoding_used
+
+    # the codec, not the gop: random_access and the delivered AV1 share a gop of 2,
+    # so that field would pass whichever of the two won
+    assert encoding_used(_asked_for("cmu_stretch", "random_access"))["codec"] == "libx264"
+
+
+def test_without_an_instruction_each_dataset_keeps_its_delivered_encoding():
+    """No override anywhere: the collection reproduces what was delivered, which is
+    two different encodings split by builder rather than one."""
+    from lerobot_pipeline.plan import encoding_used
+
+    assert encoding_used(_resolved("cmu_stretch"))["codec"] == "libsvtav1"
+    assert encoding_used(_resolved("bridge_orig"))["bframes"] == 3
+
+
+def test_one_setting_can_be_asked_for_on_its_own():
+    """Changing the keyframe interval should not mean restating the codec, the crf
+    and the pixel format alongside it. An inline mapping is a partial instruction:
+    what it names is overridden and the rest stays as delivered."""
+    from lerobot_pipeline.plan import encoding_used
+
+    applied = encoding_used(_asked_for("cmu_stretch", {"gop": 50}))
+
+    assert applied["gop"] == 50
+    assert applied["codec"] == "libsvtav1"
+
+
+def test_a_partial_instruction_still_reaches_the_converter():
+    """A gop the writer can be asked for keeps the video work where it was, rather
+    than adding a transcode because the instruction arrived in a different shape."""
+    config = _asked_for("cmu_stretch", {"gop": 50})
+
+    reached = json.loads(config.source.args["encoding"])
+    assert (reached["gop"], reached["codec"]) == (50, "libsvtav1")
+    assert [getattr(step, "kind", None) for step in config.steps] == []
