@@ -7,6 +7,7 @@ would either pass everything or fail everything.
 """
 
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -286,8 +287,60 @@ class TestDeclaredCameras:
                     "gop": 2, "bytes": 100}
 
         monkeypatch.setattr(compare, "probe", fake_probe)
+        # the fixtures are empty files, so the pixel read has nothing to decode; this
+        # test is about which cameras are reached, not about what is in them
+        monkeypatch.setattr(compare, "pixel_agreement", lambda *a, **k: 1.0)
         summary, problems = compare.compare_video(rebuilt, delivered, 0)
 
         assert set(probed) == {"top"}
         assert set(summary) == {"top"}
         assert not problems
+
+
+class TestPixels:
+    """Whether the pictures agree, not just their file sizes.
+
+    A size ratio cannot see a difference that does not change how well the frames
+    compress. Exchanging the red and blue channels is exactly that: measured on
+    utaustin_mutex, a rebuilt episode whose channels were reversed came within 1% of
+    the delivered size and passed, while its frames correlated 0.74 against the ones
+    it was meant to reproduce.
+    """
+
+    def _clip(self, path: Path, colour, frames=6, size=(64, 64)):
+        """A tiny mp4 of one flat colour, so the comparison is about the pixels."""
+        path.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run(
+            ["ffmpeg", "-v", "error", "-f", "lavfi", "-i",
+             f"color=c={colour}:s={size[0]}x{size[1]}:r=10:d={frames / 10}",
+             "-c:v", "libx264", "-pix_fmt", "yuv420p", "-y", str(path)],
+            check=True, capture_output=True)
+        return path
+
+    def test_the_same_picture_agrees(self, tmp_path):
+        a = self._clip(tmp_path / "a.mp4", "red")
+        b = self._clip(tmp_path / "b.mp4", "red")
+        assert compare.pixel_agreement(a, b) > 0.99
+
+    def test_reversed_channels_do_not_agree(self, tmp_path):
+        """Red against blue is the shape the real defect took."""
+        a = self._clip(tmp_path / "a.mp4", "0xFF4020")
+        b = self._clip(tmp_path / "b.mp4", "0x2040FF")
+        assert compare.pixel_agreement(a, b) < 0.99
+
+    def test_frames_are_sampled_rather_than_all_decoded(self, tmp_path):
+        """A long episode costs the same as a short one: only the sample is decoded."""
+        a = self._clip(tmp_path / "a.mp4", "green", frames=200)
+        assert len(compare.sample_frames(a, 4)) == 4
+
+    def test_a_reversed_episode_is_reported_even_though_its_size_matches(self, tmp_path):
+        """The whole point: two clips of the same flat colour with red and blue
+        exchanged encode to nearly the same number of bytes, so only the pixels can
+        tell them apart."""
+        for root, colour in ((tmp_path / "r", "0xFF4020"), (tmp_path / "d", "0x2040FF")):
+            self._clip(root / "videos" / "chunk-000" / "cam" / "episode_000000.mp4", colour)
+
+        summary, problems = compare.compare_video(tmp_path / "r", tmp_path / "d", 0)
+
+        assert any("frames agree" in p for p in problems), problems
+        assert "PIXELS" in summary["cam"]
