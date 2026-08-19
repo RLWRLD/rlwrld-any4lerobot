@@ -48,7 +48,7 @@ the next.
 
 | step | question | how it is judged |
 |---|---|---|
-| 1 · declaration | do the two even claim to be the same dataset | every `meta/info.json` field except the counts |
+| 1 · declaration | do the two even claim to be the same dataset | every file under `meta/` that needs no pairing |
 | 2 · episodes | how much of the delivered copy is there | **counted, never failed** |
 | 3 · sample | is what is there the same | state and action exactly; video loosely on bytes and exactly on everything else |
 | 4 · distributions | do the two describe the same data | over every episode **and** over the episodes they share |
@@ -77,6 +77,51 @@ here as one feature key on each side, and step 3 names it too, off the video dir
 
 `total_episodes` and its neighbours are set aside for a different reason — they follow
 from step 2, and failing here would report one finding twice.
+
+### All of `meta/`, and the one file left out
+
+Every file under `meta/` is compared except **`relative_stats.json`**, which is left out
+by decision: it is two bytes — `{}` — in every delivered copy examined, so there is
+nothing in it to reproduce. A file under `meta/` that nothing here compares is still
+named in the report, because the collection has grown metadata before and a silent new
+file is how a schema drifts without anyone deciding to.
+
+| file | compared as | what is set aside, and why |
+|---|---|---|
+| `info.json` | field by field | the counts; fields only one copy declares |
+| `tasks.jsonl` | the **set** of prompts | which index each is given — the rebuild numbers them in the order it first meets them, the delivered copy numbered them alphabetically |
+| `modality.json` | field by field | nothing; every entry is a claim about the data |
+| `stats.json` | per feature and statistic | the ordering features; quantiles the rebuild does not carry |
+| `episodes.jsonl` | per pair: prompt and length | — |
+| `episodes_stats.jsonl` | per pair, per feature and statistic | as `stats.json` |
+
+The last two are compared in **step 3**, not here, because they are keyed by episode
+index and need the pairing: 134 of cmu_stretch's 135 episodes sit somewhere else, so a
+line-by-line diff calls every line different and says nothing. Pair by pair they are
+exact. Reported per statistic rather than per episode — a statistic that is wrong is
+usually wrong in every episode, and 405 lines saying so is one finding printed 405
+times.
+
+Three kinds of difference are set aside there, each with the reason printed beside it:
+
+- **ordering features** — `index`, `episode_index`, `task_index`. These are bookkeeping,
+  not data, and they move whenever the rebuild writes episodes or numbers tasks in a
+  different order. That those are the *only* three was measured: over all 135
+  cmu_stretch pairs `index` differs by 2.4e4, `episode_index` by 128 and `task_index`
+  by 3, while `observation.state`, `action`, `timestamp` and `frame_index` are exact to
+  the bit.
+- **image statistics**, within a tolerance — a rebuild is a second lossy generation of
+  the same picture. `min` and `max` are allowed further than `mean` and `std`: one pixel
+  decides an extreme while a mean averages a hundred frames of them, and 8 of 135 pairs
+  put `max` between 0.05 and 0.0667 while every `mean` stayed under 0.0059.
+- **absent quantiles** — the v3.0 → v2.1 downgrade keeps five keys and the delivered
+  copies have ten.
+
+What is *not* set aside is a statistic the delivered copy never computed. Every
+delivered cmu_stretch episode records image `std` as exactly zero, where the pixels have
+a spread of 0.24 — so the rebuild and the delivered copy differ because the rebuild
+computed it and the delivered copy did not. That is reported as the difference it is,
+with the cause named, rather than tolerated away.
 
 **Step 2** pairs episodes on their own state and action bytes, since they carry no
 source id and the rebuild does not write them in the delivered order. It pairs twice —

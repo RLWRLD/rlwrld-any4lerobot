@@ -195,6 +195,350 @@ def compare_declarations(rebuilt: Path, delivered: Path) -> Declaration:
     return result
 
 
+# ---------------------------------------------------- the rest of ``meta``
+
+# Every file under ``meta/`` a comparison covers. ``relative_stats.json`` is left out
+# by decision rather than by oversight: it is two bytes -- ``{}`` -- in every delivered
+# copy examined, so there is nothing in it to reproduce.
+META_COMPARED = ("info.json", "tasks.jsonl", "modality.json", "stats.json",
+                 "episodes.jsonl", "episodes_stats.jsonl")
+META_EXCLUDED = ("relative_stats.json",)
+
+# Stats features that are bookkeeping rather than data: which episode a row belongs to,
+# where it sits in the dataset's global row order, and which line of ``tasks.jsonl``
+# its prompt is on. All three move when a rebuild writes episodes in a different order
+# or assigns task indices in a different order, and it does both -- which the episode
+# question already reports, so failing here would report it again.
+#
+# That they are the *only* three was measured, not assumed. Over all 135 cmu_stretch
+# pairs: index differs by 2.4e4, episode_index by 128 and task_index by 3, while
+# observation.state, action, timestamp and frame_index are exact to the bit.
+ORDER_FEATURES = ("index", "episode_index", "task_index")
+
+# Statistics taken from decoded video cannot be exact -- a rebuild is a second lossy
+# generation of the same picture. Image stats are stored normalised to 0-1, and on
+# cmu_stretch the paired episodes differ by 0.0057 in mean, 0.016 in min and 0.035 in
+# max: an extreme moves further than a mean does, because one clipped pixel decides it.
+# Expressed as a fraction of the delivered range so one number covers uint8 frames and
+# float depth maps.
+IMAGE_STAT_TOLERANCE = 5e-2
+
+# An extreme is decided by one pixel; a mean averages a hundred frames of them. So min
+# and max move further under a second lossy generation than mean and std do, and on
+# cmu_stretch 8 of 135 paired episodes put max between 0.05 and 0.0667 while every mean
+# stayed under 0.0059. Holding an extreme to the mean's allowance fails a faithful
+# rebuild for a single clipped pixel.
+IMAGE_EXTREME_TOLERANCE = 1e-1
+EXTREME_STATS = ("min", "max")
+
+# What a statistic may differ by when neither video nor ordering explains it. The same
+# reasoning as DISTRIBUTION_TOLERANCE: a rebuild that reproduces an episode agrees to
+# around 1e-15, so anything this far above it is the data and not the arithmetic.
+STAT_TOLERANCE = 1e-6
+
+
+@dataclass
+class Finding:
+    """One metadata comparison: what disagrees, and what disagrees for a known reason.
+
+    Two buckets rather than one, for the same reason the whole funnel has steps. Some
+    of what differs here is the rebuild being wrong and some of it follows from
+    something already reported -- the episode order, the task table's order, a lossy
+    re-encode -- and a single list of differences cannot tell a reader which is which.
+    Only ``differences`` fails; ``set_aside`` is printed with the ``reason`` beside it.
+    """
+
+    subject: str
+    differences: dict[str, tuple[Any, Any]] = field(default_factory=dict)
+    set_aside: dict[str, tuple[Any, Any]] = field(default_factory=dict)
+    reason: str = ""
+    absent: list[str] = field(default_factory=list)
+
+    @property
+    def agree(self) -> bool:
+        """A file the rebuild does not have counts against it; one neither has does not."""
+        return not self.differences and "rebuilt" not in self.absent
+
+
+def meta_json(root: Path, name: str) -> Any | None:
+    path = root / "meta" / name
+    if not path.is_file():
+        return None
+    try:
+        return json.loads(path.read_text())
+    except json.JSONDecodeError:
+        return None
+
+
+def meta_lines(root: Path, name: str) -> list[dict] | None:
+    path = root / "meta" / name
+    if not path.is_file():
+        return None
+    out = []
+    for line in path.read_text().splitlines():
+        if line.strip():
+            out.append(json.loads(line))
+    return out
+
+
+def _absence(rebuilt: Path, delivered: Path, name: str, result: Finding) -> bool:
+    """Record which side lacks ``meta/<name>``. True when there is nothing to compare.
+
+    A file the delivered copy has and the rebuild does not is a difference in the
+    dataset even though no value differs -- a rebuild with no ``modality.json`` cannot
+    be read by the training stack at all. Reporting nothing about an absent file, and
+    printing "ok" beside it, is how that goes unnoticed.
+    """
+    mine = (rebuilt / "meta" / name).is_file()
+    theirs = (delivered / "meta" / name).is_file()
+    if mine and theirs:
+        return False
+    if not mine and not theirs:
+        # neither wrote it; inventing a failure for a file nobody has is noise
+        return True
+    result.absent.append("rebuilt" if not mine else "delivered")
+    result.differences[name] = ("present" if mine else ABSENT,
+                                "present" if theirs else ABSENT)
+    return True
+
+
+def meta_inventory(rebuilt: Path, delivered: Path) -> Finding:
+    """Which of the compared files each copy actually has.
+
+    Its own finding because a file that is absent has no fields to disagree about, and
+    reporting nothing about it reads as agreement. A rebuild that never wrote
+    ``modality.json`` is not usable by the training stack -- that file is what says how
+    to slice the flat vectors -- so its absence is a difference in the dataset even
+    though no value differs.
+    """
+    result = Finding(subject="meta/", reason="excluded from the comparison by decision")
+    for name in META_EXCLUDED:
+        if (delivered / "meta" / name).is_file() or (rebuilt / "meta" / name).is_file():
+            result.set_aside[name] = ("not compared", "not compared")
+    for name in sorted({q.name for q in (delivered / "meta").glob("*")}
+                       - set(META_COMPARED) - set(META_EXCLUDED)):
+        # a file nobody thought to compare is worth one line: the collection has
+        # grown metadata before and a silent new file is how a schema drifts
+        result.set_aside[name] = ("not compared", "not compared")
+    return result
+
+
+def compare_tasks(rebuilt: Path, delivered: Path) -> Finding:
+    """``meta/tasks.jsonl`` -- the task table.
+
+    Compared as the *set* of prompts, because the index each is given is not a
+    property of the data. The rebuild numbers them in the order it first meets them,
+    which follows tfds read order; the delivered copy numbered them alphabetically. On
+    cmu_stretch that is the same five prompts under five different indices, and it is
+    also why the ``task_index`` column of the parquet differs while every episode's
+    prompt matches.
+    """
+    result = Finding(
+        subject="meta/tasks.jsonl",
+        reason="the index a task is given follows the order it was first seen, "
+               "not the data",
+    )
+    if _absence(rebuilt, delivered, "tasks.jsonl", result):
+        return result
+    mine = meta_lines(rebuilt, "tasks.jsonl")
+    theirs = meta_lines(delivered, "tasks.jsonl")
+
+    def table(lines):
+        return {entry["task_index"]: entry["task"] for entry in lines}
+
+    a, b = table(mine), table(theirs)
+    for task in sorted(set(a.values()) ^ set(b.values())):
+        side = "rebuilt" if task in a.values() else "delivered"
+        result.differences[task] = ("present" if side == "rebuilt" else ABSENT,
+                                   "present" if side == "delivered" else ABSENT)
+    for index in sorted(set(a) | set(b)):
+        if a.get(index) != b.get(index):
+            result.set_aside[f"task_index {index}"] = (a.get(index, ABSENT),
+                                                       b.get(index, ABSENT))
+    return result
+
+
+def compare_modality(rebuilt: Path, delivered: Path) -> Finding:
+    """``meta/modality.json`` -- how the training stack slices the flat vectors.
+
+    Not a LeRobot file: it is the GR00T-style view, and it is what decides which
+    columns of ``observation.state`` mean which body part. Compared field for field,
+    with nothing set aside, because every entry in it is a claim about the data.
+    """
+    result = Finding(subject="meta/modality.json")
+    if _absence(rebuilt, delivered, "modality.json", result):
+        return result
+    mine = meta_json(rebuilt, "modality.json")
+    theirs = meta_json(delivered, "modality.json")
+    a, b = flatten(mine), flatten(theirs)
+    for path in sorted(set(a) | set(b)):
+        if a.get(path, ABSENT) != b.get(path, ABSENT):
+            result.differences[path] = (a.get(path, ABSENT), b.get(path, ABSENT))
+    return result
+
+
+def _stat_gap(a: Any, b: Any) -> float:
+    import numpy as np
+
+    x, y = np.asarray(a, dtype="float64"), np.asarray(b, dtype="float64")
+    if x.shape != y.shape:
+        return float("inf")
+    return float(np.max(np.abs(x - y)))
+
+
+def _allowed(feature: str, stat: str, delivered_stats: dict) -> float:
+    """How far one statistic of one feature may drift, in its own units."""
+    import numpy as np
+
+    if not feature.startswith("observation.images"):
+        return STAT_TOLERANCE
+    lo = np.asarray(delivered_stats.get("min", 0.0), dtype="float64")
+    hi = np.asarray(delivered_stats.get("max", 1.0), dtype="float64")
+    span = max(float(np.max(hi - lo)), 1.0)
+    fraction = (IMAGE_EXTREME_TOLERANCE if stat in EXTREME_STATS
+                else IMAGE_STAT_TOLERANCE)
+    return fraction * span
+
+
+def compare_stat_blocks(
+    mine: dict, theirs: dict, label: str, result: Finding
+) -> None:
+    """One ``{feature: {stat: values}}`` pair, bucketed by what explains a difference."""
+    for feature in sorted(set(mine) | set(theirs)):
+        if feature not in mine or feature not in theirs:
+            result.differences[f"{label}{feature}"] = (
+                "present" if feature in mine else ABSENT,
+                "present" if feature in theirs else ABSENT,
+            )
+            continue
+        for stat in sorted(set(mine[feature]) | set(theirs[feature])):
+            where = f"{label}{feature}.{stat}"
+            allowed = _allowed(feature, stat, theirs[feature])
+            if stat not in mine[feature] or stat not in theirs[feature]:
+                # a quantile the rebuild does not carry: the v3.0 to v2.1 downgrade
+                # keeps five keys and the delivered copies have ten
+                result.set_aside[where] = (
+                    "present" if stat in mine[feature] else ABSENT,
+                    "present" if stat in theirs[feature] else ABSENT,
+                )
+                continue
+            gap = _stat_gap(mine[feature][stat], theirs[feature][stat])
+            if gap <= allowed:
+                continue
+            bucket = (result.set_aside if feature in ORDER_FEATURES
+                      else result.differences)
+            bucket[where] = (f"differs by {gap:.4g}", f"allowed {allowed:.2g}")
+
+
+def compare_stats_json(rebuilt: Path, delivered: Path) -> Finding:
+    """``meta/stats.json`` -- the statistics over the whole dataset."""
+    result = Finding(
+        subject="meta/stats.json",
+        reason="ordering features follow the episode and task order; missing "
+               "quantiles are the keys the v2.1 downgrade drops",
+    )
+    if _absence(rebuilt, delivered, "stats.json", result):
+        return result
+    mine = meta_json(rebuilt, "stats.json")
+    theirs = meta_json(delivered, "stats.json")
+    compare_stat_blocks(mine, theirs, "", result)
+    return result
+
+
+def compare_episode_meta(
+    rebuilt: Path, delivered: Path, pairs: dict[int, int]
+) -> Finding:
+    """``meta/episodes.jsonl`` and ``meta/episodes_stats.jsonl``, through the pairing.
+
+    These two cannot be compared line for line. Both are keyed by episode index and the
+    rebuild does not write episodes in the delivered order -- 134 of cmu_stretch's 135
+    sit somewhere else -- so a line-by-line diff would call every line different and
+    say nothing. Pair by pair they are exact, which is the finding worth having.
+
+    Every pair, not a sample: both files are read in full anyway, so checking some of
+    them would save nothing and would miss a length or a statistic that went wrong
+    outside the sample.
+
+    Reported per statistic rather than per episode. A statistic that is wrong is
+    usually wrong in every episode -- cmu_stretch's image ``std`` is wrong in all 135
+    -- and 405 lines saying so is not 405 findings, it is one finding printed 405
+    times. So each ``(feature, stat)`` gets one line: how many pairs differ, and the
+    worst of them.
+    """
+    import numpy as np
+
+    result = Finding(
+        subject="meta/episodes.jsonl + meta/episodes_stats.jsonl",
+        reason="ordering features follow the episode and task order, which the "
+               "episode question already reports; absent quantiles are the five "
+               "keys the v3.0 to v2.1 downgrade drops",
+    )
+    episodes_a = {e["episode_index"]: e
+                  for e in meta_lines(rebuilt, "episodes.jsonl") or []}
+    episodes_b = {e["episode_index"]: e
+                  for e in meta_lines(delivered, "episodes.jsonl") or []}
+    stats_a = {e["episode_index"]: e["stats"]
+               for e in meta_lines(rebuilt, "episodes_stats.jsonl") or []}
+    stats_b = {e["episode_index"]: e["stats"]
+               for e in meta_lines(delivered, "episodes_stats.jsonl") or []}
+
+    # (feature, stat) -> [pairs compared, pairs differing, worst gap, allowed,
+    #                     delivered was all zero]
+    tally: dict[tuple[str, str], list] = {}
+    for one, other in sorted(pairs.items()):
+        if one in episodes_a and other in episodes_b:
+            a, b = episodes_a[one], episodes_b[other]
+            for key in ("tasks", "length"):
+                if a.get(key) != b.get(key):
+                    result.differences[f"episodes.jsonl[{one}].{key}"] = (
+                        a.get(key, ABSENT), b.get(key, ABSENT))
+        if one not in stats_a or other not in stats_b:
+            continue
+        mine, theirs = stats_a[one], stats_b[other]
+        for feature in sorted(set(mine) | set(theirs)):
+            if feature not in mine or feature not in theirs:
+                result.differences[f"episodes_stats.jsonl.{feature}"] = (
+                    "present" if feature in mine else ABSENT,
+                    "present" if feature in theirs else ABSENT)
+                continue
+            for stat in sorted(set(mine[feature]) | set(theirs[feature])):
+                key = (feature, stat)
+                allowed = _allowed(feature, stat, theirs[feature])
+                if stat not in mine[feature] or stat not in theirs[feature]:
+                    result.set_aside[f"episodes_stats.jsonl.{feature}.{stat}"] = (
+                        "present" if stat in mine[feature] else ABSENT,
+                        "present" if stat in theirs[feature] else ABSENT)
+                    continue
+                row = tally.setdefault(key, [0, 0, 0.0, allowed, True])
+                row[0] += 1
+                gap = _stat_gap(mine[feature][stat], theirs[feature][stat])
+                if gap > allowed:
+                    row[1] += 1
+                    row[2] = max(row[2], gap)
+                if not np.all(np.asarray(theirs[feature][stat], dtype="float64") == 0):
+                    row[4] = False
+
+    for (feature, stat), (seen, bad, worst, allowed, zeroed) in sorted(tally.items()):
+        if not bad:
+            continue
+        where = f"episodes_stats.jsonl.{feature}.{stat}"
+        text = (f"{bad} of {seen} pairs differ, worst {worst:.4g}",
+                f"allowed {allowed:.2g}")
+        if feature in ORDER_FEATURES:
+            result.set_aside[where] = text
+        elif zeroed:
+            # Not a rebuild defect. The delivered copy records this statistic as
+            # exactly zero in every episode -- cmu_stretch's image std, where the
+            # pixels have a spread of 0.24 -- so the two differ because the rebuild
+            # computed it and the delivered copy did not. Reported as a difference,
+            # since it is one, with the cause named rather than tolerated away.
+            result.differences[where] = (
+                text[0], "the delivered copy records zero in every episode")
+        else:
+            result.differences[where] = text
+    return result
+
+
 @dataclass
 class EpisodeReport:
     index: int
@@ -1158,6 +1502,11 @@ class Funnel:
     dataset: str
     pairing: Pairing
     declaration: Declaration = field(default_factory=Declaration)
+    # the rest of meta/: the inventory, tasks.jsonl, modality.json, stats.json
+    meta: list[Finding] = field(default_factory=list)
+    # episodes.jsonl and episodes_stats.jsonl, which need the pairing to compare
+    episode_meta: Finding = field(
+        default_factory=lambda: Finding(subject="meta/episodes*"))
     episodes: list[EpisodeReport] = field(default_factory=list)
     chosen: list[int] = field(default_factory=list)
     coverage: VideoCoverage = field(default_factory=VideoCoverage)
@@ -1168,15 +1517,17 @@ class Funnel:
 
     @property
     def declarations_agree(self) -> bool:
-        return self.declaration.agree
+        """Every file under meta/ that needs no pairing to compare."""
+        return self.declaration.agree and all(f.agree for f in self.meta)
 
     @property
     def values_agree(self) -> bool:
-        """The sampled episodes, plus the two checks that span all of them."""
+        """The sampled episodes, plus the checks that span all of them."""
         return (
             all(r.ok for r in self.episodes if r.index >= 0)
             and self.coverage.agree
             and self.prompts.agree
+            and self.episode_meta.agree
         )
 
     @property
@@ -1194,8 +1545,13 @@ class Funnel:
     def reasons(self) -> list[str]:
         """Why :attr:`agree` is false, in the order the questions are asked."""
         out = []
-        if not self.declarations_agree:
+        if not self.declaration.agree:
             out.append("the two copies declare different datasets")
+        for finding in self.meta:
+            if not finding.agree:
+                out.append(f"{finding.subject} differs")
+        if not self.episode_meta.agree:
+            out.append("per-episode metadata differs")
         if not all(r.ok for r in self.episodes if r.index >= 0):
             out.append("sampled episodes differ")
         if not self.coverage.agree:
@@ -1217,6 +1573,12 @@ def measure(
 ) -> Funnel:
     """Walk the four questions in order, reusing the pairing for all of them."""
     declaration = compare_declarations(rebuilt, delivered)
+    meta = [
+        meta_inventory(rebuilt, delivered),
+        compare_tasks(rebuilt, delivered),
+        compare_modality(rebuilt, delivered),
+        compare_stats_json(rebuilt, delivered),
+    ]
     pairing = pair_episodes(
         episode_fingerprints(rebuilt), episode_fingerprints(delivered)
     )
@@ -1245,6 +1607,8 @@ def measure(
         dataset=spec.id,
         pairing=pairing,
         declaration=declaration,
+        meta=meta,
+        episode_meta=compare_episode_meta(rebuilt, delivered, pairs),
         episodes=reports,
         chosen=chosen,
         coverage=(
@@ -1298,6 +1662,27 @@ def declaration_lines(d: Declaration) -> list[str]:
     return lines
 
 
+def finding_lines(f: Finding, limit: int = 12) -> list[str]:
+    """One metadata finding, with whatever explains the set-aside half beside it."""
+    lines = [f"     {_mark(f.agree)} {f.subject}"]
+    for where, values in sorted(f.differences.items()):
+        if ABSENT in values and f.absent:
+            side = "rebuilt" if values[0] == ABSENT else "delivered"
+            lines.append(f"       ! {where:<46} the {side} copy does not have it")
+    plain = {k: v for k, v in f.differences.items() if not (ABSENT in v and f.absent)}
+    for where, values in sorted(plain.items())[:limit]:
+        lines.append(f"       ! {where:<46} {_pair_text(values)}")
+    if len(plain) > limit:
+        lines.append(f"       ! ... and {len(plain) - limit} more")
+    if f.set_aside:
+        lines.append(f"         {len(f.set_aside)} set aside -- {f.reason}")
+        for where, values in sorted(f.set_aside.items())[:limit]:
+            lines.append(f"           {where:<44} {_pair_text(values)}")
+        if len(f.set_aside) > limit:
+            lines.append(f"           ... and {len(f.set_aside) - limit} more")
+    return lines
+
+
 def coverage_lines(c: VideoCoverage) -> list[str]:
     lines = []
     for camera, theirs in c.delivered.items():
@@ -1320,8 +1705,12 @@ def funnel_report(f: Funnel, verbose: bool = False) -> str:
     p = f.pairing
     lines = [f"{f.dataset}", ""]
 
-    lines.append(f"1  declaration    {_mark(f.declarations_agree)}  meta/info.json")
+    lines.append(f"1  declaration    {_mark(f.declarations_agree)}  everything under "
+                 f"meta/ that needs no pairing")
+    lines.append(f"     {_mark(f.declaration.agree)} meta/info.json")
     lines += declaration_lines(f.declaration)
+    for finding in f.meta:
+        lines += finding_lines(finding)
 
     lines += ["", f"2  episodes       {_mark(None)}  counted, never failed -- which "
                   "episodes a rebuild has is decided elsewhere"]
@@ -1364,6 +1753,7 @@ def funnel_report(f: Funnel, verbose: bool = False) -> str:
                     else f"{len(prompts.mismatched)} carry different prompts"))
     for index, values in sorted(prompts.mismatched.items())[:8]:
         lines.append(f"     ! episode {index}: {_pair_text(values)}")
+    lines += finding_lines(f.episode_meta)
 
     lines += ["", f"4  distributions  {_mark(f.distributions_agree)}  max difference per "
                   "column, as a fraction of its range"]
@@ -1487,6 +1877,19 @@ def as_dict(
                 k: list(v) for k, v in sorted(f.declaration.one_sided.items())
             },
         },
+        "meta": [
+            {
+                "subject": finding.subject,
+                "agree": finding.agree,
+                "absent": finding.absent,
+                "reason": finding.reason,
+                "differences": {
+                    k: list(v) for k, v in sorted(finding.differences.items())
+                },
+                "set_aside": {k: list(v) for k, v in sorted(finding.set_aside.items())},
+            }
+            for finding in [*f.meta, f.episode_meta]
+        ],
         "episodes": {
             "rebuilt_total": p.rebuilt_total,
             "delivered_total": p.delivered_total,

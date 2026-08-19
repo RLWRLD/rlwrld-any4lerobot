@@ -1126,3 +1126,217 @@ def test_rounding_keeps_the_distinction_the_records_exist_for():
     assert compare._jsonable(float("inf")) == float("inf")
     assert compare._jsonable(0.1 + 0.2) == 0.3
     assert compare._jsonable({"a": [np.float64(1.5e-15)]}) == {"a": [1.5e-15]}
+
+
+def write_meta(root: Path, name: str, payload):
+    (root / "meta").mkdir(parents=True, exist_ok=True)
+    path = root / "meta" / name
+    if name.endswith(".jsonl"):
+        path.write_text("".join(json.dumps(e) + "\n" for e in payload))
+    else:
+        path.write_text(json.dumps(payload))
+    return path
+
+
+TASKS = [{"task_index": i, "task": t} for i, t in enumerate(["lift lid", "open door"])]
+MODALITY = {
+    "state": {"eef": {"start": 0, "end": 3}},
+    "video": {"primary": {"original_key": "observation.images.image"}},
+}
+
+
+class TestTaskTable:
+    """`meta/tasks.jsonl` -- the same prompts under different numbers."""
+
+    def test_the_same_tasks_in_a_different_order_agree(self, tmp_path):
+        """Measured on cmu_stretch: the rebuild numbers tasks in the order it first
+        meets them, which follows tfds read order, and the delivered copy numbered
+        them alphabetically. Same five prompts, five different indices."""
+        write_meta(tmp_path / "a", "tasks.jsonl", TASKS)
+        write_meta(tmp_path / "b", "tasks.jsonl", [
+            {"task_index": 0, "task": "open door"}, {"task_index": 1, "task": "lift lid"}])
+        result = compare.compare_tasks(tmp_path / "a", tmp_path / "b")
+        assert result.agree
+        assert len(result.set_aside) == 2
+        assert "order" in result.reason
+
+    def test_a_task_the_other_copy_does_not_have_fails(self, tmp_path):
+        write_meta(tmp_path / "a", "tasks.jsonl",
+                   TASKS + [{"task_index": 2, "task": "an extra job"}])
+        write_meta(tmp_path / "b", "tasks.jsonl", TASKS)
+        result = compare.compare_tasks(tmp_path / "a", tmp_path / "b")
+        assert not result.agree
+        assert "an extra job" in result.differences
+
+    def test_identical_tables_set_nothing_aside(self, tmp_path):
+        write_meta(tmp_path / "a", "tasks.jsonl", TASKS)
+        write_meta(tmp_path / "b", "tasks.jsonl", TASKS)
+        result = compare.compare_tasks(tmp_path / "a", tmp_path / "b")
+        assert result.agree and not result.set_aside
+
+
+class TestAbsentMetaFile:
+    """A file with no values to disagree about.
+
+    Reporting nothing about it, and printing "ok" beside it, is how a rebuild that
+    cannot be read by the training stack at all passes a verification run.
+    """
+
+    def test_a_file_the_rebuild_never_wrote_fails(self, tmp_path):
+        write_meta(tmp_path / "b", "modality.json", MODALITY)
+        (tmp_path / "a" / "meta").mkdir(parents=True)
+        result = compare.compare_modality(tmp_path / "a", tmp_path / "b")
+        assert not result.agree
+        assert result.absent == ["rebuilt"]
+
+    def test_neither_copy_having_it_is_not_a_finding(self, tmp_path):
+        for name in ("a", "b"):
+            (tmp_path / name / "meta").mkdir(parents=True)
+        assert compare.compare_modality(tmp_path / "a", tmp_path / "b").agree
+
+    def test_the_funnel_names_the_file_in_its_verdict(self, spec, tmp_path):
+        write_dataset(tmp_path / "a")
+        write_dataset(tmp_path / "b")
+        write_meta(tmp_path / "b", "modality.json", MODALITY)
+        measured = compare.measure(spec, tmp_path / "a", tmp_path / "b",
+                                   episodes=2, check_video=False)
+        assert not measured.agree
+        assert "meta/modality.json differs" in "; ".join(measured.reasons)
+
+    def test_relative_stats_is_excluded_by_decision(self, tmp_path):
+        """The one file left out, and it is left out because it is empty -- two bytes,
+        `{}`, in every delivered copy examined."""
+        write_meta(tmp_path / "b", "relative_stats.json", {})
+        (tmp_path / "a" / "meta").mkdir(parents=True)
+        result = compare.meta_inventory(tmp_path / "a", tmp_path / "b")
+        assert result.agree
+        assert "relative_stats.json" in result.set_aside
+
+    def test_a_metadata_file_nobody_compares_is_still_named(self, tmp_path):
+        """The collection has grown metadata before; a silent new file is how a
+        schema drifts without anyone deciding to."""
+        write_meta(tmp_path / "b", "something_new.json", {"a": 1})
+        (tmp_path / "a" / "meta").mkdir(parents=True)
+        assert "something_new.json" in compare.meta_inventory(
+            tmp_path / "a", tmp_path / "b").set_aside
+
+
+class TestModalityAlias:
+    def test_a_renamed_camera_key_fails(self, tmp_path):
+        """`write_modality` reproduced the delivered cmu_stretch file exactly except
+        for this: the delivered copy names the camera by its OXE modality alias
+        (`primary`) and ours by the source key (`image`)."""
+        write_meta(tmp_path / "a", "modality.json", {
+            **MODALITY, "video": {"image": {"original_key": "observation.images.image"}}})
+        write_meta(tmp_path / "b", "modality.json", MODALITY)
+        result = compare.compare_modality(tmp_path / "a", tmp_path / "b")
+        assert not result.agree
+        assert any("primary" in k or "image" in k for k in result.differences)
+
+    def test_nothing_is_set_aside_here(self, tmp_path):
+        """Every entry in modality.json is a claim about the data -- which columns of
+        observation.state mean which body part -- so none of it is excusable."""
+        write_meta(tmp_path / "a", "modality.json", MODALITY)
+        write_meta(tmp_path / "b", "modality.json", MODALITY)
+        result = compare.compare_modality(tmp_path / "a", tmp_path / "b")
+        assert result.agree and not result.set_aside
+
+
+def episode_stats(index, image_std, state_mean=0.5, episode_index=None):
+    return {
+        "episode_index": index,
+        "stats": {
+            "observation.state": {"mean": [state_mean], "std": [0.1], "min": [0.0],
+                                  "max": [1.0], "count": [10]},
+            "observation.images.image": {"mean": [0.4], "std": [image_std], "min": [0.0],
+                                        "max": [1.0], "count": [100]},
+            "episode_index": {"mean": [episode_index if episode_index is not None else index],
+                              "std": [0.0], "min": [index], "max": [index], "count": [10]},
+        },
+    }
+
+
+class TestPerEpisodeMeta:
+    """episodes.jsonl and episodes_stats.jsonl, which only the pairing makes comparable."""
+
+    def _pair(self, tmp_path, mine, theirs, pairs):
+        for root, lines in ((tmp_path / "a", mine), (tmp_path / "b", theirs)):
+            write_meta(root, "episodes_stats.jsonl", lines)
+            write_meta(root, "episodes.jsonl", [
+                {"episode_index": e["episode_index"], "tasks": ["t"], "length": 10}
+                for e in lines])
+        return compare.compare_episode_meta(tmp_path / "a", tmp_path / "b", pairs)
+
+    def test_a_reordered_rebuild_agrees_pair_by_pair(self, tmp_path):
+        """Line for line these two share nothing; through the pairing they are exact.
+        134 of cmu_stretch's 135 episodes sit at a different index."""
+        mine = [episode_stats(0, 0.2, 0.7), episode_stats(1, 0.2, 0.3)]
+        theirs = [episode_stats(0, 0.2, 0.3), episode_stats(1, 0.2, 0.7)]
+        result = self._pair(tmp_path, mine, theirs, {0: 1, 1: 0})
+        assert result.agree
+
+    def test_a_wrong_length_is_caught(self, tmp_path):
+        write_meta(tmp_path / "a", "episodes.jsonl",
+                   [{"episode_index": 0, "tasks": ["t"], "length": 9}])
+        write_meta(tmp_path / "b", "episodes.jsonl",
+                   [{"episode_index": 0, "tasks": ["t"], "length": 10}])
+        result = compare.compare_episode_meta(tmp_path / "a", tmp_path / "b", {0: 0})
+        assert not result.agree
+        assert "episodes.jsonl[0].length" in result.differences
+
+    def test_a_statistic_wrong_everywhere_is_one_line_not_one_per_episode(self, tmp_path):
+        """cmu_stretch's image std is wrong in all 135 pairs. 405 lines saying so is
+        not 405 findings."""
+        mine = [episode_stats(i, 0.9) for i in range(20)]
+        theirs = [episode_stats(i, 0.2) for i in range(20)]
+        result = self._pair(tmp_path, mine, theirs, {i: i for i in range(20)})
+        assert not result.agree
+        hits = [k for k in result.differences if "images" in k]
+        assert len(hits) == 1
+        assert "20 of 20 pairs differ" in result.differences[hits[0]][0]
+
+    def test_the_ordering_features_are_set_aside_with_the_reason(self, tmp_path):
+        """episode_index moves because the rebuild writes in a different order, which
+        the episode question already reported."""
+        mine = [episode_stats(0, 0.2, episode_index=0)]
+        theirs = [episode_stats(0, 0.2, episode_index=99)]
+        result = self._pair(tmp_path, mine, theirs, {0: 0})
+        assert result.agree
+        assert any("episode_index" in k for k in result.set_aside)
+        assert "episode question" in result.reason
+
+    def test_a_statistic_the_delivered_copy_records_as_zero_is_diagnosed(self, tmp_path):
+        """The real cmu_stretch case: every delivered episode has image std exactly
+        zero, where the pixels have a spread of 0.24. The rebuild computed it and the
+        delivered copy did not -- reported as the difference it is, with the cause
+        named rather than tolerated away."""
+        mine = [episode_stats(i, 0.24) for i in range(5)]
+        theirs = [episode_stats(i, 0.0) for i in range(5)]
+        result = self._pair(tmp_path, mine, theirs, {i: i for i in range(5)})
+        assert not result.agree
+        hit = next(v for k, v in result.differences.items() if "images" in k)
+        assert "records zero in every episode" in hit[1]
+
+    def test_a_missing_quantile_is_set_aside(self, tmp_path):
+        mine = [episode_stats(0, 0.2)]
+        theirs = [episode_stats(0, 0.2)]
+        theirs[0]["stats"]["observation.state"]["q01"] = [0.1]
+        result = self._pair(tmp_path, mine, theirs, {0: 0})
+        assert result.agree
+        assert "episodes_stats.jsonl.observation.state.q01" in result.set_aside
+        assert "downgrade drops" in result.reason
+
+
+class TestImageStatAllowance:
+    def test_an_extreme_is_allowed_further_than_a_mean(self):
+        """One pixel decides a max; a mean averages a hundred frames of them. On
+        cmu_stretch 8 of 135 pairs put max between 0.05 and 0.0667 while every mean
+        stayed under 0.0059."""
+        stats = {"min": [0.0], "max": [1.0]}
+        assert (compare._allowed("observation.images.image", "max", stats)
+                > compare._allowed("observation.images.image", "mean", stats))
+
+    def test_a_vector_column_gets_no_image_allowance(self):
+        """state and action are copied float32; there is no lossy step to excuse."""
+        assert compare._allowed("observation.state", "max", {"min": [0.0], "max": [1.0]}) \
+            == compare.STAT_TOLERANCE
