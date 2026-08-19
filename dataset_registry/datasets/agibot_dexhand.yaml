@@ -41,7 +41,7 @@ lerobot:
     cameras:
       primary: {source: head}
     resize: resize_preserve_aspect_area
-    encoding: rldx1_reference
+    encoding: h264_crf21
     keeps_original: false
 
   features:

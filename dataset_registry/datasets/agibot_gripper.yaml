@@ -45,7 +45,7 @@ lerobot:
       wrist_left: {source: hand_left}
       wrist_right: {source: hand_right}
     resize: resize_preserve_aspect_area
-    encoding: rldx1_reference
+    encoding: h264_crf21
     keeps_original: false
 
   features:

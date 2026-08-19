@@ -1,0 +1,23 @@
+# The H.264 most of the delivered collection carries.
+#
+# Read out of the files themselves: x264 writes its settings into every mp4 it
+# produces, so preset and crf survive in the delivered copies even though the
+# conversion code does not. Sampled 2026-08-19 across the cameras each dataset's
+# meta/modality.json exposes -- action_net, agibot (dexhand and gripper), bc_z,
+# bridge_orig, droid, fmb_dataset, fractal, furniture_bench, iamlab, kuka and
+# language_table -- and every sample agreed: ref=3 subme=7 rc_lookahead=40, which
+# is preset medium, at crf 21.0 with keyint 250 and 3 B-frames.
+#
+# crf 21 rather than 23 is the one value here that is not libx264's default, so the
+# original conversion did pass -crf. rldx1_reference assumed the whole command line
+# was flagless and wrote 23; that assumption holds for robocurate but not for these.
+
+codec: libx264
+profile: high
+pix_fmt: yuv420p
+preset: medium
+crf: 21
+gop: 250
+bframes: 3
+# unset: leave x264's scene-cut detection on, as the original encode did
+sc_threshold: null
