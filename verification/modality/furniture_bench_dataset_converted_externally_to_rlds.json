@@ -1,0 +1,53 @@
+{
+    "state": {
+        "end_effector_position": {
+            "start": 0,
+            "end": 3
+        },
+        "end_effector_rotation": {
+            "start": 3,
+            "end": 7,
+            "rotation_type": "quaternion"
+        },
+        "gripper_position": {
+            "start": 7,
+            "end": 8
+        }
+    },
+    "action": {
+        "end_effector_position": {
+            "start": 0,
+            "end": 3,
+            "absolute": false
+        },
+        "end_effector_rotation": {
+            "start": 3,
+            "end": 6,
+            "absolute": false
+        },
+        "gripper_close": {
+            "start": 6,
+            "end": 7,
+            "dtype": "int64",
+            "range": [
+                0,
+                1
+            ]
+        }
+    },
+    "video": {
+        "primary": {
+            "original_key": "observation.images.primary"
+        },
+        "wrist": {
+            "original_key": "observation.images.wrist"
+        }
+    },
+    "annotation": {
+        "human.action.task_description": {
+            "original_key": "task_index"
+        },
+        "human.action.task_name": {},
+        "human.validity": {}
+    }
+}

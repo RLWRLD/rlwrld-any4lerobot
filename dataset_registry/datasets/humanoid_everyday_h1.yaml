@@ -1,10 +1,26 @@
 id: humanoid_everyday_h1
 name: "Humanoid-Everyday (Unitree H1)"
 
-# Not yet traced to an upstream release. Recorded from the delivered copy only,
-# which is why every block below is `declared` and the dataset is not buildable.
+# The upstream is the snapshot under mirrors, which holds this robot and g1
+# together; the blocks below are still `declared`, read from the delivered copy.
 upstream:
   commercial_use: null
+
+mirrors:
+  # One snapshot holds both robots, despite the g1 in the prefix. Its meta/info.json
+  # counts 8949 episodes and 3436171 frames, which is exactly g1's 4064 + h1's 4885
+  # and 1779287 + 1656884; meta/episodes.jsonl carries a robot_type on every episode.
+  # h1 therefore has no mirror of its own to point at -- it is in here.
+  #
+  # `hf_repo`, not `rlds`: this upstream is already a LeRobot v2.1 tree, with data/,
+  # meta/ and videos/ and one camera at 480x640. Rebuilding it is a resize and a
+  # re-encode rather than a conversion.
+  - kind: foundry
+    uri: s3://rlwrld-foundry-data/external/humanoid_everyday_g1/71f6210e91c2a7e8b8e4d47db0147444a1a0640e/
+    layout: hf_repo
+    # measured 2026-08-19 over the snapshot prefix
+    objects: 26868
+    bytes: 935068718801
 
 delivered:
   path: /data/taeyoung/data/vla_pretrain_dataset/humanoid_everyday/humanoid_everyday_h1
@@ -20,9 +36,14 @@ delivered:
   converted_by: alin_lab
 
 source:
-  # No converter for this source yet. Its upstream has not been traced,
-  # so there is nothing to point a builder at; `plan` reports it as not
-  # rebuildable rather than letting a run start and fail late.
+  # `none` because the upstream needs no converter, not because it is unknown: it is
+  # already LeRobot v2.1, so the pipeline reads it as a lerobot_v21 source and the
+  # work is the resize and the re-encode.
+  #
+  # Splitting the one upstream into g1 and h1 is not part of that work. It changes
+  # which episodes a dataset contains, which is decided before a build rather than
+  # inside one -- the two trees are staged separately, each from the robot_type its
+  # own episodes carry, and each build then sees only its own.
   builder: none
 
 lerobot:

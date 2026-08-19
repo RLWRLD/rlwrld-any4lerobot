@@ -1,0 +1,27 @@
+{
+    "state": {
+        "state": {
+            "start": 0,
+            "end": 44
+        }
+    },
+    "action": {
+        "action": {
+            "start": 0,
+            "end": 44,
+            "absolute": true
+        }
+    },
+    "video": {
+        "primary": {
+            "original_key": "observation.images.primary"
+        }
+    },
+    "annotation": {
+        "human.action.task_description": {
+            "original_key": "task_index"
+        },
+        "human.action.task_name": {},
+        "human.validity": {}
+    }
+}

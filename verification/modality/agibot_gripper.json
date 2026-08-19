@@ -1,0 +1,33 @@
+{
+    "state": {
+        "state": {
+            "start": 0,
+            "end": 34
+        }
+    },
+    "action": {
+        "action": {
+            "start": 0,
+            "end": 34,
+            "absolute": true
+        }
+    },
+    "video": {
+        "primary": {
+            "original_key": "observation.images.primary"
+        },
+        "wrist_left": {
+            "original_key": "observation.images.wrist_left"
+        },
+        "wrist_right": {
+            "original_key": "observation.images.wrist_right"
+        }
+    },
+    "annotation": {
+        "human.action.task_description": {
+            "original_key": "task_index"
+        },
+        "human.action.task_name": {},
+        "human.validity": {}
+    }
+}
