@@ -13,6 +13,9 @@ Convert a dataset that already exists locally::
         --repo-id=lerobot/pusht \
         --root=/path/to/dataset
 
+The two steps that take the time -- splitting the consolidated video and the
+consolidated parquet back into one file per episode -- are lists of independent
+jobs and run on a pool of threads. ``--workers`` sizes it; see the README.
 """
 
 from __future__ import annotations
@@ -20,11 +23,14 @@ from __future__ import annotations
 import argparse
 import logging
 import math
+import os
 import shutil
 import subprocess
 from collections import defaultdict
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Iterable, NamedTuple
 
 import jsonlines
 import numpy as np
@@ -55,6 +61,10 @@ from lerobot.utils.utils import init_logging
 V21 = "v2.1"
 V30 = "v3.0"
 
+# -1 asks the machine how many cores it has, rather than writing a count into
+# the file. A count written here is a count for one machine.
+DEFAULT_WORKERS = -1
+
 LEGACY_DATA_PATH_TEMPLATE = (
     "data/chunk-{episode_chunk:03d}/episode_{episode_index:06d}.parquet"
 )
@@ -63,6 +73,51 @@ LEGACY_VIDEO_PATH_TEMPLATE = (
 )
 MIN_VIDEO_DURATION = 1e-6
 LEGACY_STATS_KEYS = ("mean", "std", "min", "max", "count")
+
+
+def resolve_workers(workers: int) -> int:
+    """How many jobs to keep in flight; ``-1`` means one per core."""
+
+    if workers == -1:
+        return os.cpu_count() or 1
+    if workers < 1:
+        raise ValueError(f"workers must be -1 or a positive integer, got {workers}")
+    return workers
+
+
+def work_through(
+    jobs: list[Any],
+    run: Callable[[Any], Any],
+    workers: int,
+    desc: str,
+) -> None:
+    """Apply ``run`` to every job, ``workers`` of them at a time.
+
+    Threads rather than processes. Every job this is used for spends its time
+    either inside an ffmpeg subprocess or inside pyarrow, and both release the
+    GIL for the whole of it; threads then cost nothing to start, share the page
+    cache over the file they are all reading, and need nothing pickled.
+
+    The jobs must be independent -- each writing a path no other one writes --
+    because nothing here orders them. ``video_segments`` and
+    ``_group_episodes_by_data_file`` are what establish that.
+    """
+
+    if not jobs:
+        return
+
+    workers = min(resolve_workers(workers), len(jobs))
+    if workers == 1:
+        for job in tqdm.tqdm(jobs, desc=desc):
+            run(job)
+        return
+
+    # map() re-raises on iteration, so a failed job still aborts the conversion.
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        for _ in tqdm.tqdm(
+            executor.map(run, jobs), total=len(jobs), desc=f"{desc} x{workers}"
+        ):
+            pass
 
 
 def _to_serializable(value: Any) -> Any:
@@ -176,48 +231,69 @@ def _group_episodes_by_data_file(
     return grouped
 
 
+def _split_data_file(
+    root: Path,
+    new_root: Path,
+    key: tuple[int, int],
+    records: list[dict[str, Any]],
+) -> None:
+    """Cut one consolidated parquet file into its episodes.
+
+    The unit of work is the file, not the episode: the whole table is read once
+    and every episode in it is sliced out of that one read.
+    """
+
+    chunk_idx, file_idx = key
+    source_path = root / DEFAULT_DATA_PATH.format(
+        chunk_index=chunk_idx, file_index=file_idx
+    )
+    if not source_path.exists():
+        raise FileNotFoundError(f"Expected source parquet file not found: {source_path}")
+
+    table = pq.read_table(source_path)
+    records = sorted(records, key=lambda rec: int(rec["dataset_from_index"]))
+    file_offset = int(records[0]["dataset_from_index"])
+
+    for record in records:
+        episode_index = int(record["episode_index"])
+        start = int(record["dataset_from_index"]) - file_offset
+        stop = int(record["dataset_to_index"]) - file_offset
+        length = stop - start
+
+        if length <= 0:
+            raise ValueError(
+                "Invalid episode length computed during data conversion: "
+                f"episode_index={episode_index}, length={length}"
+            )
+
+        episode_table = table.slice(start, length)
+
+        dest_chunk = episode_index // DEFAULT_CHUNK_SIZE
+        dest_path = new_root / LEGACY_DATA_PATH_TEMPLATE.format(
+            episode_chunk=dest_chunk,
+            episode_index=episode_index,
+        )
+        dest_path.parent.mkdir(parents=True, exist_ok=True)
+        Dataset(episode_table).to_parquet(dest_path)
+
+
 def convert_data(
-    root: Path, new_root: Path, episode_records: list[dict[str, Any]]
+    root: Path,
+    new_root: Path,
+    episode_records: list[dict[str, Any]],
+    workers: int = DEFAULT_WORKERS,
 ) -> None:
     logging.info("Converting consolidated parquet files back to per-episode files")
     grouped = _group_episodes_by_data_file(episode_records)
 
-    for (chunk_idx, file_idx), records in tqdm.tqdm(
-        grouped.items(), desc="convert data files"
-    ):
-        source_path = root / DEFAULT_DATA_PATH.format(
-            chunk_index=chunk_idx, file_index=file_idx
-        )
-        if not source_path.exists():
-            raise FileNotFoundError(
-                f"Expected source parquet file not found: {source_path}"
-            )
-
-        table = pq.read_table(source_path)
-        records = sorted(records, key=lambda rec: int(rec["dataset_from_index"]))
-        file_offset = int(records[0]["dataset_from_index"])
-
-        for record in records:
-            episode_index = int(record["episode_index"])
-            start = int(record["dataset_from_index"]) - file_offset
-            stop = int(record["dataset_to_index"]) - file_offset
-            length = stop - start
-
-            if length <= 0:
-                raise ValueError(
-                    "Invalid episode length computed during data conversion: "
-                    f"episode_index={episode_index}, length={length}"
-                )
-
-            episode_table = table.slice(start, length)
-
-            dest_chunk = episode_index // DEFAULT_CHUNK_SIZE
-            dest_path = new_root / LEGACY_DATA_PATH_TEMPLATE.format(
-                episode_chunk=dest_chunk,
-                episode_index=episode_index,
-            )
-            dest_path.parent.mkdir(parents=True, exist_ok=True)
-            Dataset(episode_table).to_parquet(dest_path)
+    # One file in flight per worker, so peak memory is that many tables at once
+    # rather than the whole dataset.
+    work_through(
+        list(grouped.items()),
+        lambda item: _split_data_file(root, new_root, item[0], item[1]),
+        workers,
+        "convert data files",
+    )
 
 
 def _group_episodes_by_video_file(
@@ -375,27 +451,40 @@ def _extract_video_segment(
         raise RuntimeError(error_msg) from exc
 
 
-def convert_videos(
+class Segment(NamedTuple):
+    """One episode's slice of one camera's concatenated file."""
+
+    src: Path
+    dst: Path
+    start: float
+    end: float
+
+
+def video_segments(
     root: Path,
     new_root: Path,
     episode_records: list[dict[str, Any]],
     video_keys: list[str],
-) -> None:
-    if len(video_keys) == 0:
-        logging.info("No video features detected; skipping video conversion")
-        return
+) -> list[Segment]:
+    """Every cut the video conversion has to make, as a flat list.
 
-    logging.info("Converting concatenated MP4 files back to per-episode videos")
+    One entry per episode per camera. They share their sources read-only and
+    each writes a path of its own, so the list can be worked through in any
+    order, or all at once.
 
+    It is still ordered by position within each source file, which is the order
+    a serial run used to read them in and keeps a parallel run's readers near
+    each other rather than scattered across the file.
+    """
+
+    segments: list[Segment] = []
     for video_key in video_keys:
         grouped = _group_episodes_by_video_file(episode_records, video_key)
         if len(grouped) == 0:
             logging.info("No video metadata found for key '%s'; skipping", video_key)
             continue
 
-        for (chunk_idx, file_idx), records in tqdm.tqdm(
-            grouped.items(), desc=f"convert videos ({video_key})"
-        ):
+        for (chunk_idx, file_idx), records in grouped.items():
             src_path = root / DEFAULT_VIDEO_PATH.format(
                 video_key=video_key,
                 chunk_index=chunk_idx,
@@ -411,17 +500,48 @@ def convert_videos(
 
             for record in records:
                 episode_index = int(record["episode_index"])
-                start = float(record[f"videos/{video_key}/from_timestamp"])
-                end = float(record[f"videos/{video_key}/to_timestamp"])
-
                 dest_chunk = episode_index // DEFAULT_CHUNK_SIZE
                 dest_path = new_root / LEGACY_VIDEO_PATH_TEMPLATE.format(
                     episode_chunk=dest_chunk,
                     video_key=video_key,
                     episode_index=episode_index,
                 )
+                segments.append(
+                    Segment(
+                        src=src_path,
+                        dst=dest_path,
+                        start=float(record[f"videos/{video_key}/from_timestamp"]),
+                        end=float(record[f"videos/{video_key}/to_timestamp"]),
+                    )
+                )
 
-                _extract_video_segment(src_path, dest_path, start=start, end=end)
+    return segments
+
+
+def convert_videos(
+    root: Path,
+    new_root: Path,
+    episode_records: list[dict[str, Any]],
+    video_keys: list[str],
+    workers: int = DEFAULT_WORKERS,
+) -> None:
+    if len(video_keys) == 0:
+        logging.info("No video features detected; skipping video conversion")
+        return
+
+    logging.info("Converting concatenated MP4 files back to per-episode videos")
+
+    def cut(segment: Segment) -> None:
+        _extract_video_segment(
+            segment.src, segment.dst, start=segment.start, end=segment.end
+        )
+
+    work_through(
+        video_segments(root, new_root, episode_records, video_keys),
+        cut,
+        workers,
+        "convert videos",
+    )
 
 
 def convert_episodes_metadata(
@@ -490,6 +610,7 @@ def copy_ancillary_directories(root: Path, new_root: Path) -> None:
 def convert_dataset(
     repo_id: str,
     root: str | Path | None = None,
+    workers: int = DEFAULT_WORKERS,
 ) -> None:
     root = HF_LEROBOT_HOME / repo_id if root is None else Path(root)
 
@@ -520,8 +641,8 @@ def convert_dataset(
 
     convert_info(root, new_root, episode_records, video_keys)
     convert_tasks(root, new_root)
-    convert_data(root, new_root, episode_records)
-    convert_videos(root, new_root, episode_records, video_keys)
+    convert_data(root, new_root, episode_records, workers=workers)
+    convert_videos(root, new_root, episode_records, video_keys, workers=workers)
     convert_episodes_metadata(new_root, episode_records)
     copy_ancillary_directories(root, new_root)
 
@@ -542,6 +663,13 @@ def parse_args() -> argparse.Namespace:
         type=str,
         default=None,
         help="Path to the local dataset root directory. If not provided, the script will use the dataset from local.",
+    )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=DEFAULT_WORKERS,
+        help="How many files to cut at once. -1 (the default) uses one per core; "
+        "1 runs the conversion serially.",
     )
     return parser.parse_args()
 
