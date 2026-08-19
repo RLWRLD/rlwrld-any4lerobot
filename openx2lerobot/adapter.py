@@ -10,7 +10,8 @@ RLDS splits cleanly: ``train[a:b]`` is a deterministic slice of the same stream,
 a chunk of episodes is a task, tasks run in parallel, and the temporary datasets are
 concatenated in task order. That last part matters -- ``aggregate_tasks`` preserves
 list order, so a sharded run writes the episodes in the same order a single-process
-run does.
+run does. The slice means the same thing under both readers below, so the task
+arithmetic does not care which one a mirror needs.
 
 Nothing here opens tensorflow at import time. The builder is constructed inside the
 worker that uses it, which keeps the adapter picklable across processes and lets the
@@ -20,9 +21,11 @@ task arithmetic be tested without the conversion environment installed.
 import json
 import re
 import sys
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any
+
+import numpy as np
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
@@ -49,18 +52,18 @@ def read_raw_dir(raw_dir: Path) -> tuple[str, str, Path]:
 def file_format(version_dir: Path) -> str | None:
     """Which format a prepared tfds directory is written in, or ``None`` if unknown.
 
-    tfds writes two, and offers a different API for each: ``tfrecord`` is read with
-    ``as_dataset`` and ``array_record`` only with ``as_data_source``. Asking for the
-    wrong one fails with an assertion telling you to call ``download_and_prepare``,
-    which says nothing about the format and sends you looking for a missing file.
-
-    Worth knowing before a run rather than during one: bc_z's mirror is array_record
-    across 1024 shards, so finding out from the converter means finding out after
-    56 GB has been fetched.
+    This is what picks the reader. tfds writes two formats and offers a different API
+    for each: ``tfrecord`` is read with ``as_dataset`` and ``array_record`` only with
+    ``as_data_source``. Asking for the wrong one fails with an assertion telling you to
+    call ``download_and_prepare``, which says nothing about the format and sends you
+    looking for a missing file -- so the format is read from the metadata rather than
+    inferred from that failure. Of the collection, only bc_z is array_record, across
+    1024 shards.
 
     A directory whose ``dataset_info.json`` predates the field reads as tfrecord,
     which is what it will be -- the field arrived after the format. A directory with
-    no metadata at all reads as ``None`` rather than as a guess.
+    no metadata at all reads as ``None`` rather than as a guess, and ``None`` reads the
+    stream, which is what every mirror but one is.
     """
     path = version_dir / "dataset_info.json"
     if not path.is_file():
@@ -75,6 +78,42 @@ def file_format(version_dir: Path) -> str | None:
     except json.JSONDecodeError:
         return None
     return info.get("fileFormat") or "tfrecord"
+
+
+def stack_steps(steps) -> dict[str, Any]:
+    """One episode's steps as arrays over time, which is the shape a transform reads.
+
+    ``as_data_source`` hands the steps back as a sequence of per-step dicts, decoded
+    one at a time as they are asked for, where the tf.data reader gets the whole
+    trajectory from ``steps.batch(steps.cardinality())``. This is that batch, done in
+    Python. Nesting is kept rather than flattened: bc_z's action is itself a dict, and
+    its standardization transform indexes into that dict by name.
+    """
+    frames = list(steps)
+    if not frames:
+        raise ValueError("episode has no steps")
+    return _stacked(frames)
+
+
+def _stacked(values: list[Any]) -> Any:
+    if isinstance(values[0], Mapping):
+        return {key: _stacked([value[key] for value in values]) for key in values[0]}
+    return np.stack(values)
+
+
+def to_numpy(trajectory: Any) -> Any:
+    """Eager tensors back to arrays, leaving whatever is already an array alone.
+
+    Standardizing a trajectory runs TensorFlow ops, so parts of the result come back as
+    eager tensors no matter which reader produced the input. The tf.data reader converts
+    a whole stream at once with ``as_numpy_iterator``; this is the same conversion for
+    one episode. Written as a duck-typed walk rather than through ``tf.nest`` so that
+    the module keeps its promise not to import TensorFlow.
+    """
+    if isinstance(trajectory, Mapping):
+        return {key: to_numpy(value) for key, value in trajectory.items()}
+    as_array = getattr(trajectory, "numpy", None)
+    return as_array() if callable(as_array) else trajectory
 
 
 def episode_chunks(total: int, per_task: int) -> list[tuple[int, int]]:
@@ -153,18 +192,6 @@ class OpenXAdapter(BaseAdapter):
     # --- the work ------------------------------------------------------------
 
     def load_tasks(self) -> list[ConversionTask]:
-        # before anything imports tensorflow: an array_record mirror cannot be read by
-        # the path below, and finding that out from tfds means finding it out after the
-        # source has been fetched
-        written_as = file_format(self.raw_dir)
-        if written_as == "array_record":
-            raise NotImplementedError(
-                f"{self.raw_dir} is written in array_record, which this converter does "
-                "not read yet: it opens a builder with as_dataset, and tfds serves "
-                "array_record only through as_data_source. Nothing else about the "
-                "mirror is wrong."
-            )
-
         total = self._count_episodes()
         if self.max_episodes is not None:
             total = min(total, self.max_episodes)
@@ -189,23 +216,63 @@ class OpenXAdapter(BaseAdapter):
         return tasks
 
     def load_subset(self, task: ConversionTask) -> Iterable[Any]:
+        split = task.metadata["split"]
+        if file_format(self.raw_dir) == "array_record":
+            return self._episodes_by_index(split)
+        return self._episodes_by_stream(split)
+
+    def _keep(self):
+        """Whether an episode is converted at all.
+
+        kuka is the one source that ships failures alongside successes. Written to
+        return the field rather than a bool so the same predicate serves both readers:
+        tf.data traces it into a graph, where ``bool`` on a tensor raises.
+        """
+        if self.dataset_name != "kuka":
+            return lambda episode: True
+        return lambda episode: episode["success"]
+
+    def _episodes_by_stream(self, split: str) -> Iterable[Any]:
+        """RLDS from a tfrecord mirror: filter, standardize and convert as a stream."""
         from functools import partial
 
         from openx_rlds import transform_raw_dataset
 
-        # kuka is the one source that ships failures alongside successes
-        keep = (
-            (lambda episode: episode["success"])
-            if self.dataset_name == "kuka"
-            else (lambda episode: True)
-        )
         dataset = (
             self._builder()
-            .as_dataset(split=task.metadata["split"])
-            .filter(keep)
+            .as_dataset(split=split)
+            .filter(self._keep())
             .map(partial(transform_raw_dataset, dataset_name=self.dataset_name))
         )
         yield from dataset.as_numpy_iterator()
+
+    def _episodes_by_index(self, split: str) -> Iterable[Any]:
+        """RLDS from an array_record mirror, which tfds serves only by random access.
+
+        ``as_data_source`` returns a sequence of episodes rather than a stream, and the
+        steps of each episode are a sequence of their own that decodes an element when
+        it is indexed. So the three things tf.data was doing as stream operations --
+        filtering, batching the steps, converting to numpy -- happen here as plain
+        Python, around the very same standardization transform. An episode costs the
+        same memory either way: both readers hold one whole trajectory at a time.
+
+        The images come out RGB under both readers -- tfds decodes them with OpenCV
+        here and reorders BGR back itself -- so this is not a second place a channel
+        order can differ. video_rules.flips_channels stays the only thing that decides
+        colour order, and it sees the same bytes whichever reader ran.
+        """
+        from openx_rlds import standardize_trajectory
+
+        keep = self._keep()
+        source = self._builder().as_data_source(split=split)
+        for index in range(len(source)):
+            episode = dict(source[index])
+            if not keep(episode):
+                continue
+            episode["steps"] = to_numpy(
+                standardize_trajectory(stack_steps(episode["steps"]), self.dataset_name)
+            )
+            yield episode
 
     def create_dataset(self, task: ConversionTask):
         from lerobot.datasets.lerobot_dataset import LeRobotDataset

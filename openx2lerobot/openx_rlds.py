@@ -46,9 +46,17 @@ from video_rules import flips_channels, resize_frame, target_shape
 np.set_printoptions(precision=2)
 
 
-def transform_raw_dataset(episode, dataset_name):
-    traj = next(iter(episode["steps"].batch(episode["steps"].cardinality())))
+def standardize_trajectory(traj, dataset_name):
+    """One episode's steps, stacked along time, in the layout this converter writes.
 
+    Split out from ``transform_raw_dataset`` because the two readers reach a
+    trajectory by different routes -- tf.data batches the nested dataset, the
+    array_record reader stacks per-step dicts (see ``stack_steps``) -- and everything
+    from here on is the same for both. The body is eager TensorFlow, which takes numpy
+    arrays as readily as tensors, so reading a second file format costs no second
+    implementation of the OXE transforms. What it returns is therefore tensors on one
+    path and a mix on the other; ``to_numpy`` settles that.
+    """
     if dataset_name in OXE_STANDARDIZATION_TRANSFORMS:
         traj = OXE_STANDARDIZATION_TRANSFORMS[dataset_name](traj)
 
@@ -76,8 +84,14 @@ def transform_raw_dataset(episode, dataset_name):
             "action": tf.cast(traj["action"], tf.float32),
         }
     )
+    return traj
 
-    episode["steps"] = traj
+
+def transform_raw_dataset(episode, dataset_name):
+    """The tfrecord reader's per-episode map: batch the nested dataset, standardize."""
+    episode["steps"] = standardize_trajectory(
+        next(iter(episode["steps"].batch(episode["steps"].cardinality()))), dataset_name
+    )
     return episode
 
 
