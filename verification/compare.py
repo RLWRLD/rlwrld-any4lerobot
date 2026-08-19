@@ -11,9 +11,14 @@ and loses the useful ones. Each question here explains the next:
 1. **declaration** -- whether the two copies even claim to be the same dataset, read
    out of ``meta/info.json``: fps, robot type, feature names, shapes and dtypes, video
    codec and pixel format. Two small JSON files, so it costs nothing to ask, and
-   anything wrong here is wrong in every episode. The count fields are set aside
-   rather than judged, because they follow from the next question and would only
-   repeat it.
+   anything wrong here is wrong in every episode.
+
+   Only the fields **both** copies declare are judged. A field one side does not have
+   is absence of evidence, not disagreement, and it is usually not the rebuild's
+   doing: the delivered copies were written by an older LeRobot that recorded fewer
+   encoder settings, which on cmu_stretch alone is eight one-sided fields against a
+   rebuild whose 135 episodes are byte-identical. The count fields are set aside for
+   a different reason -- they follow from the next question and would only repeat it.
 2. **episodes** -- how much of the delivered copy is there. Episodes are paired on
    their own state and action bytes, because they carry no source id and the rebuild
    does not write them in the delivered order. Pairing happens twice: exactly, and
@@ -131,10 +136,26 @@ class Declaration:
     robot, same feature names and shapes and dtypes, same codec and pixel format. A
     rebuild that has any of those wrong is wrong in every episode, so answering it
     first saves opening a single parquet.
+
+    Only ``differences`` fails, and it holds the fields **both** copies declare. A
+    field one copy does not have at all is absence of evidence rather than a
+    disagreement, and it is not the rebuild's doing: the delivered copies were
+    written by an older LeRobot, which recorded fewer encoder settings and kept
+    ``is_depth_map`` one level further in. Measured on cmu_stretch, that alone was
+    eight one-sided fields on a rebuild whose 135 episodes are byte-identical -- so
+    failing on them would have marked a faithful rebuild wrong, and would have gone
+    on doing it for every dataset in the collection.
+
+    What the one-sided fields would have caught is caught better elsewhere. Their
+    subject is the encoding, and the sample opens the actual files: codec, pixel
+    format, geometry and keyframe interval come off the video rather than out of a
+    writer's opinion of it. A camera the rebuild renamed is two one-sided feature
+    keys here, and the sample reports that too, by name.
     """
 
     differences: dict[str, tuple[Any, Any]] = field(default_factory=dict)
     counts: dict[str, tuple[Any, Any]] = field(default_factory=dict)
+    one_sided: dict[str, tuple[Any, Any]] = field(default_factory=dict)
     missing: list[str] = field(default_factory=list)
 
     @property
@@ -162,8 +183,14 @@ def compare_declarations(rebuilt: Path, delivered: Path) -> Declaration:
         one, other = a.get(path, ABSENT), b.get(path, ABSENT)
         if one == other:
             continue
-        bucket = (result.counts if path.split(".")[0] in COUNT_FIELDS
-                  else result.differences)
+        if path.split(".")[0] in COUNT_FIELDS:
+            bucket = result.counts
+        elif path not in a or path not in b:
+            # membership, not equality against the sentinel: a field whose value
+            # really is the string ABSENT would otherwise be filed as one-sided
+            bucket = result.one_sided
+        else:
+            bucket = result.differences
         bucket[path] = (one, other)
     return result
 
@@ -1255,13 +1282,19 @@ def declaration_lines(d: Declaration) -> list[str]:
         lines.append(f"     ! the {side} copy has no meta/info.json at all")
     for path, values in sorted(d.differences.items()):
         lines.append(f"     ! {path:<42} {_pair_text(values)}")
-    if d.counts:
-        lines.append(f"     counts       {len(d.counts)} field(s) differ; they follow "
-                     "from the episodes below and are not judged here")
-        for path, values in sorted(d.counts.items()):
+    if not d.differences and not d.missing:
+        lines.append("     every field both copies declare is the same on both sides")
+    for label, bucket, why in (
+        ("counts", d.counts, "they follow from the episodes below"),
+        ("one-sided", d.one_sided, "only one copy declares them, so there is "
+                                  "nothing to compare"),
+    ):
+        if not bucket:
+            continue
+        lines.append(f"     {label:<12} {len(bucket)} field(s); {why}, and they are "
+                     "not judged here")
+        for path, values in sorted(bucket.items()):
             lines.append(f"                  {path:<42} {_pair_text(values)}")
-    elif not d.differences and not d.missing:
-        lines.append("     every field the conversion decides is the same on both sides")
     return lines
 
 
@@ -1450,6 +1483,9 @@ def as_dict(
                 k: list(v) for k, v in sorted(f.declaration.differences.items())
             },
             "counts": {k: list(v) for k, v in sorted(f.declaration.counts.items())},
+            "one_sided": {
+                k: list(v) for k, v in sorted(f.declaration.one_sided.items())
+            },
         },
         "episodes": {
             "rebuilt_total": p.rebuilt_total,

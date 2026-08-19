@@ -59,9 +59,24 @@ pass and `5.3e-02` is not.
 
 **Step 1** diffs the two `info.json` files as dotted paths rather than against a schema
 of the file — it has gained fields across LeRobot versions, and a comparison that listed
-the ones it knew would go quiet on the rest. fps, robot type, feature shapes and dtypes,
-codec and pixel format are failures; `total_episodes` and its neighbours are set aside,
-because they follow from step 2 and failing here would report one finding twice.
+the ones it knew would go quiet on the rest.
+
+Only the fields **both** copies declare are judged. A field one side does not have is
+absence of evidence, not disagreement, and usually not the rebuild's doing: the delivered
+copies were written by an older LeRobot that recorded fewer encoder settings and kept
+`is_depth_map` one level further in. On cmu_stretch that is eight one-sided fields —
+`crf`, `preset`, `g`, `fast_decode`, `video_backend`, `extra_options` and `is_depth_map`
+twice over — against a rebuild whose 135 episodes are byte-identical. Failing on them
+would mark a faithful rebuild wrong, and would go on doing it for every dataset in the
+collection.
+
+Nothing is lost by that. What the one-sided fields describe is the encoding, and step 3
+opens the actual files: codec, pixel format, geometry and keyframe interval come off the
+video rather than out of a writer's opinion of it. A camera the rebuild renamed appears
+here as one feature key on each side, and step 3 names it too, off the video directories.
+
+`total_episodes` and its neighbours are set aside for a different reason — they follow
+from step 2, and failing here would report one finding twice.
 
 **Step 2** pairs episodes on their own state and action bytes, since they carry no
 source id and the rebuild does not write them in the delivered order. It pairs twice —

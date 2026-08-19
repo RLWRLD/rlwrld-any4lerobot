@@ -662,17 +662,50 @@ class TestDeclaration:
         assert result.differences[
             "features.observation.images.image.info.video.codec"] == ("av1", "h264")
 
-    def test_a_renamed_camera_reads_as_a_field_each_side_lacks(self, tmp_path):
+    def test_a_renamed_camera_is_reported_and_left_to_the_sample(self, tmp_path):
         """Eight of the delivered OXE datasets renamed their cameras to the modality
-        aliases. That shows up here as one key on each side, which is why an absent
-        field has to be reported rather than skipped as 'nothing to compare'."""
+        aliases. That shows up here as one feature key on each side, which is reported
+        and not failed -- the sample names the rename off the video directories, which
+        is the stronger evidence, and it fails there."""
         mine = {"observation.images.primary": {"dtype": "video", "shape": [128, 128, 3]}}
         result = self._compare(tmp_path, {"features": mine}, {})
+        assert result.agree
+        assert any("primary" in k for k in result.one_sided)
+        assert any("observation.state" in k for k in result.one_sided)
+        assert not result.differences
+
+    def test_an_encoder_field_only_one_writer_records_is_reported(self, tmp_path):
+        """The case measured on the real cmu_stretch rebuild. Its 135 episodes are
+        byte-identical to the delivered ones, and its info.json carries eight fields
+        the delivered copy has no equivalent for -- crf, preset, g, fast_decode,
+        video_backend, extra_options, and is_depth_map one level further out. All of
+        them are the writer's version, and failing on them would have marked a
+        faithful rebuild wrong for every dataset in the collection."""
+        theirs = json.loads(json.dumps(INFO["features"]))
+        del theirs["observation.images.image"]["info"]["video.codec"]
+        result = self._compare(tmp_path, {}, {"features": theirs})
+        assert result.agree
+        assert list(result.one_sided) == [
+            "features.observation.images.image.info.video.codec"]
+
+    def test_a_field_both_copies_declare_still_fails(self, tmp_path):
+        """The one criterion left. Absence is not disagreement; disagreement is."""
+        theirs = json.loads(json.dumps(INFO["features"]))
+        theirs["observation.images.image"]["info"]["video.codec"] = "h264"
+        result = self._compare(tmp_path, {}, {"features": theirs})
         assert not result.agree
-        absent = [k for k, v in result.differences.items()
-                  if compare.ABSENT in v]
-        assert any("primary" in k for k in absent)
-        assert any("observation.state" in k for k in absent)
+        assert list(result.differences) == [
+            "features.observation.images.image.info.video.codec"]
+
+    def test_a_value_that_is_literally_the_sentinel_is_not_mistaken_for_absence(
+        self, tmp_path
+    ):
+        """One-sidedness is decided by membership, not by equality against the
+        sentinel, so a dataset whose robot_type happens to read like it is still
+        compared."""
+        result = self._compare(tmp_path, {"robot_type": compare.ABSENT}, {})
+        assert not result.agree
+        assert "robot_type" in result.differences
 
     def test_the_count_fields_are_set_aside_rather_than_failed(self, tmp_path):
         """They follow from which episodes the rebuild ended up with, which the next
