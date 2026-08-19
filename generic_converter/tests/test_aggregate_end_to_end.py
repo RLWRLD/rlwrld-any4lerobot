@@ -5,6 +5,7 @@ what they contain. These build real LeRobot datasets, with real video, and
 aggregate them with the batching on and off.
 """
 
+import json
 import shutil
 import subprocess
 
@@ -101,6 +102,12 @@ def test_batching_produces_the_same_dataset(sources, tmp_path):
             # the whole list rather than rebuilt per append -- but the coded
             # video has to be identical.
             assert _packet_md5(left) == _packet_md5(right), relative
+        elif relative.name == "stats.json":
+            # Compared as values: upstream writes this one out of a set, so its
+            # key order is not stable even between two runs of unchanged code
+            # (measured on taco_play -- two runs, two different digests, every
+            # value equal). What has to match is what it says.
+            assert json.loads(left.read_text()) == json.loads(right.read_text())
         else:
             assert left.read_bytes() == right.read_bytes(), relative
 
