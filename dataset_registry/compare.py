@@ -159,6 +159,13 @@ def declared_cameras(root: Path) -> set[str] | None:
     ``None`` rather than every camera, because "declares nothing" and "declares all
     of them" are different: the first is a dataset that has not been given a modality
     file, and guessing on its behalf would quietly narrow a comparison.
+
+    Both spellings of each camera come back, because the delivered copies use two
+    conventions for the directory a camera's videos sit in: most name it after the
+    ``original_key`` in full -- ``observation.images.rgb_static`` -- while
+    humanoid_everyday names it ``egocentric_resized``, the last segment alone.
+    Recognising one spelling would leave every dataset using the other with no
+    cameras to compare at all, which reads as a pass.
     """
     path = root / "meta" / "modality.json"
     if not path.is_file():
@@ -169,10 +176,11 @@ def declared_cameras(root: Path) -> set[str] | None:
         return None
     if not video:
         return None
-    return {
-        str(entry.get("original_key", f"observation.images.{name}")).rsplit(".", 1)[-1]
-        for name, entry in video.items()
-    }
+    names: set[str] = set()
+    for name, entry in video.items():
+        key = str(entry.get("original_key") or f"observation.images.{name}")
+        names.update({key, key.rsplit(".", 1)[-1]})
+    return names
 
 
 def episode_videos(

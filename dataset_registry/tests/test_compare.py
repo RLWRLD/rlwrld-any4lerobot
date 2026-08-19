@@ -238,12 +238,28 @@ class TestDeclaredCameras:
         return root
 
     def test_the_cameras_a_dataset_exposes_are_read_from_modality(self, tmp_path):
+        """Both spellings of the exposed camera, and neither spelling of the one
+        that is not: the directory it lives in may be named either way."""
         root = self._tree(tmp_path / "d", ["wrist", "top"], declared=["top"])
-        assert compare.declared_cameras(root) == {"top"}
+        assert compare.declared_cameras(root) == {"top", "observation.images.top"}
 
     def test_a_dataset_without_modality_declares_nothing(self, tmp_path):
         root = self._tree(tmp_path / "d", ["wrist", "top"])
         assert compare.declared_cameras(root) is None
+
+    def test_a_camera_directory_named_by_its_full_key_is_recognised(self, tmp_path):
+        """Two naming conventions are in use. Most delivered datasets name the
+        directory after the modality entry's original_key in full --
+        observation.images.rgb_static -- while humanoid_everyday names it with the
+        last segment alone. Matching only one of the two silently empties the other."""
+        root = self._tree(
+            tmp_path / "d",
+            ["observation.images.top", "observation.images.wrist"],
+            declared=["top"],
+        )
+        assert set(compare.episode_videos(root, 0, compare.declared_cameras(root))) == {
+            "observation.images.top"
+        }
 
     def test_an_undeclared_camera_is_left_out(self, tmp_path):
         root = self._tree(tmp_path / "d", ["wrist", "top"], declared=["top"])
