@@ -75,6 +75,12 @@ class TestRgbEncoder:
             rgb_encoder("rldx1_reference")
         assert "bframes=3" in str(exc.value)
 
+    def test_an_encoding_may_arrive_as_the_settings_themselves(self):
+        """--encoding advertises "a name ... or the JSON of one", which is the shape
+        settings take crossing a command line: the pipeline sends JSON whenever the
+        run asked for an encoding the collection has no file for."""
+        assert rgb_encoder('{"gop": 50}').g == 50
+
 
 class TestFlipsChannels:
     """The rule decides the channel order; the table decides which cameras it reaches."""
@@ -116,11 +122,3 @@ class TestFlipsChannels:
             "berkeley_fanuc_manipulation",
             "fmb_dataset",
         }
-
-
-def test_an_encoding_may_arrive_as_json():
-    """--encoding advertises "a name ... or the JSON of one", and the pipeline sends
-    JSON whenever the run asks for settings rather than a named profile."""
-    config = rgb_encoder('{"gop": 50}')
-
-    assert config.g == 50

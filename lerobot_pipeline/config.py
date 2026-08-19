@@ -190,6 +190,7 @@ def _apply_profile(
     a dataset is named -- the source type and the state_layout step.
     """
     filled = dict(raw)
+    encoding = _encoding_to_build_with(filled, profile, spec)
 
     if spec is not None:
         source = dict(filled.get("source") or {})
@@ -200,10 +201,14 @@ def _apply_profile(
         if source["type"] == "spec":
             # the spec-driven converter is dataset-agnostic; which dataset is a flag
             args["dataset"] = spec.id
-        if _converter_writes_the_video(source["type"], spec.encoding):
-            # a converter that writes the video is told how, by the dataset rather
-            # than by the profile: the OXE sources carry two different encodings
-            args["encoding"] = spec.encoding
+        if _converter_writes_the_video(source["type"], encoding):
+            # a converter that writes the video is told how -- by the dataset when
+            # nothing else asked, since the OXE sources carry two different encodings.
+            # Settings travel as JSON the way the resize rule does, a command line
+            # carrying a name or a string rather than a mapping.
+            args["encoding"] = (
+                encoding if isinstance(encoding, str) else json.dumps(encoding)
+            )
         # the run config still wins, so a one-off run can override
         source["args"] = {**args, **(source.get("args") or {})}
         filled["source"] = source
@@ -220,9 +225,7 @@ def _apply_profile(
         # the spec says whether this dataset is resized at all; the profile says how
         resize = (profile.get("video") or {}).get("resize")
         if resize and (spec is None or spec.is_resized):
-            if _converter_writes_the_video(
-                filled["source"]["type"], spec.encoding if spec else None
-            ):
+            if _converter_writes_the_video(filled["source"]["type"], encoding):
                 # resolved rather than named, so the converter gets the profile's
                 # parameters and not the step's own defaults
                 filled["source"]["args"].setdefault("resize", json.dumps(dict(resize)))
@@ -235,11 +238,43 @@ def _apply_profile(
     if version and "type" not in (filled.get("dest") or {}):
         filled["dest"] = {**(filled.get("dest") or {}), "type": version}
 
-    encoding = (profile.get("video") or {}).get("encoding")
-    if encoding and "encoding" not in (filled.get("runtime") or {}):
+    if encoding:
         filled["runtime"] = {**(filled.get("runtime") or {}), "encoding": encoding}
 
     return filled
+
+
+def _encoding_to_build_with(
+    raw: Mapping[str, Any], profile: Mapping[str, Any], spec: Any
+):
+    """What this run encodes with, settled before anything depends on it.
+
+    A dataset's own encoding is a record of how the delivered copy was made, not an
+    instruction to make another one the same way. Asking for a different encoding --
+    in the run config or in the profile -- overrides that record.
+
+    It has to be settled first because it decides two things at once: the encoder
+    settings, and *where* the video is encoded. An encoding LeRobot's writer can
+    produce is written by the converter in one pass; anything else is a transcode
+    afterwards. Deciding the place from the delivered encoding and the settings from
+    the instruction is how an override came to reach only half the collection.
+    """
+    asked = (raw.get("runtime") or {}).get("encoding")
+    if asked is None:
+        asked = (profile.get("video") or {}).get("encoding")
+    delivered = spec.encoding if spec is not None else None
+
+    if asked is None:
+        return delivered
+    if isinstance(asked, str) or delivered is None:
+        # a named profile is a complete set of settings, so it stands on its own
+        return asked
+    # settings rather than a name: a partial instruction. Changing the keyframe
+    # interval should not mean restating the codec and the crf alongside it, so
+    # what it does not name stays as delivered.
+    from .encoding import load_profile
+
+    return {**load_profile(delivered), **dict(asked)}
 
 
 def _converter_writes_the_video(source_type: str, encoding) -> bool:

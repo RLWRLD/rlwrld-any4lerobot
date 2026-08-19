@@ -10,6 +10,7 @@ derived from the source video, so a profile that only sets ``crf`` still mirrors
 the source's codec.
 """
 
+import json
 from collections.abc import Mapping
 from dataclasses import replace
 from pathlib import Path
@@ -70,9 +71,17 @@ def available_profiles() -> list[str]:
 def load_profile(source: str | Mapping[str, Any]) -> dict[str, Any]:
     """Return the overrides a profile applies, as a plain dict.
 
-    ``source`` is either the name of a file in ``configs/encoding`` or an inline
-    mapping from a pipeline config.
+    ``source`` is either the name of a file in ``configs/encoding`` or the settings
+    themselves -- as a mapping from a pipeline config, or as the JSON of one, which
+    is the shape they take crossing a converter's command line.
     """
+    if isinstance(source, str) and source.strip().startswith("{"):
+        try:
+            source = json.loads(source)
+        except json.JSONDecodeError as exc:
+            raise EncodingProfileError(
+                f"could not parse {source!r} as encoding settings: {exc}"
+            ) from exc
     if isinstance(source, Mapping):
         return _validate(source, origin="inline encoding settings")
     return _validate(_read_profile_file(source), origin=f"encoding profile {source!r}")
