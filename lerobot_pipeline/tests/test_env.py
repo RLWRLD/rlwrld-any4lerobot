@@ -50,6 +50,16 @@ class TestLoading:
         with pytest.raises(EnvError, match="nonsense"):
             load_env(env_file("runtime: {nonsense: 1}\n"))
 
+    @pytest.mark.parametrize("key", ["encoding", "preset", "crf"])
+    def test_a_machine_cannot_say_how_the_video_is_encoded(self, env_file, key):
+        """How a dataset is built is the profile's answer, not a machine's. Left
+        available here it would also be invisible: a build records the spec and the
+        profile it was made under, so a machine that quietly re-encoded would leave
+        a record indistinguishable from the collection's own, and the next run would
+        skip it as already built."""
+        with pytest.raises(EnvError, match="profile"):
+            load_env(env_file(f"runtime: {{{key}: 1}}\n"))
+
 
 class TestPaths:
     def test_a_dataset_lands_under_the_roots(self):

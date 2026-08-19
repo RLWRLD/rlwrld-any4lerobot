@@ -39,7 +39,13 @@ _TOP_LEVEL = {
     "batch",
     "runtime",
 }
-_RUNTIME = {"workers", "threads_per_ffmpeg", "preset", "crf", "encoding"}
+# How hard this machine may work, and nothing about what comes out of it. The
+# encoder settings used to be settable here too; they belong to the profile, whose
+# name a build records -- see _PROFILE_KEYS.
+_RUNTIME = {"workers", "threads_per_ffmpeg"}
+# Rules that decide what is built rather than how fast. Named so that finding one in
+# an environment file can say where it belongs instead of just "unknown key".
+_PROFILE_KEYS = {"preset", "crf", "encoding"}
 _BATCH = {"max_datasets", "target_episodes"}
 
 # Deliberately modest: enough to keep a small dataset from leaving a machine idle,
@@ -143,6 +149,15 @@ def load_env(source: str | Path) -> Environment:
         )
 
     runtime = raw.get("runtime") or {}
+    misplaced = sorted(set(runtime) & _PROFILE_KEYS)
+    if misplaced:
+        raise EnvError(
+            f"{path}.runtime: {', '.join(misplaced)} decides what is built rather "
+            "than how fast, so it belongs to a profile. Building the collection a "
+            "different way is a second file in configs/profiles, which a build "
+            "records the name of; setting it here would leave a build that differs "
+            "from the collection looking identical to one that does not."
+        )
     unknown = sorted(set(runtime) - _RUNTIME)
     if unknown:
         raise EnvError(f"{path}.runtime: unknown key(s) {', '.join(unknown)}")
