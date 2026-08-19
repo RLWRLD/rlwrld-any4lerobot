@@ -41,7 +41,7 @@ from adapter import OpenXAdapter, read_raw_dir
 from generic_converter import run_converter
 from oxe_utils.configs import OXE_DATASET_CONFIGS, ActionEncoding, StateEncoding
 from oxe_utils.transforms import OXE_STANDARDIZATION_TRANSFORMS
-from video_rules import resize_frame, target_shape
+from video_rules import flips_channels, resize_frame, target_shape
 
 np.set_printoptions(precision=2)
 
@@ -157,15 +157,30 @@ def camera_shapes(features) -> dict[str, tuple[int, int]]:
     }
 
 
-def frame_images(observation, index: int, shapes: dict[str, tuple[int, int]]):
-    """One frame's camera images, keyed and sized the way they will be written."""
+def frame_images(
+    observation,
+    index: int,
+    shapes: dict[str, tuple[int, int]],
+    dataset_name: str = "",
+    channels=None,
+):
+    """One frame's camera images, keyed and sized the way they will be written.
+
+    The channel rule is applied before the resize, because the resize reads the array
+    as ``rgb24`` and a reversed view would be resized as the wrong colours.
+    """
     out = {}
     for key, value in observation.items():
         if "depth" in key or not any(x in key for x in ["image", "rgb"]):
             continue
         name = f"observation.images.{key}"
+        frame = value[index]
+        if flips_channels(channels, dataset_name, key):
+            # a copy, not the reversed view: PyAV and LeRobot both want the buffer
+            # contiguous, and a negative stride is not
+            frame = frame[..., ::-1].copy()
         shape = shapes.get(name)
-        out[name] = value[index] if shape is None else resize_frame(value[index], shape)
+        out[name] = frame if shape is None else resize_frame(frame, shape)
     return out
 
 
@@ -181,6 +196,7 @@ def create_lerobot_dataset(
     image_writer_threads: int = 10,
     resize=None,
     encoding=None,
+    channels=None,
     executor: str = "local",
     workers: int = -1,
     cpus_per_task: int = 1,
@@ -208,6 +224,7 @@ def create_lerobot_dataset(
         episodes_per_task=episodes_per_task,
         resize=resize,
         encoding=encoding,
+        channels=channels,
         fps=fps,
         robot_type=robot_type,
         use_videos=use_videos,
@@ -286,6 +303,18 @@ def main():
             "(`resize_preserve_aspect_area`) or the JSON of one with its parameters. "
             "Resizing happens here rather than in a later stage because this "
             "converter encodes the video itself -- see video_rules.py."
+        ),
+    )
+    parser.add_argument(
+        "--channels",
+        type=str,
+        default="as_source",
+        help=(
+            "Channel order for the cameras Open X-Embodiment reads as BGR: "
+            "`as_source` writes the bytes the way the RLDS file stores them, which "
+            "is what the delivered copies did; `bgr_to_rgb` reverses them, which is "
+            "what the upstream transforms do and what matches the scene. Datasets "
+            "with no such camera convert the same way under both."
         ),
     )
     parser.add_argument(
