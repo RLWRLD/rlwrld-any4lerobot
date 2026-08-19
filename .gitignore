@@ -63,9 +63,11 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-# uv/poetry lock files
+# poetry is not used here; uv.lock IS tracked. This is a collection of scripts
+# (`package = false`), not a library -- the resolution it pins is the one that was
+# tested, and an image built without it cannot claim two nodes are running the
+# same thing.
 poetry.lock
-uv.lock
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
