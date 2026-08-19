@@ -15,14 +15,18 @@ The two are held to different standards, because they can be:
   full -- which is the interesting part: if every shared row matches, the difference
   is a trimmed tail, and if they diverge partway the two are keeping *different*
   frames and the strategy is wrong.
-* **video must match in geometry, frame count, codec and keyframe interval; its
-  bytes will not match.** Two ffmpeg builds with the same flags do not emit the same
-  file, so the size is reported as a ratio and judged loosely. Everything else there
+* **video must match in geometry, frame count, codec, keyframe interval and the
+  pictures themselves; its bytes will not match.** Two ffmpeg builds with the same
+  flags do not emit the same file, so the size is reported as a ratio and judged
+  loosely. Everything else there
   is decided by our own settings rather than by the encoder build, so a difference is
   a real failure. The keyframe interval is included deliberately: it is not in the
   stream header and has to be read off the frames, and it is the one encoder setting
   the training loader feels, since sampling a random frame from a 250-frame GOP means
-  decoding back to the last keyframe.
+  decoding back to the last keyframe. The pictures are checked on a sample of frames
+  rather than all of them, because a video that is not the one it should be is wrong
+  in every frame -- and checked at all because the size ratio cannot see it: a rebuild
+  with red and blue exchanged came within 1% of the delivered size and passed.
 
 Episodes carry no source id in the delivered copy, so they are aligned by position
 and the alignment is *checked* rather than assumed: the task prompt of each pair
@@ -235,6 +239,89 @@ def keyframe_interval(path: Path) -> int | None:
     return keyframes[1] - keyframes[0] if len(keyframes) > 1 else None
 
 
+# Frames decoded per camera per episode. The point is to catch a picture that is
+# not the one it should be -- reversed channels, a shifted clip, the wrong episode
+# -- and any of those is wrong in every frame, so a handful spread across the
+# episode says as much as all of them at a fraction of the cost.
+PIXEL_FRAMES = 6
+
+# Below this, the two are not the same picture. Measured 2026-08-19 on delivered
+# episodes of ucsd_kitchen (av1), action_net (h264 crf 21) and humanoid_everyday
+# (h264 fast crf 18), by decoding each and encoding it again with the settings its
+# own spec names -- a second lossy generation, so a floor rather than an estimate:
+#
+#     re-encoded from the delivered frames      0.9993  0.9994  0.9997
+#     red and blue exchanged                    0.8871
+#     shifted four pixels and rescaled          0.8887
+#     a different episode of the same task      0.55      (utaustin_mutex)
+#
+# Nothing lands between 0.89 and 0.999, so the threshold is not a judgement call
+# about how close is close enough.
+#
+# The size ratio cannot stand in for this. The same channel reversal that costs
+# action_net 24% of its bytes cost utaustin_mutex under 1%, which is how a reversed
+# rebuild passed a size check at 64/64 -- how much a wrong picture changes the byte
+# count depends on the picture.
+PIXEL_AGREEMENT = 0.98
+
+
+def sample_frames(path: Path, count: int = PIXEL_FRAMES):
+    """``count`` frames spread through ``path``, as one uint8 array.
+
+    Decoded through ffmpeg rather than a decoding library, for the same reason the
+    rest of this module shells out to ffprobe: the comparison should see what ffmpeg
+    sees, and a second decoder in the dependency list is a second answer to what a
+    file contains.
+    """
+    import numpy as np
+
+    total = int(probe(path).get("nb_read_frames") or 0)
+    if total <= 0:
+        raise CompareError(f"no frames to sample in {path}")
+    picks = sorted({round(i * (total - 1) / max(count - 1, 1)) for i in range(count)})
+    width, height = int(probe(path)["width"]), int(probe(path)["height"])
+    # one select filter rather than one ffmpeg per frame: seeking is the expensive
+    # part, and an episode is short enough to read straight through
+    expression = "+".join(f"eq(n\\,{n})" for n in picks)
+    result = subprocess.run(
+        ["ffmpeg", "-v", "error", "-i", str(path), "-vf", f"select={expression}",
+         "-fps_mode", "passthrough", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"],
+        capture_output=True, timeout=300,
+    )
+    if result.returncode != 0:
+        raise CompareError(f"ffmpeg failed reading {path}: {result.stderr.decode()[:300]}")
+    frames = np.frombuffer(result.stdout, dtype=np.uint8)
+    return frames.reshape(-1, height, width, 3)[: len(picks)]
+
+
+def pixel_agreement(a: Path, b: Path, count: int = PIXEL_FRAMES) -> float:
+    """How well two videos' frames agree, as the weakest of the sampled frames.
+
+    The weakest rather than the average, because a difference that shows up in one
+    frame is still a difference; averaging lets a good majority hide it.
+    """
+    import numpy as np
+
+    left, right = sample_frames(a, count), sample_frames(b, count)
+    if left.shape[1:] != right.shape[1:]:
+        return 0.0
+    n = min(len(left), len(right))
+    scores = []
+    for index in range(n):
+        x = left[index].astype(np.float64).ravel()
+        y = right[index].astype(np.float64).ravel()
+        if x.std() == 0 and y.std() == 0:
+            # a flat frame against a flat frame: correlation is undefined, so fall
+            # back to whether the two flats are the same colour
+            scores.append(1.0 if np.allclose(x, y, atol=2) else 0.0)
+            continue
+        if x.std() == 0 or y.std() == 0:
+            scores.append(0.0)
+            continue
+        scores.append(float(np.corrcoef(x, y)[0, 1]))
+    return min(scores) if scores else 0.0
+
+
 def probe(path: Path) -> dict[str, Any]:
     """Geometry, frame count, codec settings and keyframe interval of one mp4."""
     payload = _ffprobe([
@@ -383,10 +470,20 @@ def compare_video(
                 f"video {key}: {a['bytes']} bytes against delivered {b['bytes']} "
                 f"({ratio:.2f}x) -- beyond what a different ffmpeg build explains"
             )
+        # the pictures themselves, which the size ratio cannot see: reversing the red
+        # and blue channels leaves a file the same size and the frames unrecognisable
+        agreement = pixel_agreement(videos_a[key], videos_b[key])
+        if agreement < PIXEL_AGREEMENT:
+            verdict = "PIXELS"
+            problems.append(
+                f"video {key}: frames agree {agreement:.3f} against delivered, below "
+                f"{PIXEL_AGREEMENT} -- the same size encoded from a different picture"
+            )
+
         summary[key] = (
             f"{a.get('width')}x{a.get('height')} {a.get('nb_read_frames')}f "
             f"{a.get('codec_name')}/GOP{a.get('gop') or '>' + str(GOP_PROBE_FRAMES)} "
-            f"{a['bytes']}B vs {b['bytes']}B ({ratio:.2f}x) {verdict}"
+            f"{a['bytes']}B vs {b['bytes']}B ({ratio:.2f}x) px{agreement:.3f} {verdict}"
         )
     return summary, problems
 
