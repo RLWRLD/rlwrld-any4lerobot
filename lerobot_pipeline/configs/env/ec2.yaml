@@ -30,14 +30,19 @@ builders:
   # up a level: every worker used to spawn five of them, which on 24 workers is 144
   # processes each holding TensorFlow. One writer per task, many tasks.
   #
-  # workers is bounded by memory, not by cores. A task holds a TensorFlow runtime,
-  # measured at about 3 GB, so 32 of them exhausted a 96 GB machine before this file
-  # named a machine with 192. Read it as "how many 3 GB tasks fit", and check the
-  # headroom before raising it.
+  # -1 is "one worker per core", worked out on the machine rather than written down
+  # here. A number written down is a number for one machine: 64 was chosen on a
+  # 192-core instance and then run on 48-core ones, where it oversubscribed by a
+  # third and put 64 tasks of ~3 GB into 192 GB of RAM. One worker per core needs
+  # 144 GB for the same work and fits.
+  #
+  # Which does assume a machine with about 4 GB per core. A task holds one whole
+  # episode, and the largest in this collection is around 300 MB, so that ratio is
+  # what keeps memory from being the binding constraint instead of cores.
   openx:
     executor: local
     episodes_per_task: 25
-    workers: 64
+    workers: -1
     image_writer_process: 0
     image_writer_threads: 4
   # one temporary dataset per 100 episodes, distributed across cores by datatrove
