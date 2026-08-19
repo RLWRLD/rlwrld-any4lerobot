@@ -1,0 +1,10 @@
+# The build context is copied wholesale; keep it to the repo.
+.git
+.gitignore
+.claude
+**/.venv
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+docs/superpowers
+*.log

@@ -13,6 +13,10 @@ set -uo pipefail
 REPO_DIR=${REPO_DIR:-/opt/oxe/any4lerobot}
 SCRATCH=${SCRATCH:-/scratch}
 UV=${UV:-/usr/local/bin/uv}
+MARKER=${BOOTSTRAP_MARKER:-/opt/oxe/BOOTSTRAP_DONE}
+# In the image the environment is already on PATH, so there is nothing for `uv run`
+# to resolve; on a machine built by user-data.sh there is.
+PYTHON=${PYTHON:-"$UV run --extra openx python"}
 
 failures=0
 pass() { printf '  ok    %s\n' "$1"; }
@@ -37,7 +41,7 @@ else
   fail "${free_gb:-0} GB free on $SCRATCH -- a single source can be 48 GB"
 fi
 
-[ -f /opt/oxe/BOOTSTRAP_DONE ] && pass "bootstrap marker" || fail "no bootstrap marker"
+[ -f "$MARKER" ] && pass "bootstrap marker" || fail "no bootstrap marker at $MARKER"
 command -v ffmpeg >/dev/null && pass "ffmpeg" || fail "ffmpeg not installed"
 [ -x "$UV" ] && pass "uv" || fail "uv not at $UV"
 
@@ -59,15 +63,19 @@ empty=$(find . -name '*.py' -size 0 -not -name '__init__.py' -not -path './.venv
 [ "$empty" -eq 0 ] && pass "no truncated source files" \
   || fail "$empty source files are zero bytes -- the image was captured unquiesced"
 
-empty_venv=$(find .venv -type f -size 0 -not -name '__init__.py' -not -name 'py.typed' \
-  2>/dev/null | wc -l)
-[ "$empty_venv" -lt 50 ] && pass "venv intact" \
-  || fail "$empty_venv files in .venv are zero bytes -- rebuild it with uv sync"
+# Counting every empty file in the virtualenv does not work: a healthy one has
+# about 150, nearly all of them dist-info REQUESTED markers, which are empty by
+# definition. Compiled libraries never are, and they are what truncation destroys.
+empty_libs=$(find .venv -type f \
+  \( -name '*.so' -o -name '*.so.*' -o -name '*.dylib' -o -name '*.pyd' \) \
+  -size 0 2>/dev/null | wc -l)
+[ "$empty_libs" -eq 0 ] && pass "venv intact" \
+  || fail "$empty_libs compiled libraries in .venv are zero bytes -- rebuild it with uv sync"
 
 if [ -s uv.lock ]; then
   pass "uv.lock ($(stat -c %s uv.lock) bytes)"
 else
-  fail "uv.lock is missing or empty -- it is gitignored, so a clone does not bring it"
+  fail "uv.lock is missing or empty -- without it the environment is whatever resolved today"
 fi
 
 # macOS tar writes these; dataset_registry.available() reads them as specs
@@ -77,17 +85,17 @@ apple=$(find . -name '._*' | wc -l)
 
 echo "== environment"
 
-if "$UV" run --extra openx python -c "
+if $PYTHON -c "
 import lerobot, tensorflow, tensorflow_datasets, datatrove
 from generic_converter.pipeline import aggregate_tasks
 from openx2lerobot.adapter import OpenXAdapter
 " >/dev/null 2>&1; then
   pass "imports resolve"
 else
-  fail "imports do not resolve -- run: $UV sync --extra openx --group dev"
+  fail "imports do not resolve -- run: $UV sync --locked --extra openx --group dev"
 fi
 
-if "$UV" run --extra openx python -c "import tensorflow_graphics" >/dev/null 2>&1; then
+if $PYTHON -c "import tensorflow_graphics" >/dev/null 2>&1; then
   pass "tensorflow_graphics"
 else
   warn "no tensorflow_graphics -- furniture_bench and iamlab_cmu_pickup_insert will fail"

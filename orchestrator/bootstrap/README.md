@@ -1,9 +1,67 @@
 # Bringing a machine up for a verification run
 
-What has to be true on a fresh instance before `python -m orchestrator run --env ec2`
-can be left alone. Every check in [`preflight.sh`](preflight.sh) is here because a run
-was lost to it, so the order below is: build the machine, stage the data, run
-preflight, then start.
+What has to be true on a fresh node before `python -m orchestrator run --env ec2` can
+be left alone. Every check in [`preflight.sh`](preflight.sh) is here because a run was
+lost to it, so the order is always: build the node, stage the data, run preflight,
+then start.
+
+## Use the image
+
+The [`Dockerfile`](../../Dockerfile) at the repo root is the supported way to build a
+node. One node does this:
+
+```bash
+docker run --rm \
+  -e DATASETS="taco_play toto" \
+  -e NIC_RATE=100Gb/s \
+  -v /scratch:/scratch \
+  <registry>/any4lerobot:<tag>
+```
+
+`DATASETS` is that node's share; [`node.sh`](node.sh) runs preflight and then hands
+the names to the orchestrator, which fetches, builds and publishes each in turn.
+
+### Why a container and not an AMI
+
+Nothing about a node's *data* is baked in — each node downloads its own share and
+uploads its own output — so an image only ever held the environment, which is the
+part an AMI held badly. The AMI this replaces was captured with `--no-reboot`,
+snapshotting a filesystem that was never quiesced, and came back with **3,945
+zero-length files in `.venv`** and `generic_converter/` gone, without a word. Nothing
+noticed until a run failed hours later with `KeyError: splits['train']`, which reads
+like a dataset problem.
+
+Layers are content-addressed. A damaged one fails to pull; it does not start and
+misbehave. And two nodes pulling the same digest are running the same thing, which is
+the property that matters once there is more than one node.
+
+That is also why `uv.lock` is tracked and why the build passes `--locked`: if the
+lock and `pyproject.toml` disagree the build stops, rather than quietly resolving
+something new.
+
+### Building and pushing
+
+Nodes are `m7i`, so the image has to be **`linux/amd64`** whatever it is built on:
+
+```bash
+REGISTRY=<account>.dkr.ecr.us-east-1.amazonaws.com
+aws ecr get-login-password --region us-east-1 \
+  | docker login --username AWS --password-stdin "$REGISTRY"
+
+docker buildx build --platform linux/amd64 \
+  -t "$REGISTRY/any4lerobot:$(git rev-parse --short HEAD)" --push .
+```
+
+Tag with the commit, not `latest`. A run should be able to say which image produced
+its output, and `latest` cannot answer that. Pull by digest in anything scheduled:
+`…/any4lerobot@sha256:…` is the only form that guarantees every node in a fan-out got
+the same bytes.
+
+## Without the image
+
+[`user-data.sh`](user-data.sh) prepares a bare instance the same way, for when a
+container is inconvenient — it installs the packages and makes the directories, and
+leaves the repo to be delivered separately. Everything below applies either way.
 
 ## The machine
 
