@@ -11,18 +11,43 @@ uv run python -m dataset_registry.compare action_net --rebuilt /out --delivered 
 ```
 
 `verify` checks a spec against a dataset: does each slot really hold the column the
-spec says. `compare` checks a rebuild against the delivered copy, and holds the two
-halves to different standards — **state and action must be identical**, since every
-slot is a copied float32, while **video bytes must only be close**, since two ffmpeg
-builds given the same flags do not emit the same file. Geometry, frame count, codec
-and **keyframe interval** must still match exactly: those are decided by our
-settings, not by the encoder build.
+spec says.
 
-The keyframe interval is read off the frames rather than the stream header, which
-does not carry it. It is included because the first runs deliberately do not try to
-match encoding — the video settings are left alone until a difference is actually
-observed — and that is only safe if the difference would be reported rather than
-noticed later in a size ratio.
+`compare` asks how closely a rebuild matches the delivered copy, in **three steps**
+rather than one verdict — because one verdict was the wrong shape. The rebuilds do not
+control the order they write episodes in, some episodes land a row or two short, and
+the two copies do not carry the same set of metadata files, so "does it reproduce"
+collapses several answers into one and loses the useful ones.
+
+| step | question | how it is judged |
+|---|---|---|
+| 1 · episodes | how much of the delivered copy is there | **counted, never failed** |
+| 2 · sample | is what is there the same, checked in full on a sample | state and action exactly; video loosely on bytes and exactly on everything else |
+| 3 · distributions | do the two describe the same data | over every episode **and** over the episodes they share |
+
+Step 1 pairs episodes on their own state and action bytes, since they carry no source
+id and the rebuild does not write them in the delivered order. It pairs twice — exactly,
+then on the first few rows — so an episode that is *present but a row short* is counted
+apart from one that is genuinely absent.
+
+Step 2 holds the two halves to different standards: **state and action must be
+identical**, since every slot is a copied float32, while **video bytes must only be
+close**, since two ffmpeg builds given the same flags do not emit the same file.
+Geometry, frame count, codec, **keyframe interval** and the **pictures** must match
+exactly: those are decided by our settings, not by the encoder build. The keyframe
+interval is read off the frames rather than the stream header, which does not carry it,
+and the pictures are checked because a size ratio cannot see them — a rebuild with red
+and blue exchanged came within 1% of the delivered size.
+
+Step 3 is the pair that makes the arrangement worth having. If the two rows disagree,
+the difference is the episodes missing in step 1 and nothing more; if the shared-episode
+row is *also* off, the values themselves are wrong. It reads the parquet rather than
+`meta`, because the delivered copies carry quantiles in `episodes_stats.jsonl` and a
+rebuild does not — the v3.0 → v2.1 downgrade keeps only the five legacy keys — so
+comparing what each *says* about itself would compare the writers, not the data.
+
+The exit status follows steps 2 and 3 over the shared episodes and ignores step 1: a run
+that lost episodes should still be able to say whether the ones it has are right.
 
 Two things read these specs: [`spec2lerobot`](../spec2lerobot) converts a raw source
 using the `source:` section, and `lerobot_pipeline`'s `state_layout` step assembles

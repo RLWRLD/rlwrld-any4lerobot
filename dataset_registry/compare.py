@@ -1,38 +1,44 @@
-"""Compare a rebuilt dataset against the delivered copy it is meant to reproduce.
+"""Ask how closely a rebuilt dataset matches the delivered copy it reproduces.
 
-    uv run python -m dataset_registry.compare action_net --rebuilt /out --delivered /ref
+    uv run python -m dataset_registry.compare cmu_stretch --rebuilt /out --delivered /ref
 
-The two are held to different standards, because they can be:
+Three questions in order, because one verdict was the wrong shape for this. The
+rebuilds do not control the order they write episodes in, some episodes land a row or
+two short, and the two copies do not even carry the same set of metadata files -- so
+"does it reproduce" collapses several different answers into one and loses the useful
+ones. Each question here explains the next:
 
-* **state and action must be identical, row for row.** Every slot is a float32
-  copied out of the source, so a rebuild that reads the same bytes and lines the
-  clocks up the same way produces the same numbers exactly. A difference in the
-  values is a real difference, reported as a failure rather than a tolerance.
-* **the row count may differ slightly.** Which rows survive is decided by the clock
-  strategy, and the delivered copy was produced by a script that no longer exists,
-  so an episode landing a frame or two short is expected. Up to ``--row-tolerance``
-  rows of difference is accepted, and the overlapping prefix is still compared in
-  full -- which is the interesting part: if every shared row matches, the difference
-  is a trimmed tail, and if they diverge partway the two are keeping *different*
-  frames and the strategy is wrong.
-* **video must match in geometry, frame count, codec, keyframe interval and the
-  pictures themselves; its bytes will not match.** Two ffmpeg builds with the same
-  flags do not emit the same file, so the size is reported as a ratio and judged
-  loosely. Everything else there
-  is decided by our own settings rather than by the encoder build, so a difference is
-  a real failure. The keyframe interval is included deliberately: it is not in the
-  stream header and has to be read off the frames, and it is the one encoder setting
-  the training loader feels, since sampling a random frame from a 250-frame GOP means
-  decoding back to the last keyframe. The pictures are checked on a sample of frames
-  rather than all of them, because a video that is not the one it should be is wrong
-  in every frame -- and checked at all because the size ratio cannot see it: a rebuild
-  with red and blue exchanged came within 1% of the delivered size and passed.
+1. **episodes** -- how much of the delivered copy is there. Episodes are paired on
+   their own state and action bytes, because they carry no source id and the rebuild
+   does not write them in the delivered order. Pairing happens twice: exactly, and
+   then on the first few rows, so that an episode which is *present but a row short*
+   is counted apart from one that is genuinely absent. Absence is reported, never
+   failed -- which episodes a rebuild ends up with is decided outside this comparison.
+2. **sample** -- whether what is there is the same, checked in full on a sample of
+   paired episodes. state and action must be identical, row for row: every slot is a
+   float32 copied out of the source, so a difference is a real difference and not a
+   tolerance. Video must match in geometry, frame count, codec, keyframe interval and
+   the pictures themselves; its *bytes* will not, because two ffmpeg builds given the
+   same flags do not emit the same file, so size is judged as a loose ratio. The
+   pictures are checked because the ratio cannot see them: a rebuild with red and blue
+   exchanged came within 1% of the delivered size. The keyframe interval is checked
+   because it is not in the stream header and it is the one encoder setting the
+   training loader feels, since sampling a frame from a 250-frame GOP means decoding
+   back to the last keyframe.
+3. **distributions** -- whether the two describe the same data, per vector column,
+   summarised by mean, std, min, max and three quantiles and scaled by the column's
+   own range so that metres and radians answer the same number. Asked twice, over
+   every episode and over the episodes the two copies share. That pair is the point of
+   the arrangement: if they disagree, the difference is the missing episodes from the
+   first question and nothing more; if the shared-episode number is also off, the
+   values themselves are wrong. It is computed from the parquet rather than from
+   ``meta``, because the delivered copies carry quantiles in ``episodes_stats.jsonl``
+   and a rebuild does not -- the v3.0 to v2.1 downgrade keeps only the five legacy
+   keys -- so comparing what each *says* about itself would compare the writers.
 
-Episodes carry no source id in the delivered copy, so they are aligned by position
-and the alignment is *checked* rather than assumed: the task prompt of each pair
-must agree. One dropped episode shifts everything after it, and comparing shifted
-episodes would produce a wall of meaningless differences, so a prompt mismatch stops
-the run.
+The exit status follows steps 2 and 3 over the shared episodes. It deliberately
+ignores step 1: a run that lost episodes should still be able to say whether the ones
+it has are right.
 """
 
 import argparse
@@ -95,29 +101,6 @@ def episode_prompts(root: Path) -> dict[int, str]:
     return out
 
 
-def episode_digests(root: Path) -> dict[str, list[int]]:
-    """state+action bytes of every episode -> the indices that carry them.
-
-    A list, not an index, because an episode can genuinely repeat: two of the 150
-    ucsd_kitchen episodes are identical vectors.
-    """
-    import pandas as pd
-
-    out: dict[str, list[int]] = {}
-    for path in sorted(root.glob("data/**/*.parquet")):
-        frame = pd.read_parquet(path)
-        for index, rows in frame.groupby("episode_index"):
-            rows = rows.sort_values("frame_index")
-            digest = hashlib.sha256()
-            for column in ("observation.state", "action"):
-                if column not in rows:
-                    continue
-                for value in rows[column]:
-                    digest.update(bytes(memoryview(value.astype("float32"))))
-            out.setdefault(digest.hexdigest(), []).append(int(index))
-    return out
-
-
 def pair_digests(
     a: dict[str, list[int]], b: dict[str, list[int]]
 ) -> dict[int, int]:
@@ -142,9 +125,234 @@ def pair_digests(
     return pairs
 
 
-def pair_by_content(rebuilt: Path, delivered: Path) -> dict[int, int]:
-    """:func:`pair_digests` over two datasets on disk."""
-    return pair_digests(episode_digests(rebuilt), episode_digests(delivered))
+# Rows enough to tell two episodes apart while surviving a trimmed tail. Both upstream
+# clock filters cut from the end, so a rebuild that trimmed differently still agrees at
+# the front, while one that kept a *different* selection of frames does not.
+PREFIX_ROWS = 8
+
+
+@dataclass(frozen=True)
+class Fingerprint:
+    """What identifies an episode when its index cannot.
+
+    ``whole`` answers "are these the same episode, to the byte". ``prefix`` answers
+    the weaker question that has to be asked separately: "is this the same episode
+    with its tail cut somewhere else". Keeping both is what lets a report say how many
+    episodes are *missing* rather than lumping the trimmed ones in with them -- and
+    that distinction decides whether a distribution difference further down needs
+    explaining or not.
+
+    An episode shorter than ``PREFIX_ROWS`` gets the same digest for both, so it can
+    only ever match exactly. At eight rows against episodes of a hundred and more that
+    is a corner rather than a case.
+    """
+
+    rows: int
+    whole: str
+    prefix: str
+
+
+def _stack(column):
+    """A parquet column of per-row arrays as one ``(rows, width)`` array."""
+    import numpy as np
+
+    values = column.to_numpy()
+    return np.stack(values) if values.dtype == object else values.reshape(len(values), -1)
+
+
+def episode_fingerprints(root: Path) -> dict[int, Fingerprint]:
+    """Every episode in ``root``, keyed by its own index."""
+    import pandas as pd
+
+    out: dict[int, Fingerprint] = {}
+    for path in sorted(root.glob("data/**/*.parquet")):
+        frame = pd.read_parquet(path)
+        if "episode_index" not in frame:
+            continue
+        for index, rows in frame.groupby("episode_index"):
+            if "frame_index" in rows:
+                rows = rows.sort_values("frame_index")
+            whole = hashlib.sha256()
+            prefix = hashlib.sha256()
+            # column by column, in the same order episode_digests uses, so the two
+            # agree on what an episode's bytes are
+            for column in ("observation.state", "action"):
+                if column not in rows:
+                    continue
+                values = _stack(rows[column]).astype("float32")
+                whole.update(values.tobytes())
+                prefix.update(values[:PREFIX_ROWS].tobytes())
+            out[int(index)] = Fingerprint(
+                rows=len(rows), whole=whole.hexdigest(), prefix=prefix.hexdigest()
+            )
+    return out
+
+
+def _group(fingerprints: dict[int, Fingerprint], key, only=None) -> dict[str, list[int]]:
+    grouped: dict[str, list[int]] = {}
+    for index, print_ in sorted(fingerprints.items()):
+        if only is not None and index not in only:
+            continue
+        grouped.setdefault(key(print_), []).append(index)
+    return grouped
+
+
+@dataclass
+class Pairing:
+    """Which episodes the two copies have in common, and on what basis.
+
+    The counts are the first thing a verification run should report, because every
+    later number depends on them: a distribution computed over episodes the other side
+    does not have is expected to differ, and one computed over the episodes they share
+    is not.
+    """
+
+    exact: dict[int, int] = field(default_factory=dict)
+    trimmed: dict[int, int] = field(default_factory=dict)
+    rebuilt_only: list[int] = field(default_factory=list)
+    delivered_only: list[int] = field(default_factory=list)
+    rebuilt_rows: int = 0
+    delivered_rows: int = 0
+
+    @property
+    def pairs(self) -> dict[int, int]:
+        return {**self.exact, **self.trimmed}
+
+    @property
+    def rebuilt_total(self) -> int:
+        return len(self.exact) + len(self.trimmed) + len(self.rebuilt_only)
+
+    @property
+    def delivered_total(self) -> int:
+        return len(self.exact) + len(self.trimmed) + len(self.delivered_only)
+
+    @property
+    def moved(self) -> int:
+        """Paired episodes whose index is not the one they had. Not a defect on its
+        own -- openx2lerobot writes in tfds read order -- but it is the reason a
+        position-aligned comparison reports every episode as different."""
+        return sum(1 for one, other in self.pairs.items() if one != other)
+
+
+def pair_episodes(
+    rebuilt: dict[int, Fingerprint], delivered: dict[int, Fingerprint]
+) -> Pairing:
+    """Match episodes on their own contents, exactly first and then by prefix.
+
+    Two passes rather than one because the answers mean different things. An exact
+    match says the episode reproduced; a prefix match says the same episode is there
+    with a different number of rows, which is the clock strategy landing elsewhere and
+    not a missing episode. Whatever survives both passes really is absent from one side.
+
+    Multiplicity is respected as in :func:`pair_digests`: episodes whose contents
+    appear a different number of times on the two sides are left unpaired rather than
+    matched arbitrarily, because there is no way to say which went with which.
+    """
+    result = Pairing(
+        rebuilt_rows=sum(f.rows for f in rebuilt.values()),
+        delivered_rows=sum(f.rows for f in delivered.values()),
+    )
+
+    def take(key, only_rebuilt=None, only_delivered=None) -> dict[int, int]:
+        return pair_digests(
+            _group(rebuilt, key, only_rebuilt), _group(delivered, key, only_delivered)
+        )
+
+    result.exact = take(lambda f: f.whole)
+    result.trimmed = take(
+        lambda f: f.prefix,
+        set(rebuilt) - set(result.exact),
+        set(delivered) - set(result.exact.values()),
+    )
+
+    paired = result.pairs
+    result.rebuilt_only = sorted(set(rebuilt) - set(paired))
+    result.delivered_only = sorted(set(delivered) - set(paired.values()))
+    return result
+
+
+# What a distribution is summarised by. Quantiles rather than std alone because the
+# question they answer is different: std moves when the values are rescaled, a quantile
+# moves when the shape changes.
+DISTRIBUTION_STATS = ("mean", "std", "min", "max", "q01", "q50", "q99")
+
+VECTORS = ("observation.state", "action")
+
+
+def distribution(
+    root: Path, episodes: set[int] | None = None, columns: tuple[str, ...] = VECTORS
+) -> dict[str, dict[str, Any]]:
+    """Per-dimension summary of each vector column, over ``episodes`` or over all.
+
+    Computed from the parquet rather than read out of ``meta``, on purpose. The two
+    copies do not carry the same metadata -- the delivered ones have quantiles in
+    ``episodes_stats.jsonl`` and a rebuild does not, because the v3.0 to v2.1
+    downgrade keeps only the five legacy keys -- so a comparison of what each *says*
+    about itself would be comparing the writers, not the data.
+    """
+    import numpy as np
+
+    gathered: dict[str, list] = {column: [] for column in columns}
+    for path in sorted(root.glob("data/**/*.parquet")):
+        frame = pd_read(path)
+        if episodes is not None and "episode_index" in frame:
+            frame = frame[frame["episode_index"].isin(episodes)]
+        if not len(frame):
+            continue
+        for column in columns:
+            if column in frame:
+                gathered[column].append(_stack(frame[column]).astype("float64"))
+
+    out: dict[str, dict[str, Any]] = {}
+    for column, parts in gathered.items():
+        if not parts:
+            continue
+        values = np.concatenate(parts)
+        out[column] = {
+            "rows": len(values),
+            "mean": values.mean(axis=0),
+            "std": values.std(axis=0),
+            "min": values.min(axis=0),
+            "max": values.max(axis=0),
+            "q01": np.percentile(values, 1, axis=0),
+            "q50": np.percentile(values, 50, axis=0),
+            "q99": np.percentile(values, 99, axis=0),
+        }
+    return out
+
+
+def pd_read(path: Path):
+    import pandas as pd
+
+    return pd.read_parquet(path)
+
+
+def distribution_gap(rebuilt: dict, delivered: dict) -> dict[str, float]:
+    """Column -> the worst difference across its dimensions, as a fraction of range.
+
+    Scaled by the delivered column's own span so that one dimension in metres and
+    another in radians are answerable by the same number. A column present on only one
+    side is reported as ``inf`` rather than skipped.
+    """
+    import numpy as np
+
+    gaps: dict[str, float] = {}
+    for column in sorted(set(rebuilt) | set(delivered)):
+        if column not in rebuilt or column not in delivered:
+            gaps[column] = float("inf")
+            continue
+        mine, theirs = rebuilt[column], delivered[column]
+        span = np.asarray(theirs["max"]) - np.asarray(theirs["min"])
+        span = np.where(span > 0, span, 1.0)
+        worst = 0.0
+        for stat in DISTRIBUTION_STATS:
+            a, b = np.asarray(mine[stat]), np.asarray(theirs[stat])
+            if a.shape != b.shape:
+                worst = float("inf")
+                break
+            worst = max(worst, float(np.max(np.abs(a - b) / span)))
+        gaps[column] = worst
+    return gaps
 
 
 def episode_parquet(root: Path, index: int) -> Path | None:
@@ -448,8 +656,18 @@ def compare_video(
 
     for key in sorted(set(videos_a) | set(videos_b)):
         if key not in videos_a or key not in videos_b:
-            problems.append(f"video {key} only in the "
-                            f"{'delivered' if key not in videos_a else 'rebuilt'} dataset")
+            problem = (f"video {key} only in the "
+                       f"{'delivered' if key not in videos_a else 'rebuilt'} dataset")
+            if key not in videos_a:
+                # A camera the rebuild wrote under a different name reads, through the
+                # filter above, exactly like one it did not write at all -- and eight of
+                # the delivered OXE datasets renamed their cameras to the modality
+                # aliases while nineteen kept the source keys, so this is the common
+                # case rather than a corner. Name what is actually there.
+                elsewhere = sorted(set(episode_videos(rebuilt, index)) - set(videos_a))
+                if elsewhere:
+                    problem += f"; the rebuild has {', '.join(elsewhere)} instead"
+            problems.append(problem)
             continue
         a, b = probe(videos_a[key]), probe(videos_b[key])
 
@@ -488,87 +706,62 @@ def compare_video(
     return summary, problems
 
 
-ALIGNMENTS = ("position", "content")
-
-
 def run(
     spec: DatasetSpec, rebuilt: Path, delivered: Path,
     episodes: int, check_video: bool, row_tolerance: int = ROW_TOLERANCE,
-    align: str = "position",
 ) -> list[EpisodeReport]:
-    """Compare ``episodes`` episodes, pairing them the way ``align`` says.
+    """Compare the first ``episodes`` episodes of each, paired by index.
 
-    ``position`` is the stronger question -- it asks whether the same episode is in
-    the same place -- and is the default for that reason. ``content`` drops the order
-    and asks only whether the episodes themselves reproduce, which is the right
-    question for a converter that does not control the order it writes in.
+    The narrow question: is the same episode in the same place. :func:`measure` asks
+    the broader one, pairing on contents instead, and uses :func:`compare_episode`
+    the same way this does.
     """
-    if align not in ALIGNMENTS:
-        raise CompareError(f"unknown alignment {align!r}; use one of {', '.join(ALIGNMENTS)}")
+    return compare_chosen(spec, rebuilt, delivered, list(range(episodes)), {},
+                          check_video, row_tolerance)
 
+
+def compare_chosen(
+    spec: DatasetSpec, rebuilt: Path, delivered: Path,
+    chosen: list[int], pairs: dict[int, int],
+    check_video: bool, row_tolerance: int = ROW_TOLERANCE,
+) -> list[EpisodeReport]:
+    """``compare_episode`` over ``chosen``, reading the prompts once."""
     rebuilt_prompts = episode_prompts(rebuilt)
     delivered_prompts = episode_prompts(delivered)
-
-    pairs: dict[int, int] = {}
-    unpaired = 0
-    if align == "content":
-        rebuilt_digests = episode_digests(rebuilt)
-        pairs = pair_digests(rebuilt_digests, episode_digests(delivered))
-        unpaired = sum(len(v) for v in rebuilt_digests.values()) - len(pairs)
-        chosen = sorted(pairs)[:episodes]
-    else:
-        chosen = list(range(episodes))
-
-    reports = [
-        compare_episode(spec, rebuilt, delivered, index,
-                        rebuilt_prompts, delivered_prompts, check_video, row_tolerance,
+    return [
+        compare_episode(spec, rebuilt, delivered, index, rebuilt_prompts,
+                        delivered_prompts, check_video, row_tolerance,
                         delivered_index=pairs.get(index))
         for index in chosen
     ]
-    if unpaired:
-        reports.append(unpaired_report(unpaired))
-    return reports
 
 
-def unpaired_report(count: int) -> EpisodeReport:
-    """A finding about the datasets as a whole rather than about one episode.
-
-    It rides along as a report so that it counts towards the exit status: episodes
-    the delivered copy simply does not contain are a failure to reproduce, even when
-    every episode that *was* compared came out identical.
-    """
-    report = EpisodeReport(index=-1)
-    report.problems.append(
-        f"{count} rebuilt episode(s) have vectors that appear nowhere in the "
-        "delivered copy, so they were not compared"
+def episode_lines(r: EpisodeReport) -> list[str]:
+    """One episode's findings, without the run-level tally :func:`report` adds."""
+    mark = "ok  " if r.ok else "FAIL"
+    if r.index < 0:
+        return [f"[{mark}] {problem}" for problem in r.problems]
+    if r.rows_rebuilt == r.rows_delivered:
+        rows = f"{r.rows_rebuilt} rows"
+    else:
+        delta = (r.rows_rebuilt or 0) - (r.rows_delivered or 0)
+        rows = f"{r.rows_rebuilt} vs {r.rows_delivered} rows ({delta:+d})"
+    where = (
+        f"{r.index:>5}"
+        if r.delivered_index is None or r.delivered_index == r.index
+        else f"{r.index:>5}->{r.delivered_index}"
     )
-    return report
+    lines = [f"[{mark}] episode {where}  {rows}"]
+    lines += [f"         {key:<20} {value}" for key, value in r.columns.items()]
+    lines += [f"         video {key:<14} {value}" for key, value in r.video.items()]
+    lines += [f"         ! {problem}" for problem in r.problems]
+    return lines
 
 
 def report(reports: list[EpisodeReport]) -> str:
     lines = []
     for r in reports:
-        mark = "ok  " if r.ok else "FAIL"
-        if r.index < 0:
-            lines += [f"[{mark}] {problem}" for problem in r.problems]
-            continue
-        if r.rows_rebuilt == r.rows_delivered:
-            rows = f"{r.rows_rebuilt} rows"
-        else:
-            delta = (r.rows_rebuilt or 0) - (r.rows_delivered or 0)
-            rows = f"{r.rows_rebuilt} vs {r.rows_delivered} rows ({delta:+d})"
-        where = (
-            f"{r.index:>5}"
-            if r.delivered_index is None or r.delivered_index == r.index
-            else f"{r.index:>5}->{r.delivered_index}"
-        )
-        lines.append(f"[{mark}] episode {where}  {rows}")
-        for key, value in r.columns.items():
-            lines.append(f"         {key:<20} {value}")
-        for key, value in r.video.items():
-            lines.append(f"         video {key:<14} {value}")
-        for problem in r.problems:
-            lines.append(f"         ! {problem}")
+        lines += episode_lines(r)
 
     episodes = [r for r in reports if r.index >= 0]
     failed = [r for r in episodes if not r.ok]
@@ -587,19 +780,136 @@ def report(reports: list[EpisodeReport]) -> str:
     return "\n".join(lines)
 
 
+# What a rebuild's own float summation order can cost, with room to spare: a rebuild
+# that reproduces the delivered episodes measures around 1e-15 here, so anything this
+# far above it is a difference in the data rather than in the arithmetic.
+DISTRIBUTION_TOLERANCE = 1e-6
+
+
+@dataclass
+class Funnel:
+    """How closely a rebuild matches, asked in three questions rather than one.
+
+    A single verdict was the wrong shape for this. The rebuilds do not control the
+    order they write episodes in, some episodes land a row or two short, and the
+    metadata each side carries is not even the same set of files -- so "does it
+    reproduce" collapses several different answers into one, and the useful ones get
+    lost. These are separate on purpose, and they are ordered so that each explains
+    the next: how much is there, whether what is there is the same, and whether the
+    two describe the same distribution.
+
+    The third is asked twice, over everything and over the episodes the two share.
+    That pair is the point of the whole arrangement: if they disagree, the difference
+    is the missing episodes from the first question and nothing more, and if the
+    shared-episode number is also off then something is wrong with the values.
+    """
+
+    dataset: str
+    pairing: Pairing
+    episodes: list[EpisodeReport] = field(default_factory=list)
+    gap_overall: dict[str, float] = field(default_factory=dict)
+    gap_shared: dict[str, float] = field(default_factory=dict)
+
+    @property
+    def values_agree(self) -> bool:
+        """Whether every episode that was compared in full came out identical."""
+        return all(r.ok for r in self.episodes if r.index >= 0)
+
+    @property
+    def distributions_agree(self) -> bool:
+        return all(v <= DISTRIBUTION_TOLERANCE for v in self.gap_shared.values())
+
+
+def measure(
+    spec: DatasetSpec,
+    rebuilt: Path,
+    delivered: Path,
+    episodes: int = 8,
+    check_video: bool = True,
+    row_tolerance: int = ROW_TOLERANCE,
+) -> Funnel:
+    """Walk the three questions in order, reusing the pairing for all of them."""
+    pairing = pair_episodes(
+        episode_fingerprints(rebuilt), episode_fingerprints(delivered)
+    )
+
+    pairs = pairing.pairs
+    if pairs:
+        chosen = sorted(pairs)[:episodes]
+    else:
+        # Nothing paired at all, which is what a rebuild whose *values* are wrong looks
+        # like -- no episode on either side has a counterpart, so there is nothing to
+        # sample. Fall back to position so that step 2 still says what differs; the
+        # first question has already reported that none of them matched.
+        chosen = list(range(min(episodes, pairing.rebuilt_total)))
+    reports = compare_chosen(spec, rebuilt, delivered, chosen, pairs,
+                             check_video, row_tolerance)
+
+    shared = set(pairing.exact)
+    return Funnel(
+        dataset=spec.id,
+        pairing=pairing,
+        episodes=reports,
+        gap_overall=distribution_gap(distribution(rebuilt), distribution(delivered)),
+        gap_shared=distribution_gap(
+            distribution(rebuilt, episodes=shared),
+            distribution(delivered, episodes={pairing.exact[i] for i in shared}),
+        ),
+    )
+
+
+def _gaps(gaps: dict[str, float]) -> str:
+    return "   ".join(f"{column} {value:.1e}" for column, value in sorted(gaps.items()))
+
+
+def funnel_report(f: Funnel, verbose: bool = False) -> str:
+    p = f.pairing
+    lines = [f"{f.dataset}", ""]
+
+    lines.append("1  episodes")
+    lines.append(f"     rebuilt      {p.rebuilt_total:>6} episodes  {p.rebuilt_rows:>9,} rows")
+    lines.append(f"     delivered    {p.delivered_total:>6} episodes  {p.delivered_rows:>9,} rows")
+    lines.append(f"     reproduced   {len(p.pairs):>6}  ({len(p.exact)} identical, "
+                 f"{len(p.trimmed)} same episode with a different row count)")
+    lines.append(f"     absent       {len(p.delivered_only):>6} of the delivered episodes; "
+                 f"{len(p.rebuilt_only)} in the rebuild are not in the delivered copy")
+    if p.moved:
+        lines.append(f"     reordered    {p.moved:>6} of {len(p.pairs)} paired episodes "
+                     "carry a different index")
+
+    compared = [r for r in f.episodes if r.index >= 0]
+    failed = [r for r in compared if not r.ok]
+    lines += ["", "2  sample"]
+    lines.append(f"     compared     {len(compared):>6} of {len(p.pairs)} paired episodes, in full")
+    lines.append(f"     identical    {len(compared) - len(failed):>6}"
+                 + (f"  ({len(failed)} differ)" if failed else ""))
+    for r in compared if verbose else failed:
+        lines += ["     " + line for line in episode_lines(r)]
+
+    lines += ["", "3  distributions   (max difference per column, as a fraction of its range)"]
+    lines.append(f"     every episode        {_gaps(f.gap_overall)}")
+    lines.append(f"     the shared ones      {_gaps(f.gap_shared)}")
+    if not f.distributions_agree:
+        lines.append("     ! the shared episodes do not agree, so this is the values "
+                     "differing and not the missing episodes")
+    elif len(p.delivered_only) or len(p.rebuilt_only):
+        lines.append(f"     the two rows differ because {len(p.delivered_only)} delivered "
+                     "episode(s) are absent; over what both copies have, they agree")
+    return "\n".join(lines)
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("dataset", help=f"one of: {', '.join(available())}")
     parser.add_argument("--rebuilt", type=Path, required=True)
     parser.add_argument("--delivered", type=Path, default=None,
                         help="defaults to the spec's delivered.path")
-    parser.add_argument("--episodes", type=int, default=8)
+    parser.add_argument("--episodes", type=int, default=8,
+                        help="how many paired episodes to compare in full (step 2)")
     parser.add_argument("--no-video", action="store_true",
                         help="compare only the vectors; skips ffprobe")
-    parser.add_argument("--align", choices=ALIGNMENTS, default="position",
-                        help="how to pair episodes: by index (default), or by their "
-                             "own state/action bytes when the rebuild does not "
-                             "control the order it writes in")
+    parser.add_argument("--verbose", "-v", action="store_true",
+                        help="print every sampled episode, not only the ones that differ")
     parser.add_argument("--row-tolerance", type=int, default=ROW_TOLERANCE,
                         help="rows an episode may differ by before it counts as a "
                              "wrong clock strategy rather than a trimmed tail")
@@ -615,10 +925,17 @@ def main(argv=None) -> int:
         print(f"delivered dataset not found: {delivered}", file=sys.stderr)
         return 2
 
-    reports = run(spec, args.rebuilt, delivered, args.episodes, not args.no_video,
-                  args.row_tolerance, align=args.align)
-    print(report(reports))
-    return 1 if any(not r.ok for r in reports) else 0
+    if not args.rebuilt.exists():
+        print(f"rebuilt dataset not found: {args.rebuilt}", file=sys.stderr)
+        return 2
+
+    measured = measure(spec, args.rebuilt, delivered, args.episodes,
+                       not args.no_video, args.row_tolerance)
+    print(funnel_report(measured, verbose=args.verbose))
+    # Missing episodes are reported, not judged: which episodes a rebuild ends up with
+    # is decided outside this comparison, and a run that lost some should still be able
+    # to say whether the ones it has are right.
+    return 0 if measured.values_agree and measured.distributions_agree else 1
 
 
 if __name__ == "__main__":

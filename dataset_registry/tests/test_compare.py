@@ -32,23 +32,33 @@ ROWS = 20
 WIDTH = 44
 
 
-def write_dataset(root: Path, rows=ROWS, episodes=2, nudge=None, prompts=None):
+def write_dataset(root: Path, rows=ROWS, episodes=2, nudge=None, prompts=None,
+                  nudge_row=0, only=None, order=None):
     """A minimal LeRobot tree with just enough for the comparator."""
     (root / "meta").mkdir(parents=True, exist_ok=True)
     (root / "data" / "chunk-000").mkdir(parents=True, exist_ok=True)
 
     lines = []
     for index in range(episodes):
+        if only is not None and index not in only:
+            continue
         # draw a fixed size and slice, so that a shorter episode really is a prefix
         # of the longer one rather than a different draw
-        rng = np.random.default_rng(index)
+        # `order` decouples an episode's contents from the index it is written at, so
+        # a fixture can hold the same episodes in a different order
+        seed = index if order is None else order[index]
+        rng = np.random.default_rng(seed)
         state = rng.random((ROWS, WIDTH)).astype(np.float32)[:rows]
         action = rng.random((ROWS, WIDTH)).astype(np.float32)[:rows]
         if nudge is not None and index == 0:
-            state[0, nudge] = np.float32(state[0, nudge] + 1.0)
-        pd.DataFrame(
-            {"observation.state": list(state), "action": list(action)}
-        ).to_parquet(root / "data" / "chunk-000" / f"episode_{index:06d}.parquet")
+            state[nudge_row, nudge] = np.float32(state[nudge_row, nudge] + 1.0)
+        pd.DataFrame({
+            "observation.state": list(state),
+            "action": list(action),
+            # episode_fingerprints groups on these, as the real files carry them
+            "episode_index": [index] * len(state),
+            "frame_index": list(range(len(state))),
+        }).to_parquet(root / "data" / "chunk-000" / f"episode_{index:06d}.parquet")
         task = (prompts or {}).get(index, f"task {index}")
         lines.append(json.dumps(
             {"episode_index": index, "tasks": [task], "length": rows}))
@@ -207,17 +217,6 @@ class TestPairDigests:
         assert compare.pair_digests({"a": [0]}, {"a": [0, 1]}) == {}
 
 
-class TestUnpairedReport:
-    def test_it_fails_the_run(self):
-        assert not compare.unpaired_report(3).ok
-
-    def test_it_is_not_counted_as_an_episode(self):
-        text = compare.report([compare.unpaired_report(3)])
-
-        assert "0/0 episodes" in text
-        assert "3 rebuilt episode(s)" in text
-
-
 class TestDeclaredCameras:
     """Which cameras a comparison is about.
 
@@ -344,3 +343,237 @@ class TestPixels:
 
         assert any("frames agree" in p for p in problems), problems
         assert "PIXELS" in summary["cam"]
+
+
+class TestRenamedCamera:
+    """A camera the rebuild wrote under a different name.
+
+    Eight of the 27 delivered OXE datasets renamed their cameras to the modality
+    aliases -- bc_z's feature is `observation.images.primary` where the RLDS key is
+    `image` -- and nineteen kept the source keys. A rebuild derives the name from the
+    source, so for those eight the directory will not match. Because undeclared rebuilt
+    cameras are filtered out on purpose, that arrives looking like a camera the rebuild
+    never wrote, which sends the reader after the wrong thing.
+    """
+
+    def _clip(self, path: Path):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run(
+            ["ffmpeg", "-v", "error", "-f", "lavfi", "-i",
+             "color=c=red:s=64x64:r=10:d=0.6",
+             "-c:v", "libx264", "-pix_fmt", "yuv420p", "-y", str(path)],
+            check=True, capture_output=True)
+
+    def test_the_name_the_rebuild_used_is_reported(self, tmp_path):
+        rebuilt, delivered = tmp_path / "r", tmp_path / "d"
+        self._clip(rebuilt / "videos/chunk-000/observation.images.image/episode_000000.mp4")
+        self._clip(delivered / "videos/chunk-000/observation.images.primary/episode_000000.mp4")
+        (delivered / "meta").mkdir(parents=True, exist_ok=True)
+        (delivered / "meta" / "modality.json").write_text(json.dumps(
+            {"video": {"primary": {"original_key": "observation.images.primary"}}}))
+
+        _, problems = compare.compare_video(rebuilt, delivered, 0)
+
+        assert len(problems) == 1
+        assert "observation.images.primary only in the delivered" in problems[0]
+        assert "the rebuild has observation.images.image instead" in problems[0]
+
+    def test_a_camera_that_really_is_absent_says_only_that(self, tmp_path):
+        rebuilt, delivered = tmp_path / "r", tmp_path / "d"
+        (rebuilt / "videos").mkdir(parents=True)
+        self._clip(delivered / "videos/chunk-000/observation.images.primary/episode_000000.mp4")
+        (delivered / "meta").mkdir(parents=True, exist_ok=True)
+        (delivered / "meta" / "modality.json").write_text(json.dumps(
+            {"video": {"primary": {"original_key": "observation.images.primary"}}}))
+
+        _, problems = compare.compare_video(rebuilt, delivered, 0)
+
+        assert "instead" not in problems[0]
+
+
+class TestFingerprints:
+    """The two questions an episode's contents can answer.
+
+    `whole` is "is this the same episode"; `prefix` is the weaker "is this the same
+    episode with its tail somewhere else". Keeping them apart is what lets a report
+    distinguish an episode that is missing from one that is a row short.
+    """
+
+    def test_the_same_episode_prints_the_same(self, tmp_path):
+        a = compare.episode_fingerprints(write_dataset(tmp_path / "a"))
+        b = compare.episode_fingerprints(write_dataset(tmp_path / "b"))
+        assert a[0] == b[0]
+
+    def test_a_trimmed_tail_keeps_the_prefix_and_changes_the_whole(self, tmp_path):
+        a = compare.episode_fingerprints(write_dataset(tmp_path / "a", rows=ROWS - 1))
+        b = compare.episode_fingerprints(write_dataset(tmp_path / "b"))
+        assert a[0].prefix == b[0].prefix
+        assert a[0].whole != b[0].whole
+        assert (a[0].rows, b[0].rows) == (ROWS - 1, ROWS)
+
+    def test_a_change_inside_the_prefix_changes_both(self, tmp_path):
+        """Which is the point: a rebuild that got the values wrong must not be
+        mistaken for one that trimmed differently."""
+        a = compare.episode_fingerprints(write_dataset(tmp_path / "a", nudge=17))
+        b = compare.episode_fingerprints(write_dataset(tmp_path / "b"))
+        assert a[0].prefix != b[0].prefix
+
+    def test_a_change_past_the_prefix_leaves_the_prefix_alone(self, tmp_path):
+        """So it is paired and then compared, rather than counted as absent."""
+        a = compare.episode_fingerprints(
+            write_dataset(tmp_path / "a", nudge=17, nudge_row=ROWS - 1))
+        b = compare.episode_fingerprints(write_dataset(tmp_path / "b"))
+        assert a[0].prefix == b[0].prefix and a[0].whole != b[0].whole
+
+
+class TestPairing:
+    """Step 1 of the funnel: how much of the delivered copy is there at all."""
+
+    def _pair(self, a, b):
+        return compare.pair_episodes(
+            compare.episode_fingerprints(a), compare.episode_fingerprints(b))
+
+    def test_identical_datasets_pair_exactly(self, tmp_path):
+        p = self._pair(write_dataset(tmp_path / "a"), write_dataset(tmp_path / "b"))
+        assert (len(p.exact), len(p.trimmed)) == (2, 0)
+        assert not p.rebuilt_only and not p.delivered_only
+        assert p.moved == 0
+
+    def test_a_trimmed_episode_is_paired_and_labelled_as_such(self, tmp_path):
+        """Not absent. The episode is there; its row count is not the same."""
+        p = self._pair(write_dataset(tmp_path / "a", rows=ROWS - 1),
+                       write_dataset(tmp_path / "b"))
+        assert (len(p.exact), len(p.trimmed)) == (0, 2)
+        assert not p.delivered_only
+
+    def test_a_missing_episode_is_counted_against_the_delivered_copy(self, tmp_path):
+        p = self._pair(write_dataset(tmp_path / "a", episodes=1),
+                       write_dataset(tmp_path / "b", episodes=2))
+        assert len(p.exact) == 1
+        assert p.delivered_only == [1] and not p.rebuilt_only
+        assert (p.rebuilt_total, p.delivered_total) == (1, 2)
+
+    def test_an_episode_the_delivered_copy_lacks_is_counted_the_other_way(self, tmp_path):
+        p = self._pair(write_dataset(tmp_path / "a", episodes=2),
+                       write_dataset(tmp_path / "b", episodes=1))
+        assert p.rebuilt_only == [1] and not p.delivered_only
+
+    def test_rows_are_totalled_on_both_sides(self, tmp_path):
+        p = self._pair(write_dataset(tmp_path / "a", rows=ROWS - 1),
+                       write_dataset(tmp_path / "b"))
+        assert (p.rebuilt_rows, p.delivered_rows) == (2 * (ROWS - 1), 2 * ROWS)
+
+    def test_a_permutation_pairs_fully_and_is_counted_as_moved(self, tmp_path):
+        """openx2lerobot writes in tfds read order, so nearly every episode moves.
+        Worth knowing, and not a defect, so it is counted rather than failed."""
+        p = self._pair(write_dataset(tmp_path / "a", order=[1, 0]),
+                       write_dataset(tmp_path / "b", order=[0, 1]))
+        assert p.exact == {0: 1, 1: 0}
+        assert p.moved == 2
+        assert not p.rebuilt_only and not p.delivered_only
+
+    def test_episodes_in_the_same_place_are_not_counted_as_moved(self, tmp_path):
+        assert self._pair(write_dataset(tmp_path / "a"),
+                          write_dataset(tmp_path / "b")).moved == 0
+
+    def test_a_value_wrong_in_the_first_rows_leaves_the_episode_unmatched(self, tmp_path):
+        """Recorded because it shapes how the report has to be read: `absent` means
+        "no episode with these contents", not "no episode at this index"."""
+        p = self._pair(write_dataset(tmp_path / "a", nudge=17),
+                       write_dataset(tmp_path / "b"))
+        assert p.rebuilt_only == [0] and p.delivered_only == [0]
+
+
+class TestDistributions:
+    """Step 3: whether the two describe the same distribution, and the reason the
+    question is asked twice."""
+
+    def test_identical_datasets_have_no_gap(self, tmp_path):
+        a, b = write_dataset(tmp_path / "a"), write_dataset(tmp_path / "b")
+        gaps = compare.distribution_gap(compare.distribution(a), compare.distribution(b))
+        assert set(gaps) == {"observation.state", "action"}
+        assert max(gaps.values()) <= compare.DISTRIBUTION_TOLERANCE
+
+    def test_a_changed_value_opens_a_gap(self, tmp_path):
+        a = write_dataset(tmp_path / "a", nudge=17, episodes=1)
+        b = write_dataset(tmp_path / "b", episodes=1)
+        gaps = compare.distribution_gap(compare.distribution(a), compare.distribution(b))
+        assert gaps["observation.state"] > compare.DISTRIBUTION_TOLERANCE
+
+    def test_a_column_on_only_one_side_is_not_quietly_skipped(self):
+        gaps = compare.distribution_gap({"action": {}}, {})
+        assert gaps["action"] == float("inf")
+
+    def test_restricting_to_shared_episodes_removes_the_effect_of_a_missing_one(
+        self, tmp_path
+    ):
+        """The whole reason step 3 is asked twice. A rebuild that lost an episode has a
+        genuinely different distribution overall, and an identical one over what the
+        two copies share -- and only the second says whether the values are right."""
+        a = write_dataset(tmp_path / "a", episodes=3, only={0, 1})
+        b = write_dataset(tmp_path / "b", episodes=3)
+        shared = {0, 1}
+        overall = compare.distribution_gap(
+            compare.distribution(a), compare.distribution(b))
+        restricted = compare.distribution_gap(
+            compare.distribution(a, episodes=shared),
+            compare.distribution(b, episodes=shared))
+        assert overall["action"] > compare.DISTRIBUTION_TOLERANCE
+        assert restricted["action"] <= compare.DISTRIBUTION_TOLERANCE
+
+
+class TestFunnel:
+    """The three questions together, and what each one is allowed to fail on."""
+
+    def test_a_faithful_rebuild_passes_every_step(self, spec, tmp_path):
+        f = compare.measure(spec, write_dataset(tmp_path / "a"),
+                            write_dataset(tmp_path / "b"), episodes=2, check_video=False)
+        assert f.values_agree and f.distributions_agree
+        assert len(f.pairing.exact) == 2
+
+    def test_a_missing_episode_is_measured_and_does_not_fail_the_run(self, spec, tmp_path):
+        """Which episodes a rebuild ends up with is decided outside this comparison, so
+        the report counts them and still answers whether the rest is right."""
+        f = compare.measure(spec, write_dataset(tmp_path / "a", episodes=2, only={0}),
+                            write_dataset(tmp_path / "b", episodes=2),
+                            episodes=2, check_video=False)
+        assert f.pairing.delivered_only == [1]
+        assert f.values_agree and f.distributions_agree
+
+    def test_step_three_restricts_both_sides_to_the_shared_episodes(self, spec, tmp_path):
+        """A rebuild carrying an episode the delivered copy does not have differs
+        overall and agrees over what they share. Restricting only one side would leave
+        the second number reading like the first, which is the mistake that makes the
+        whole arrangement pointless."""
+        f = compare.measure(spec, write_dataset(tmp_path / "a", episodes=2),
+                            write_dataset(tmp_path / "b", episodes=2, only={0}),
+                            episodes=2, check_video=False)
+        assert f.pairing.rebuilt_only == [1]
+        assert f.gap_overall["action"] > compare.DISTRIBUTION_TOLERANCE
+        assert f.gap_shared["action"] <= compare.DISTRIBUTION_TOLERANCE
+        assert f.distributions_agree
+
+    def test_wrong_values_fail_the_run(self, spec, tmp_path):
+        """Nothing pairs, so step 2 falls back to position and still reports what
+        differs rather than going quiet."""
+        f = compare.measure(spec, write_dataset(tmp_path / "a", nudge=17, episodes=1),
+                            write_dataset(tmp_path / "b", episodes=1),
+                            episodes=2, check_video=False)
+        assert not f.values_agree
+        assert [r for r in f.episodes if r.index >= 0]
+
+    def test_the_report_names_all_three_steps(self, spec, tmp_path):
+        text = compare.funnel_report(compare.measure(
+            spec, write_dataset(tmp_path / "a"), write_dataset(tmp_path / "b"),
+            episodes=2, check_video=False))
+        for heading in ("1  episodes", "2  sample", "3  distributions"):
+            assert heading in text
+
+    def test_the_report_explains_a_gap_the_missing_episodes_account_for(
+        self, spec, tmp_path
+    ):
+        text = compare.funnel_report(compare.measure(
+            spec, write_dataset(tmp_path / "a", episodes=3, only={0, 1}),
+            write_dataset(tmp_path / "b", episodes=3), episodes=2, check_video=False))
+        assert "1 delivered episode(s) are absent" in text
+        assert "over what both copies have, they agree" in text
