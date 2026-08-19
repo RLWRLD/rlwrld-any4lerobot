@@ -15,7 +15,7 @@ docker run --rm \
   -e DATASETS="taco_play toto" \
   -e NIC_RATE=100Gb/s \
   -v /scratch:/scratch \
-  <registry>/any4lerobot:<tag>
+  487592470682.dkr.ecr.us-east-1.amazonaws.com/rlwrld/inhouse-services/any4lerobot/node:<tag>
 ```
 
 `DATASETS` is that node's share; [`node.sh`](node.sh) runs preflight and then hands
@@ -41,21 +41,27 @@ something new.
 
 ### Building and pushing
 
-Nodes are `m7i`, so the image has to be **`linux/amd64`** whatever it is built on:
+Nodes are `m7i`, so the image has to be **`linux/amd64`** whatever it is built on —
+on an arm64 machine that means an emulated build, which is slow but correct:
 
 ```bash
-REGISTRY=<account>.dkr.ecr.us-east-1.amazonaws.com
-aws ecr get-login-password --region us-east-1 \
-  | docker login --username AWS --password-stdin "$REGISTRY"
+REPO=487592470682.dkr.ecr.us-east-1.amazonaws.com/rlwrld/inhouse-services/any4lerobot/node
 
-docker buildx build --platform linux/amd64 \
-  -t "$REGISTRY/any4lerobot:$(git rev-parse --short HEAD)" --push .
+aws ecr get-login-password --region us-east-1 \
+  | docker login --username AWS --password-stdin "${REPO%%/*}"
+
+docker buildx build --platform linux/amd64 --provenance=false \
+  -t "$REPO:$(git rev-parse --short HEAD)" --push .
 ```
 
 Tag with the commit, not `latest`. A run should be able to say which image produced
 its output, and `latest` cannot answer that. Pull by digest in anything scheduled:
-`…/any4lerobot@sha256:…` is the only form that guarantees every node in a fan-out got
-the same bytes.
+`$REPO@sha256:…` is the only form that guarantees every node in a fan-out got the
+same bytes.
+
+`--provenance=false` keeps the push to a plain image manifest. Without it buildx
+writes an OCI index with an attestation beside the image, which some runtimes will
+not pull.
 
 ## Without the image
 
