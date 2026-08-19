@@ -63,6 +63,7 @@ class OpenXAdapter(BaseAdapter):
         episodes_per_task: int = 100,
         resize: Any = None,
         encoding: Any = None,
+        channels: Any = None,
         fps: int | None = None,
         robot_type: str | None = None,
         use_videos: bool = True,
@@ -77,6 +78,7 @@ class OpenXAdapter(BaseAdapter):
         self.max_episodes = max_episodes
         self.resize = resize
         self.encoding = encoding
+        self.channels = channels
         self.use_videos = use_videos
         self.image_writer_process = image_writer_process
         self.image_writer_threads = image_writer_threads
@@ -185,7 +187,10 @@ class OpenXAdapter(BaseAdapter):
         for index in range(traj["action"].shape[0]):
             dataset.add_frame(
                 {
-                    **frame_images(traj["observation"], index, shapes),
+                    **frame_images(
+                        traj["observation"], index, shapes,
+                        self.dataset_name, self.channels,
+                    ),
                     "observation.state": traj["proprio"][index],
                     "action": traj["action"][index],
                     "task": traj["task"][0].decode(),
