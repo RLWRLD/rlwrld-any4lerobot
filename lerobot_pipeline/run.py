@@ -101,10 +101,32 @@ def run_pipeline(
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(str(produced), str(dest))
 
+    write_dataset_modality(config, dest)
+
     if not keep_intermediate:
         shutil.rmtree(workdir, ignore_errors=True)
 
     return dest
+
+
+def write_dataset_modality(config: PipelineConfig, dest: Path) -> Path | None:
+    """``meta/modality.json`` into the finished dataset, whatever built it.
+
+    Written here rather than in a stage, for two reasons. It has to come **last**: a
+    version conversion writes into a fresh root and carries across only the files it
+    knows about, and this is not one of them -- it is not a LeRobot file at all, but
+    the GR00T-style view the training stack reads to slice the flat vectors. And it
+    has to happen for **every** dataset: it used to be written by the ``state_layout``
+    step, which runs only when a config has table steps, so the 27 OpenX datasets --
+    whose converter writes ``observation.state`` itself and needs no layout step --
+    came out without it. A rebuild with no ``modality.json`` cannot be read by the
+    training stack, and nothing said so.
+    """
+    if config.dataset is None:
+        return None
+    from .steps.state_layout import write_modality
+
+    return write_modality(config.dataset, dest)
 
 
 # --- stage executors ---------------------------------------------------------

@@ -55,7 +55,7 @@ lerobot:
     # source-side geometry is unknown: this dataset has not been traced to an
     # upstream release, so only its delivered form is recorded (see delivered.video)
     cameras:
-      egocentric: {}
+      egocentric: {modality: null}
       egocentric_resized: {}
     # H.264 High with a 250-frame GOP is the rldx1_reference profile, which
     # only our encoder produces -- so the delivered copy was re-encoded, and

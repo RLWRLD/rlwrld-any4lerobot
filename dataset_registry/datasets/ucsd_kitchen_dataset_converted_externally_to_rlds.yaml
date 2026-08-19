@@ -50,7 +50,7 @@ lerobot:
   video:
     # measured from the RLDS mirror's features.json, not inferred
     cameras:
-      image: {shape: [480, 640, 3]}
+      image: {shape: [480, 640, 3], modality: primary}
     # The delivered copy is 192x256, which is exactly what the rldx1 resize makes of
     # a 480x640 frame -- so it was resized, despite carrying LeRobot's own AV1/GOP2
     # writer default. The codec says nothing here: openx2lerobot hands frames to that

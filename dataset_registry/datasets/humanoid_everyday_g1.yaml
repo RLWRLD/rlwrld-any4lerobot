@@ -54,7 +54,7 @@ lerobot:
 
   video:
     cameras:
-      egocentric: {source: egocentric}
+      egocentric: {source: egocentric, modality: null}
       egocentric_resized: {source: egocentric}
     resize: resize_preserve_aspect_area
     encoding: h264_crf18_fast

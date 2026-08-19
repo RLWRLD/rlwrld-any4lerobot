@@ -1,5 +1,6 @@
 import os
 import threading
+from pathlib import Path
 
 import pytest
 
@@ -323,3 +324,83 @@ def test_a_whole_downgrade_lands_in_the_same_place_however_many_workers(tmp_path
     assert (serial / "meta" / "episodes.jsonl").exists()
     assert len(list((serial / "videos").rglob("*.mp4"))) == EPISODES
     assert _tree(serial) == _tree(parallel)
+
+
+class TestWholeDatasetStats:
+    """`meta/stats.json`, aggregated from the per-episode entries already in hand.
+
+    v2.1 carries it and the delivered RLDX-1 copies have one; the downgrade wrote
+    `episodes_stats.jsonl` and nothing else, so every rebuild came out without it.
+    """
+
+    def _episodes(self):
+        """Two episodes of one 1-wide feature, with numbers whose aggregate is known."""
+        return [
+            {"f": {"mean": [1.0], "std": [0.0], "min": [1.0], "max": [1.0],
+                   "count": [1], "q50": [1.0]}},
+            {"f": {"mean": [3.0], "std": [0.0], "min": [3.0], "max": [3.0],
+                   "count": [3], "q50": [3.0]}},
+        ]
+
+    def test_counts_and_extremes_are_exact(self):
+        out = dg.aggregate_episode_stats(self._episodes())["f"]
+        assert out["count"].tolist() == [4]
+        assert out["min"].tolist() == [1.0]
+        assert out["max"].tolist() == [3.0]
+
+    def test_the_mean_is_weighted_by_the_count(self):
+        """One row at 1 and three at 3 average 2.5, not 2."""
+        out = dg.aggregate_episode_stats(self._episodes())["f"]
+        assert out["mean"].tolist() == [2.5]
+
+    def test_the_std_is_pooled_and_not_averaged(self):
+        """Both episodes have std 0 and the pool does not. How far a group spreads
+        about its own mean says nothing about how far that mean sits from everyone
+        else's -- averaging instead put `index` out by 7,168 on cmu_stretch."""
+        out = dg.aggregate_episode_stats(self._episodes())["f"]
+        # E[x^2] - mean^2 = (1 + 27)/4 - 6.25 = 0.75
+        assert out["std"].tolist() == pytest.approx([0.75**0.5])
+
+    def test_a_quantile_is_a_count_weighted_mean(self):
+        """Not lerobot's envelope, which takes the min of the lower quantiles and the
+        max of the upper. The delivered copies used the weighted mean; measured
+        against cmu_stretch's own stats.json, 4.2e-09 this way against 1.2e+04."""
+        out = dg.aggregate_episode_stats(self._episodes())["f"]
+        assert out["q50"].tolist() == [2.5]
+
+    def test_a_quantile_only_some_episodes_have_is_left_out(self):
+        episodes = self._episodes()
+        del episodes[0]["f"]["q50"]
+        assert "q50" not in dg.aggregate_episode_stats(episodes)["f"]
+
+    def test_each_feature_is_weighted_by_its_own_count(self):
+        """Image statistics come from a hundred sampled frames while the vectors cover
+        every row, so one weight for the whole episode is wrong for one of them."""
+        episodes = [
+            {"vec": {"mean": [0.0], "std": [0.0], "min": [0.0], "max": [0.0], "count": [1]},
+             "img": {"mean": [0.0], "std": [0.0], "min": [0.0], "max": [0.0], "count": [100]}},
+            {"vec": {"mean": [1.0], "std": [0.0], "min": [1.0], "max": [1.0], "count": [99]},
+             "img": {"mean": [1.0], "std": [0.0], "min": [1.0], "max": [1.0], "count": [100]}},
+        ]
+        out = dg.aggregate_episode_stats(episodes)
+        assert out["vec"]["mean"].tolist() == pytest.approx([0.99])
+        assert out["img"]["mean"].tolist() == pytest.approx([0.5])
+
+    def test_a_feature_only_one_episode_has_still_aggregates(self):
+        episodes = self._episodes()
+        episodes[0]["only_here"] = {"mean": [5.0], "std": [0.0], "min": [5.0],
+                                    "max": [5.0], "count": [2]}
+        out = dg.aggregate_episode_stats(episodes)
+        assert out["only_here"]["count"].tolist() == [2]
+
+    def test_no_episodes_is_not_an_error(self):
+        assert dg.aggregate_episode_stats([]) == {}
+
+
+def test_the_quantiles_are_no_longer_dropped():
+    """They used to be filtered out to match the v2.1 schema. v2.1 does not require
+    them but the delivered copies carry them, and they cannot be recovered later
+    without reading every frame again -- droid has 27 million of them."""
+    assert set(dg.LEGACY_STATS_KEYS) == {"mean", "std", "min", "max", "count"}
+    source = Path(dg.__file__).read_text()
+    assert "k in LEGACY_STATS_KEYS" not in source

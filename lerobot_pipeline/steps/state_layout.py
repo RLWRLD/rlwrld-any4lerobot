@@ -99,7 +99,10 @@ class StateLayoutStep:
             _rewrite(path, out / path.relative_to(root), plans)
 
         write_info(_patch_features(info, plans), out)
-        write_modality(self.spec, out)
+        # modality.json is not written here any more. It has to be last -- a version
+        # conversion afterwards writes into a fresh root and would leave it behind --
+        # and it has to happen for datasets with no table step at all, which this
+        # method never sees. `run_pipeline` writes it into the finished dataset.
 
 
 def _parquet_files(root: Path) -> list[Path]:
@@ -201,9 +204,16 @@ def write_modality(spec, root: str | Path) -> Path:
             block["absolute"] = True
         modality[side] = {side: block}
 
+    # keyed by the modality alias and not by the camera key: the delivered files name
+    # cmu_stretch's one camera `primary` while its feature is
+    # `observation.images.image`, and the training stack reads the alias
+    exposed = {
+        camera: spec.camera_modality(camera) for camera in spec.cameras
+    }
     modality["video"] = {
-        camera: {"original_key": f"observation.images.{camera}"}
-        for camera in spec.cameras
+        alias: {"original_key": f"observation.images.{camera}"}
+        for camera, alias in exposed.items()
+        if alias is not None
     }
     modality["annotation"] = {
         "human.action.task_description": {"original_key": "task_index"},

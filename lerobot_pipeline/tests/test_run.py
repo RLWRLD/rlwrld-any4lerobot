@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import pytest
@@ -396,3 +397,65 @@ def test_a_workdir_left_by_an_earlier_failure_is_cleared_first(tmp_path):
     )
 
     assert not (workdir / "00_convert" / "leftover_lerobot").exists()
+
+
+class TestModalityIsAlwaysWritten:
+    """`meta/modality.json` into the finished dataset, whatever built it.
+
+    It used to be written by the `state_layout` step, which runs only when a config
+    has table steps -- so the 27 OpenX datasets, whose converter writes
+    `observation.state` itself and needs no layout step, came out without it. A
+    rebuild with no modality.json cannot be read by the training stack at all, and
+    nothing said so.
+    """
+
+    def _config(self, tmp_path, dataset, steps):
+        return parse_config(
+            {
+                "name": "demo",
+                "dataset": dataset,
+                "source": {"type": "openx", "path": str(tmp_path / "in")},
+                "steps": steps,
+                "dest": {"type": "lerobot_v21", "path": str(tmp_path / "out")},
+            }
+        )
+
+    def test_a_dataset_with_no_table_step_still_gets_one(self, tmp_path):
+        """cmu_stretch is built by openx2lerobot and has no state_layout step. This is
+        the case that was silently missing the file."""
+        run_pipeline(
+            self._config(tmp_path, "cmu_stretch", []),
+            workdir=tmp_path / "work",
+            executors=_recorder([]),
+        )
+        modality = json.loads((tmp_path / "out" / "meta" / "modality.json").read_text())
+        assert modality["video"] == {
+            "primary": {"original_key": "observation.images.image"}
+        }
+
+    def test_it_is_written_after_the_last_stage(self, tmp_path):
+        """A version conversion writes into a fresh root and carries across only the
+        files it knows about; modality.json is not one of them, so anything written
+        before the conversion is left behind."""
+        calls = []
+        run_pipeline(
+            self._config(tmp_path, "cmu_stretch", []),
+            workdir=tmp_path / "work",
+            executors=_recorder(calls),
+        )
+        assert calls[-1][0] == "version_convert"
+        assert (tmp_path / "out" / "meta" / "modality.json").is_file()
+
+    def test_a_run_with_no_dataset_named_writes_none(self, tmp_path):
+        """A plain transform has no spec to derive it from, and inventing one would
+        put a claim about the data into a file nobody checked."""
+        config = parse_config(
+            {
+                "name": "demo",
+                "source": {"type": "lerobot_v21", "path": str(tmp_path / "in")},
+                "steps": [{"type": "resize_preserve_aspect_area"}],
+                "dest": {"type": "lerobot_v30", "path": str(tmp_path / "out")},
+            }
+        )
+        run_pipeline(config, workdir=tmp_path / "work", executors=_recorder([]))
+        assert not (tmp_path / "out" / "meta" / "modality.json").exists()

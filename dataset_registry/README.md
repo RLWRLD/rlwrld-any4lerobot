@@ -164,6 +164,29 @@ data-driven path in `spec2lerobot`; the others are the converters this repo alre
 had, which write `observation.state` themselves and so skip `state_layout`; `none`
 means the source is already LeRobot.
 
+```yaml
+lerobot:
+  video:
+    cameras:
+      image: {shape: [128, 128, 3], modality: primary}   # a third name
+      image_2: {shape: [256, 256, 3], modality: null}    # on disk, not exposed
+```
+
+A camera has **three** names and all three are in use at once. cmu_stretch's is the
+feature `observation.images.image`, its video directory is named after that in full,
+and `meta/modality.json` calls it `primary` — the alias `openx2lerobot`'s
+`image_obs_keys` maps the source key to. The training stack reads the alias, so getting
+it wrong renames the camera as far as the model is concerned. `modality` is read back
+from the delivered `modality.json` files, for the same reason `resize` is: it is a fact
+about what was shipped. Only the 19 OpenX sets whose alias differs from their camera key
+declare it; for the other 8 the two are already the same word.
+
+`modality: null` means **on disk and not exposed**. bridge_orig keeps two spare views of
+four and berkeley_cable_routing a fourth wrist angle; the delivered modality files list
+neither, and a camera nothing reads is not a camera as far as the training stack is
+concerned. All 36 delivered `modality.json` files' `video` blocks are reproduced from
+these declarations, which is checked in `tests/test_registry.py`.
+
 `resize` is a **fact, not a choice** — it was read back from the delivered encoding.
 AV1 with a two-frame GOP is LeRobot's own writer default and survives only if
 nothing re-encoded the file, so those datasets get no video step at all: running one
