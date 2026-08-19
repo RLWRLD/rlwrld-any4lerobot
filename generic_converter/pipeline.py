@@ -2,7 +2,9 @@ import os
 import shutil
 import sys
 from collections.abc import Sequence
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from typing import NamedTuple
 
 from datatrove.pipeline.base import PipelineStep
 from datatrove.utils.logging import get_random_str, get_timestamp
@@ -239,6 +241,7 @@ def aggregate_tasks(
     tasks: list[ConversionTask],
     output_dir: Path,
     aggr_repo_id: str | None = None,
+    batched: bool = True,
 ):
     logger = setup_logger()
 
@@ -255,6 +258,7 @@ def aggregate_tasks(
         f"aggregate {len(roots)} temporary datasets into {output_dir} as {resolved_aggr_repo_id}"
     )
     _aggregate_datasets_with_normalized_arrays(
+        batched=batched,
         repo_ids=[None] * len(roots),
         roots=roots,
         aggr_repo_id=resolved_aggr_repo_id,
@@ -263,13 +267,302 @@ def aggregate_tasks(
     logger.info(f"aggregation complete: {output_dir}")
 
 
-def _aggregate_datasets_with_normalized_arrays(**kwargs) -> None:
+def plan_destinations(sizes: Sequence[float], cap_mb: float) -> list[int]:
+    """Which destination file each source belongs in, decided before any is written.
+
+    The rule is the one the upstream fold applies -- a destination takes its
+    first source whatever its size, and stops once another one would put it over
+    ``cap_mb`` -- but measured against the sum of the source sizes rather than
+    the size of the destination as built so far. That number does not exist
+    until the file has been written, and writing it once is the whole point.
+
+    Planning on the sum is safe because a concatenation is never bigger than its
+    parts: measured on taco_play it comes to 0.9991 of the sum for video and
+    0.9916 for parquet, both sharing one container's worth of overhead instead
+    of one each. So a file planned to sit under the cap stays under it.
+    """
+
+    destinations: list[int] = []
+    current = 0
+    filled = 0.0
+    for size in sizes:
+        if destinations and filled + size >= cap_mb:
+            current += 1
+            filled = 0.0
+        destinations.append(current)
+        filled += size
+    return destinations
+
+
+class _OpenParquet(NamedTuple):
+    """A destination parquet being filled, and how to write it when it is full."""
+
+    path: Path
+    frames: list
+    filled_mb: float
+    contains_images: bool
+    hf_features: object
+    one_row_group_per_episode: bool
+
+
+class BatchedParquetWriter:
+    """Collects what each destination parquet will hold and writes it once.
+
+    Stands in for ``append_or_create_parquet_file``, which is not the append its
+    name suggests: parquet keeps its index in a footer covering the whole file,
+    so "appending" means reading the destination back, concatenating in memory
+    and writing all of it out again. Doing that once per source turns one 22 MB
+    file into 1.4 GB of writing (measured on taco_play: 130 sources, one
+    destination).
+
+    Nothing here decides anything differently -- the same sources land in the
+    same destinations in the same order. Only the writing is deferred, until the
+    destination is complete. So the files come out byte for byte identical, and
+    the memory held is one destination's worth, which the size cap bounds.
+
+    Both callers of the upstream function -- the frame data and the episode
+    metadata -- keep their own destination sequence, so buffers are kept per
+    path template.
+    """
+
+    def __init__(self):
+        # path template -> the destination currently being filled
+        self._open: dict[str, _OpenParquet] = {}
+
+    def append(
+        self,
+        df,
+        src_path: Path,
+        idx: dict,
+        max_mb: float,
+        chunk_size: int,
+        default_path: str,
+        contains_images: bool = False,
+        aggr_root: Path | None = None,
+        hf_features=None,
+        concatenate: bool = True,
+        one_row_group_per_episode: bool = False,
+    ) -> tuple[dict, tuple[int, int]]:
+        from lerobot.datasets import aggregate as aggregate_module
+
+        if aggr_root is None:
+            raise ValueError("aggr_root must be provided.")
+
+        buffered = self._open.get(default_path)
+        src_mb = aggregate_module.get_parquet_file_size_in_mb(src_path)
+
+        if buffered is not None and (
+            not concatenate or buffered.filled_mb + src_mb >= max_mb
+        ):
+            self._write(default_path)
+            idx["chunk"], idx["file"] = aggregate_module.update_chunk_file_indices(
+                idx["chunk"], idx["file"], chunk_size
+            )
+            buffered = None
+
+        dst_chunk, dst_file = idx["chunk"], idx["file"]
+        if buffered is None:
+            self._open[default_path] = _OpenParquet(
+                path=aggr_root
+                / default_path.format(chunk_index=dst_chunk, file_index=dst_file),
+                frames=[df],
+                filled_mb=src_mb,
+                contains_images=contains_images,
+                hf_features=hf_features,
+                one_row_group_per_episode=one_row_group_per_episode,
+            )
+        else:
+            buffered.frames.append(df)
+            self._open[default_path] = buffered._replace(
+                filled_mb=buffered.filled_mb + src_mb
+            )
+
+        return idx, (dst_chunk, dst_file)
+
+    def _write(self, default_path: str) -> None:
+        import pandas as pd
+        from lerobot.datasets import aggregate as aggregate_module
+
+        pending = self._open.pop(default_path)
+        combined = (
+            pending.frames[0]
+            if len(pending.frames) == 1
+            else pd.concat(pending.frames, ignore_index=True)
+        )
+
+        pending.path.parent.mkdir(parents=True, exist_ok=True)
+        if pending.contains_images:
+            aggregate_module.to_parquet_with_hf_images(
+                combined, pending.path, features=pending.hf_features
+            )
+        elif pending.one_row_group_per_episode:
+            aggregate_module.to_parquet_one_row_group_per_episode(combined, pending.path)
+        else:
+            combined.to_parquet(pending.path)
+
+    def flush(self) -> None:
+        """Write whatever destinations are still open. Safe to call twice."""
+        for default_path in list(self._open):
+            self._write(default_path)
+
+
+class PlannedVideoFiles:
+    """Works out which sources make up each destination video, then builds them.
+
+    ``concatenate_video_files`` is not an append either. mp4 keeps its index --
+    the moov atom, holding the offset and timestamp of every frame -- for the
+    whole file, and this repo's writer puts it at the front, so growing a file
+    means writing a new one and moving the old one aside. Calling it once per
+    source therefore rewrites everything accumulated so far, every time:
+    measured on real taco_play video, appending 24 sources of 4.2 MB each wrote
+    1,267 MB to produce a 101 MB file, and the per-append cost climbed from
+    0.04s to 0.30s while the amount of new video stayed the same.
+
+    ffmpeg's concat demuxer takes a list. Given one, it streams every source
+    through once and writes moov at the end -- 130 sources, 548 MB, in 1.89s
+    against the 108.8s the same work takes an append at a time. So the planning
+    pass records the list, and ``build`` hands each destination over whole.
+
+    Nothing about the layout changes: the same sources land in the same
+    destination in the same order, at the same timestamps.
+    """
+
+    def __init__(self):
+        # destination path -> the sources that make it up, in order
+        self._sources: dict[Path, list[Path]] = {}
+
+    def plan(
+        self,
+        src_meta,
+        dst_meta,
+        videos_idx,
+        video_files_size_in_mb,
+        chunk_size,
+        concatenate_videos=True,
+    ):
+        for video_idx in videos_idx.values():
+            video_idx["episode_duration"] = 0
+            video_idx["src_to_offset"] = {}
+            video_idx["src_to_dst"] = {}
+            video_idx.setdefault("dst_file_durations", {})
+            video_idx.setdefault("filled_mb", {})
+
+        for key in videos_idx:
+            self._plan_key(
+                key,
+                src_meta,
+                dst_meta,
+                videos_idx[key],
+                video_files_size_in_mb,
+                chunk_size,
+                concatenate_videos,
+            )
+        return videos_idx
+
+    def _plan_key(
+        self,
+        key,
+        src_meta,
+        dst_meta,
+        video_idx,
+        video_files_size_in_mb,
+        chunk_size,
+        concatenate_videos,
+    ):
+        from lerobot.datasets import aggregate as aggregate_module
+
+        pairs = sorted(
+            {
+                (chunk, file)
+                for chunk, file in zip(
+                    src_meta.episodes[f"videos/{key}/chunk_index"],
+                    src_meta.episodes[f"videos/{key}/file_index"],
+                    strict=False,
+                )
+            }
+        )
+
+        chunk_idx = video_idx["chunk"]
+        file_idx = video_idx["file"]
+        dst_file_durations = video_idx["dst_file_durations"]
+        filled_mb = video_idx["filled_mb"]
+
+        for src_chunk_idx, src_file_idx in pairs:
+            src_path = src_meta.root / aggregate_module.DEFAULT_VIDEO_PATH.format(
+                video_key=key, chunk_index=src_chunk_idx, file_index=src_file_idx
+            )
+            src_duration = aggregate_module.get_video_duration_in_s(src_path)
+            src_size = aggregate_module.get_file_size_in_mb(src_path)
+
+            dst_key = (chunk_idx, file_idx)
+            started = dst_key in filled_mb
+            if started and (
+                not concatenate_videos
+                or filled_mb[dst_key] + src_size >= video_files_size_in_mb
+            ):
+                chunk_idx, file_idx = aggregate_module.update_chunk_file_indices(
+                    chunk_idx, file_idx, chunk_size
+                )
+                dst_key = (chunk_idx, file_idx)
+                started = False
+
+            dst_path = dst_meta.root / aggregate_module.DEFAULT_VIDEO_PATH.format(
+                video_key=key, chunk_index=chunk_idx, file_index=file_idx
+            )
+            offset = dst_file_durations.get(dst_key, 0) if started else 0
+
+            video_idx["src_to_offset"][(src_chunk_idx, src_file_idx)] = offset
+            video_idx["src_to_dst"][(src_chunk_idx, src_file_idx)] = dst_key
+            self._sources.setdefault(dst_path, []).append(src_path)
+
+            filled_mb[dst_key] = filled_mb.get(dst_key, 0) + src_size
+            dst_file_durations[dst_key] = offset + src_duration
+            video_idx["episode_duration"] += src_duration
+
+        video_idx["chunk"] = chunk_idx
+        video_idx["file"] = file_idx
+        return video_idx
+
+    def build(self, workers: int = -1) -> None:
+        """Build every destination, each from its whole source list, at once."""
+        from lerobot.datasets.aggregate import concatenate_video_files
+
+        if not self._sources:
+            return
+
+        destinations = list(self._sources.items())
+        resolved = os.cpu_count() or 1 if workers == -1 else max(1, workers)
+
+        def build_one(item):
+            dst_path, sources = item
+            dst_path.parent.mkdir(parents=True, exist_ok=True)
+            if len(sources) == 1:
+                shutil.copy(str(sources[0]), str(dst_path))
+                return
+            concatenate_video_files(sources, dst_path, compatibility_check=True)
+
+        with ThreadPoolExecutor(max_workers=min(resolved, len(destinations))) as pool:
+            for _ in pool.map(build_one, destinations):
+                pass
+        self._sources.clear()
+
+
+def _aggregate_datasets_with_normalized_arrays(batched: bool = True, **kwargs) -> None:
+    """Aggregate, with this repo's corrections to how upstream writes files.
+
+    ``batched=False`` leaves the file writing as upstream does it, one source at
+    a time. Nothing in production wants that -- it is how the tests get a
+    reference to compare the batched output against.
+    """
+
     from lerobot.datasets import aggregate as aggregate_module
 
     original_aggregate_videos = aggregate_module.aggregate_videos
     original_read_parquet = aggregate_module.pd.read_parquet
     original_writer = aggregate_module.to_parquet_one_row_group_per_episode
     original_update_meta_data = aggregate_module.update_meta_data
+    original_append = aggregate_module.append_or_create_parquet_file
+    original_finalize = aggregate_module.finalize_aggregation
 
     def read_normalized_arrays(*args, **kwargs):
         return _normalize_array_values(original_read_parquet(*args, **kwargs))
@@ -277,10 +570,24 @@ def _aggregate_datasets_with_normalized_arrays(**kwargs) -> None:
     def write_normalized_arrays(df, path):
         return original_writer(_normalize_array_values(df), path)
 
-    aggregate_module.aggregate_videos = _aggregate_videos_by_key_parallel
+    parquet_writer = BatchedParquetWriter()
+    videos = PlannedVideoFiles()
+
+    def finalize_once_everything_is_written(*args, **kwargs):
+        """The source loop only planned; the files get built here, at the end."""
+        parquet_writer.flush()
+        videos.build()
+        return original_finalize(*args, **kwargs)
+
     aggregate_module.pd.read_parquet = read_normalized_arrays
     aggregate_module.to_parquet_one_row_group_per_episode = write_normalized_arrays
     aggregate_module.update_meta_data = _update_meta_data_without_fragmenting
+    if batched:
+        aggregate_module.aggregate_videos = videos.plan
+        aggregate_module.append_or_create_parquet_file = parquet_writer.append
+        aggregate_module.finalize_aggregation = finalize_once_everything_is_written
+    else:
+        aggregate_module.aggregate_videos = _aggregate_videos_by_key_parallel
     try:
         aggregate_datasets(**kwargs)
     finally:
@@ -288,6 +595,8 @@ def _aggregate_datasets_with_normalized_arrays(**kwargs) -> None:
         aggregate_module.pd.read_parquet = original_read_parquet
         aggregate_module.to_parquet_one_row_group_per_episode = original_writer
         aggregate_module.update_meta_data = original_update_meta_data
+        aggregate_module.append_or_create_parquet_file = original_append
+        aggregate_module.finalize_aggregation = original_finalize
 
 
 def _aggregate_videos_by_key_parallel(
