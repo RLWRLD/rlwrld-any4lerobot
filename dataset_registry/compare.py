@@ -148,10 +148,40 @@ def episode_parquet(root: Path, index: int) -> Path | None:
     return matches[0] if matches else None
 
 
-def episode_videos(root: Path, index: int) -> dict[str, Path]:
+def declared_cameras(root: Path) -> set[str] | None:
+    """The cameras ``meta/modality.json`` exposes, or ``None`` if it declares none.
+
+    A dataset can carry a camera it does not expose. bridge_orig keeps two spare
+    views of four; humanoid_everyday keeps the unresized 640x480 original beside the
+    256x192 the training stack actually reads. Those files are on disk and nothing
+    opens them, so a rebuild that differs there differs in a way no one can see.
+
+    ``None`` rather than every camera, because "declares nothing" and "declares all
+    of them" are different: the first is a dataset that has not been given a modality
+    file, and guessing on its behalf would quietly narrow a comparison.
+    """
+    path = root / "meta" / "modality.json"
+    if not path.is_file():
+        return None
+    try:
+        video = (json.loads(path.read_text()) or {}).get("video") or {}
+    except json.JSONDecodeError:
+        return None
+    if not video:
+        return None
+    return {
+        str(entry.get("original_key", f"observation.images.{name}")).rsplit(".", 1)[-1]
+        for name, entry in video.items()
+    }
+
+
+def episode_videos(
+    root: Path, index: int, keep: set[str] | None = None
+) -> dict[str, Path]:
     out = {}
     for path in sorted(root.glob(f"videos/**/episode_{index:06d}.mp4")):
-        out[path.parent.name] = path
+        if keep is None or path.parent.name in keep:
+            out[path.parent.name] = path
     return out
 
 
@@ -312,7 +342,12 @@ def compare_video(
     rebuilt: Path, delivered: Path, index: int, delivered_index: int | None = None
 ) -> tuple[dict, list[str]]:
     other = index if delivered_index is None else delivered_index
-    videos_a, videos_b = episode_videos(rebuilt, index), episode_videos(delivered, other)
+    # the delivered copy is the target, so it is the one that says which cameras the
+    # comparison is about; reading the rebuild's would let a rebuild narrow its own
+    # examination
+    keep = declared_cameras(delivered)
+    videos_a = episode_videos(rebuilt, index, keep)
+    videos_b = episode_videos(delivered, other, keep)
     summary: dict[str, str] = {}
     problems: list[str] = []
 

@@ -215,3 +215,63 @@ class TestUnpairedReport:
 
         assert "0/0 episodes" in text
         assert "3 rebuilt episode(s)" in text
+
+
+class TestDeclaredCameras:
+    """Which cameras a comparison is about.
+
+    A delivered dataset can carry a camera its own meta/modality.json does not
+    expose -- bridge_orig keeps two spare views, humanoid_everyday keeps the
+    unresized original beside the resized one the training stack reads. Holding a
+    rebuild to a camera nothing consumes fails it for a file no one opens.
+    """
+
+    def _tree(self, root: Path, cameras, declared=None):
+        for camera in cameras:
+            path = root / "videos" / "chunk-000" / camera
+            path.mkdir(parents=True, exist_ok=True)
+            (path / "episode_000000.mp4").write_bytes(b"")
+        if declared is not None:
+            (root / "meta").mkdir(parents=True, exist_ok=True)
+            (root / "meta" / "modality.json").write_text(json.dumps({"video": {
+                c: {"original_key": f"observation.images.{c}"} for c in declared}}))
+        return root
+
+    def test_the_cameras_a_dataset_exposes_are_read_from_modality(self, tmp_path):
+        root = self._tree(tmp_path / "d", ["wrist", "top"], declared=["top"])
+        assert compare.declared_cameras(root) == {"top"}
+
+    def test_a_dataset_without_modality_declares_nothing(self, tmp_path):
+        root = self._tree(tmp_path / "d", ["wrist", "top"])
+        assert compare.declared_cameras(root) is None
+
+    def test_an_undeclared_camera_is_left_out(self, tmp_path):
+        root = self._tree(tmp_path / "d", ["wrist", "top"], declared=["top"])
+        assert set(compare.episode_videos(root, 0, keep={"top"})) == {"top"}
+
+    def test_no_filter_keeps_every_camera(self, tmp_path):
+        root = self._tree(tmp_path / "d", ["wrist", "top"], declared=["top"])
+        assert set(compare.episode_videos(root, 0)) == {"wrist", "top"}
+
+    def test_a_comparison_is_about_the_cameras_the_delivered_copy_exposes(
+        self, tmp_path, monkeypatch
+    ):
+        """The delivered copy is the target, so its modality file is the one that
+        says what the comparison is about -- not the rebuild's, which would let a
+        rebuild narrow its own examination."""
+        rebuilt = self._tree(tmp_path / "r", ["wrist", "top"], declared=["top", "wrist"])
+        delivered = self._tree(tmp_path / "d", ["wrist", "top"], declared=["top"])
+        probed = []
+
+        def fake_probe(path):
+            probed.append(path.parent.name)
+            return {"width": 1, "height": 1, "nb_read_frames": 1, "codec_name": "av1",
+                    "profile": "Main", "pix_fmt": "yuv420p", "has_b_frames": 0,
+                    "gop": 2, "bytes": 100}
+
+        monkeypatch.setattr(compare, "probe", fake_probe)
+        summary, problems = compare.compare_video(rebuilt, delivered, 0)
+
+        assert set(probed) == {"top"}
+        assert set(summary) == {"top"}
+        assert not problems
