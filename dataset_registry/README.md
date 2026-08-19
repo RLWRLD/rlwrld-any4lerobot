@@ -7,22 +7,15 @@ file and nothing else — no Python.
 ```bash
 uv run python -m dataset_registry.verify --upstream --all      # re-check the pins online
 uv run python -m dataset_registry.verify action_net /path/to/dataset
-uv run python -m dataset_registry.compare action_net --rebuilt /out --delivered /ref
 ```
 
 `verify` checks a spec against a dataset: does each slot really hold the column the
-spec says. `compare` checks a rebuild against the delivered copy, and holds the two
-halves to different standards — **state and action must be identical**, since every
-slot is a copied float32, while **video bytes must only be close**, since two ffmpeg
-builds given the same flags do not emit the same file. Geometry, frame count, codec
-and **keyframe interval** must still match exactly: those are decided by our
-settings, not by the encoder build.
+spec says.
 
-The keyframe interval is read off the frames rather than the stream header, which
-does not carry it. It is included because the first runs deliberately do not try to
-match encoding — the video settings are left alone until a difference is actually
-observed — and that is only safe if the difference would be reported rather than
-noticed later in a size ratio.
+Checking a rebuild against the delivered copy is **not** here. That is
+[`verification`](../verification), which reads these specs and is read by nothing in
+this directory — what a rebuild is measured against must not be able to move when the
+thing being measured does.
 
 Two things read these specs: [`spec2lerobot`](../spec2lerobot) converts a raw source
 using the `source:` section, and `lerobot_pipeline`'s `state_layout` step assembles

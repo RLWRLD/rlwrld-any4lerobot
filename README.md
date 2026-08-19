@@ -76,6 +76,10 @@ for the settings that matter.
 
   - [x] [Orchestrator](./orchestrator/README.md) — `fetch → build → publish` over the whole registry, resumable, with the source deleted only once it is built
 
+- ​**​Verification​**​:
+
+  - [x] [Verification](./verification/README.md) — does a rebuild reproduce the delivered copy: four steps, and a record per dataset
+
 - ​**​Preprocessing​**​:
 
   - [x] [LeRobot Pipeline](./lerobot_pipeline/README.md) — config-driven `source → steps → dest` preprocessing; one file per dataset, one per machine
