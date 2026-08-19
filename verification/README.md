@@ -1,9 +1,22 @@
 # Verification — does a rebuild reproduce the delivered copy
 
-One question none of the converters can answer, kept apart from all of them. `compare`
-reads [`dataset_registry`](../dataset_registry) to know what a dataset is, and nothing
-under any4lerobot's own directories imports anything here — what a rebuild is measured
-against must not move when the thing being measured does.
+The one directory here that is not conversion work. Everything else in this repository
+exists to **produce** a dataset — the converters, [`lerobot_pipeline`](../lerobot_pipeline),
+[`orchestrator`](../orchestrator), [`dataset_registry`](../dataset_registry) — and this
+exists to ask whether what came out is the same as what was delivered.
+
+Which is the whole reason it is separate. `compare` reads `dataset_registry` to know what
+a dataset is and imports nothing else here: **what is being measured must not be able to
+change what measures it.** A comparison that shared a resizer, an encoder profile or a
+stats routine with the converter would agree with it by construction. So it shells out to
+ffmpeg and ffprobe for video and reads the parquet itself, rather than reusing the code
+that wrote either.
+
+Conversion work stays where it belongs and is *not* here: the RLDS sharding and
+ArrayRecord reader in [`openx2lerobot`](../openx2lerobot), the channel-order rules in
+`openx2lerobot/video_rules.py`, the parallel v3.0 → v2.1 downgrade in
+[`ds_version_convert`](../ds_version_convert). Those are improvements to the converters,
+and a verification directory that absorbed them would be verifying itself.
 
 ```bash
 uv run python -m verification.compare cmu_stretch --rebuilt /out --delivered /ref
