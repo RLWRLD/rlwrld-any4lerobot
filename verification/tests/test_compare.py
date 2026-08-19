@@ -17,8 +17,8 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from dataset_registry import load  # noqa: E402
-from dataset_registry import compare  # noqa: E402
-from dataset_registry.compare import (  # noqa: E402
+from verification import compare  # noqa: E402
+from verification.compare import (  # noqa: E402
     SIZE_TOLERANCE,
     compare_episode,
     episode_prompts,
@@ -164,7 +164,7 @@ class TestKeyframeInterval:
         """ffprobe appends a stray comma to the first row, so a plain equality test
         misses frame 0 -- and frame 0 is always a keyframe, which turns every
         interval into "only one keyframe found"."""
-        from dataset_registry import compare
+        from verification import compare
 
         monkeypatch.setattr(compare, "_ffprobe", lambda command, path: "1,\n0\n0\n1\n0\n")
         assert compare.keyframe_interval(tmp_path / "x.mp4") == 3
@@ -172,14 +172,14 @@ class TestKeyframeInterval:
     def test_one_keyframe_means_unknown_rather_than_zero(self, tmp_path, monkeypatch):
         """An episode shorter than the interval has a single keyframe; that is not
         the same as a one-frame GOP."""
-        from dataset_registry import compare
+        from verification import compare
 
         monkeypatch.setattr(compare, "_ffprobe", lambda command, path: "1,\n0\n0\n0\n")
         assert compare.keyframe_interval(tmp_path / "x.mp4") is None
 
     def test_a_two_frame_gop_is_read_as_two(self, tmp_path, monkeypatch):
         """LeRobot's own writer default, which the AV1 datasets still carry."""
-        from dataset_registry import compare
+        from verification import compare
 
         monkeypatch.setattr(compare, "_ffprobe", lambda command, path: "1,\n0\n1\n0\n1\n")
         assert compare.keyframe_interval(tmp_path / "x.mp4") == 2
@@ -1022,6 +1022,19 @@ class TestReportFile:
         assert payload["verdict"]["overall"] is False
         assert payload["verdict"]["reasons"] == ["sampled episodes differ"]
 
+    def test_the_statistics_are_rounded_so_a_re_run_diffs_cleanly(self, spec, tmp_path):
+        """The records are committed. A float64's full repr changes in its last digits
+        when a rebuild sums in a different order, so an unrounded record re-diffs
+        entirely on a run that found nothing new -- and a diff that always changes is
+        a diff nobody reads."""
+        stats = self._payload(spec, tmp_path)["distributions"]["detail"]
+        mean = stats["overall"]["delivered"]["observation.state"]["mean"]
+        # every recorded value is already its own rounding, and the raw statistic is
+        # not -- so the rounding happened and re-running cannot change these digits
+        assert all(v == float(f"{v:.{compare.RECORDED_DIGITS}g}") for v in mean)
+        raw = compare.distribution(tmp_path / "b")["observation.state"]["mean"]
+        assert any(v != float(f"{v:.{compare.RECORDED_DIGITS}g}") for v in raw.tolist())
+
 
 class TestChannelDiagnosis:
     """Naming the cause once the frames have already disagreed.
@@ -1071,3 +1084,12 @@ class TestChannelDiagnosis:
                        colour)
         _, problems = compare.compare_video(tmp_path / "r", tmp_path / "d", 0)
         assert any("red and blue channels are exchanged" in p for p in problems), problems
+
+
+def test_rounding_keeps_the_distinction_the_records_exist_for():
+    """Significant digits, not decimal places: rounding 1.5e-15 to twelve decimals is
+    a flat zero, and "the shared episodes agree to 1e-15" is the whole finding."""
+    assert compare._jsonable(1.5e-15) == 1.5e-15
+    assert compare._jsonable(float("inf")) == float("inf")
+    assert compare._jsonable(0.1 + 0.2) == 0.3
+    assert compare._jsonable({"a": [np.float64(1.5e-15)]}) == {"a": [1.5e-15]}

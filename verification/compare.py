@@ -1,6 +1,6 @@
 """Ask how closely a rebuilt dataset matches the delivered copy it reproduces.
 
-    uv run python -m dataset_registry.compare cmu_stretch --rebuilt /out --delivered /ref
+    uv run python -m verification.compare cmu_stretch --rebuilt /out --delivered /ref
 
 Four questions in order, cheapest and widest first, because one verdict was the wrong
 shape for this. The rebuilds do not control the order they write episodes in, some
@@ -64,7 +64,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from .schema import DatasetSpec, available, load
+from dataset_registry import DatasetSpec, available, load
 
 # ffmpeg is not deterministic across builds; this bounds "the same picture, encoded
 # again" against "we encoded something else"
@@ -1361,14 +1361,33 @@ def funnel_report(f: Funnel, verbose: bool = False) -> str:
     return "\n".join(lines)
 
 
+# Significant digits kept for a recorded statistic. *Significant*, not decimal
+# places: the interesting numbers here span 1e-15 to 1e+03, and rounding to twelve
+# decimals would turn "agrees to 1.5e-15" into a flat zero -- which is the one
+# distinction these records exist to preserve.
+#
+# Twelve rather than all of them because the records are committed. A float64's full
+# repr changes in its last digits when a rebuild sums in a different order, so an
+# unrounded record re-diffs entirely on a re-run that found nothing new, and a diff
+# that always changes is a diff nobody reads. Twelve digits is six orders of
+# magnitude finer than DISTRIBUTION_TOLERANCE.
+RECORDED_DIGITS = 12
+
+
 def _jsonable(value: Any) -> Any:
-    """numpy scalars and arrays as plain JSON, recursively."""
+    """numpy scalars and arrays as plain JSON, recursively, floats rounded."""
     if isinstance(value, dict):
         return {str(key): _jsonable(item) for key, item in value.items()}
     if isinstance(value, (list, tuple)):
         return [_jsonable(item) for item in value]
     as_list = getattr(value, "tolist", None)
-    return as_list() if callable(as_list) else value
+    if callable(as_list):
+        return _jsonable(as_list())
+    if isinstance(value, float):
+        # inf and nan have no digits to keep, and float() would not survive the format
+        return value if value != value or value in (float("inf"), float("-inf")) else (
+            float(f"{value:.{RECORDED_DIGITS}g}"))
+    return value
 
 
 def settings(episodes: int, row_tolerance: int, check_video: bool) -> dict[str, Any]:
@@ -1410,7 +1429,9 @@ def as_dict(
     from datetime import datetime, timezone
 
     p = f.pairing
-    return {
+    # one pass over the whole payload at the end rather than at each numpy-bearing
+    # field: a field added later should not have to remember to do this
+    return _jsonable({
         "dataset": f.dataset,
         "measured_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "rebuilt": str(rebuilt),
@@ -1466,11 +1487,11 @@ def as_dict(
             "delivered_only": f.prompts.delivered_only,
         },
         "distributions": {
-            "gap_overall": _jsonable(f.gap_overall),
-            "gap_shared": _jsonable(f.gap_shared),
-            "detail": _jsonable(f.distributions),
+            "gap_overall": f.gap_overall,
+            "gap_shared": f.gap_shared,
+            "detail": f.distributions,
         },
-    }
+    })
 
 
 def write_report(payload: dict[str, Any], text: str, into: Path) -> list[Path]:

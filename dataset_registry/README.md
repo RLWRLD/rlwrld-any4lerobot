@@ -7,85 +7,15 @@ file and nothing else — no Python.
 ```bash
 uv run python -m dataset_registry.verify --upstream --all      # re-check the pins online
 uv run python -m dataset_registry.verify action_net /path/to/dataset
-uv run python -m dataset_registry.compare action_net --rebuilt /out --delivered /ref
-uv run python -m dataset_registry.compare cmu_stretch --rebuilt /out --report records/
 ```
 
 `verify` checks a spec against a dataset: does each slot really hold the column the
 spec says.
 
-`compare` asks how closely a rebuild matches the delivered copy, in **four steps**
-rather than one verdict — because one verdict was the wrong shape. The rebuilds do not
-control the order they write episodes in, some episodes land a row or two short, and
-the two copies do not carry the same set of metadata files, so "does it reproduce"
-collapses several answers into one and loses the useful ones. The steps run cheapest
-and widest first, and each one explains the next.
-
-| step | question | how it is judged |
-|---|---|---|
-| 1 · declaration | do the two even claim to be the same dataset | every `meta/info.json` field except the counts |
-| 2 · episodes | how much of the delivered copy is there | **counted, never failed** |
-| 3 · sample | is what is there the same | state and action exactly; video loosely on bytes and exactly on everything else |
-| 4 · distributions | do the two describe the same data | over every episode **and** over the episodes they share |
-
-Every step prints a verdict word next to its numbers, and the report ends with one line
-saying which step decided the run. A reader should not have to know that `1.5e-15` is a
-pass and `5.3e-02` is not.
-
-**Step 1** diffs the two `info.json` files as dotted paths rather than against a schema
-of the file — it has gained fields across LeRobot versions, and a comparison that listed
-the ones it knew would go quiet on the rest. fps, robot type, feature shapes and dtypes,
-codec and pixel format are failures; `total_episodes` and its neighbours are set aside,
-because they follow from step 2 and failing here would report one finding twice.
-
-**Step 2** pairs episodes on their own state and action bytes, since they carry no
-source id and the rebuild does not write them in the delivered order. It pairs twice —
-exactly, then on the first eight rows — so an episode that is *present but different*
-is counted apart from one that is genuinely absent. The second pass catches two things
-and only one of them is a trimmed tail, so the report splits them: a row or two short,
-against the same length with values that go wrong past row 8.
-
-**Step 3** holds the two halves to different standards: **state and action must be
-identical**, since every slot is a copied float32, while **video bytes must only be
-close**, since two ffmpeg builds given the same flags do not emit the same file.
-Geometry, frame count, codec, **keyframe interval** and the **pictures** must match
-exactly: those are decided by our settings, not by the encoder build. The keyframe
-interval is read off the frames rather than the stream header, which does not carry it,
-and the pictures are checked because a size ratio cannot see them — a rebuild with red
-and blue exchanged came within 1% of the delivered size. Channel order is *not* a check
-of its own; it is consulted only after the frames have already disagreed, to name the
-likely cause. A time offset or a crop position is the next thing it could have been,
-and one dedicated test per cause never ends.
-
-Half the sample comes from each **end** of the paired index range. Taking the first N
-looked thorough and was not: `openx2lerobot` converts in chunks of twenty-five
-episodes, one worker to a chunk, so the front of the range is a single worker's output.
-Two things also span *every* episode, from file metadata alone: the **task prompt** of
-every paired episode, and each camera's **file count and mean size**. Without the
-second, a rebuild that wrote a tenth of its videos passed on the sampled ones.
-
-**Step 4** is the pair that makes the arrangement worth having. If the two rows
-disagree, the difference is the episodes outside the shared set from step 2 and nothing
-more; if the shared-episode row is *also* off, the values themselves are wrong. It reads
-the parquet rather than `meta`, because the delivered copies carry quantiles in
-`episodes_stats.jsonl` and a rebuild does not — the v3.0 → v2.1 downgrade keeps only the
-five legacy keys — so comparing what each *says* about itself would compare the writers,
-not the data.
-
-The exit status follows steps 1, 3 and 4, the last over the shared episodes. It ignores
-step 2: a run that lost episodes should still be able to say whether the ones it has are
-right.
-
-### The record a run leaves
-
-`--report DIR` writes `DIR/<dataset>.json` and `DIR/<dataset>.txt`. The runs happen on
-throwaway nodes, one dataset to a node, so the records are collected into one directory
-afterwards and committed — which is why the JSON carries the **thresholds that decided
-the verdict** rather than only the verdict, the **index map** of which rebuilt episode
-was compared against which delivered one, and the **full per-dimension statistics** for
-both sides rather than only the gap they were reduced to. The datasets are far too large
-to keep beside the record, and a number nobody can recompute is a number nobody can
-argue with. Re-running a dataset overwrites its own two files and nothing else.
+Checking a rebuild against the delivered copy is **not** here. That is
+[`verification`](../verification), which reads these specs and is read by nothing in
+this directory — what a rebuild is measured against must not be able to move when the
+thing being measured does.
 
 Two things read these specs: [`spec2lerobot`](../spec2lerobot) converts a raw source
 using the `source:` section, and `lerobot_pipeline`'s `state_layout` step assembles
