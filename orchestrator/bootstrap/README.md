@@ -148,15 +148,18 @@ dataset problem, not a disk problem. Stop the instance before creating the image
 
 All 27 openx mirrors carry complete tfds metadata (`dataset_info.json` and
 `features.json`); the taco_play files that appeared missing were an incomplete local
-copy, not a gap in S3. What is genuinely blocked:
+copy, not a gap in S3. Nothing is blocked on code any more, but one of the three former
+blockers has not been run since it was addressed:
 
-| dataset | blocker |
-|---|---|
-| `bc_z` | mirror is **`array_record`**, not tfrecord — the only one of the 27. `as_dataset()` cannot read it; it needs `as_data_source()`. |
-| `furniture_bench_...` | transform imports `tensorflow_graphics`, which is in no extra in `pyproject.toml` |
-| `iamlab_cmu_pickup_insert_...` | same |
+| dataset | was | now |
+|---|---|---|
+| `bc_z` | mirror is **`array_record`**, not tfrecord — the only one of the 27, and `as_dataset()` cannot read it | the adapter reads the format from `dataset_info.json` and switches to `as_data_source()`. **Never run against the real mirror** — what the reader assumes about tfds is tested (`openx2lerobot/tests/test_rlds_decoding.py`), the 1090-shard source is not. Expect to debug this one on first contact. |
+| `furniture_bench_...` | transform imports `tensorflow_graphics`, which was in no extra | `tensorflow_graphics` is in the `openx` extra |
+| `iamlab_cmu_pickup_insert_...` | same | same |
 
 `cmu_playing_with_food` also needs `tensorflow_graphics` but is not in the registry.
+
+`toto`'s OOM was addressed by `workers: -1` and has also never been re-run.
 
 ## Traps
 

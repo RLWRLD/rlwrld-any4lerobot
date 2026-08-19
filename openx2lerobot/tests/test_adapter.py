@@ -1,10 +1,14 @@
 import json
+import sys
+import types
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 import adapter
-from adapter import OpenXAdapter, episode_chunks, read_raw_dir
+from adapter import OpenXAdapter, episode_chunks, read_raw_dir, stack_steps, to_numpy
+from generic_converter import ConversionTask
 
 
 class TestReadRawDir:
@@ -123,13 +127,13 @@ class TestLocalConfig:
 
 
 class TestFileFormat:
-    """Which reader a mirror needs, read before a run rather than during one.
+    """Which reader a mirror needs.
 
     tfds writes two formats and offers a different API for each: tfrecord through
     as_dataset, array_record through as_data_source, and asking for the wrong one
     fails with an assertion about download_and_prepare that says nothing about the
-    format. bc_z's mirror is array_record -- 1024 shards of it -- so a run that finds
-    out late has already fetched 56 GB.
+    format. So the format is read from the metadata instead of inferred from that
+    failure. bc_z's mirror is the collection's only array_record one, 1024 shards of it.
     """
 
     def _info(self, root: Path, file_format: str | None):
@@ -156,12 +160,284 @@ class TestFileFormat:
     def test_no_metadata_at_all_is_not_guessed_at(self, tmp_path):
         assert adapter.file_format(tmp_path / "nothing") is None
 
-    def test_planning_refuses_an_array_record_mirror_by_name(self, tmp_path):
-        """Not "call download_and_prepare" 56 GB later. The converter cannot read this
-        format yet, so the run should stop at planning with the format named."""
-        raw = tmp_path / "bc_z" / "1.0.1"
-        self._info(raw, "array_record")
+    def test_the_format_does_not_change_the_plan(self, tmp_path):
+        """Both readers take the same ``train[a:b]``, so a mirror's format is a
+        question for the worker that reads it and not for the task arithmetic."""
+        raw = self._info(tmp_path / "bc_z" / "1.0.1", "array_record")
         subject = OpenXAdapter(raw_dir=raw, output_path=tmp_path / "out")
+        subject._count_episodes = lambda: 250
 
-        with pytest.raises(NotImplementedError, match="array_record"):
-            subject.load_tasks()
+        splits = [task.metadata["split"] for task in subject.load_tasks()]
+        assert splits == ["train[0:100]", "train[100:200]", "train[200:250]"]
+
+
+class TestStackSteps:
+    """The batch tf.data was doing for free.
+
+    `as_dataset` gives an episode whose steps are a nested tf.data.Dataset, and the
+    tfrecord reader turns that into a trajectory with `.batch(cardinality())`.
+    `as_data_source` gives a sequence of per-step dicts instead, so the same
+    trajectory has to be assembled here -- and it has to come out the same shape,
+    because the standardization transform that reads it is shared.
+    """
+
+    def test_a_field_becomes_one_array_over_time(self):
+        steps = [{"action": np.array([1.0, 2.0])}, {"action": np.array([3.0, 4.0])}]
+        assert stack_steps(steps)["action"].tolist() == [[1.0, 2.0], [3.0, 4.0]]
+
+    def test_nesting_is_kept_rather_than_flattened(self):
+        """bc_z's action is a dict of six fields, and its transform slices into them
+        by name: trajectory["action"]["future/xyz_residual"][:, :3]."""
+        steps = [
+            {"action": {"future/xyz_residual": np.zeros(3)}},
+            {"action": {"future/xyz_residual": np.ones(3)}},
+        ]
+        stacked = stack_steps(steps)
+        assert stacked["action"]["future/xyz_residual"].shape == (2, 3)
+
+    def test_a_language_instruction_survives_as_something_decodable(self):
+        """save_episode reads the task as traj["task"][0].decode(), so whatever the
+        steps hold has to still be bytes once stacked."""
+        steps = [{"language_instruction": b"pick up the cup"}] * 3
+        assert stack_steps(steps)["language_instruction"][0].decode() == "pick up the cup"
+
+    def test_a_scalar_per_step_becomes_a_column(self):
+        steps = [{"is_last": np.bool_(False)}, {"is_last": np.bool_(True)}]
+        assert stack_steps(steps)["is_last"].tolist() == [False, True]
+
+    def test_an_episode_with_no_steps_is_an_error(self):
+        """Rather than an empty trajectory that fails later inside the transform, where
+        the shapes no longer say which episode it came from."""
+        with pytest.raises(ValueError, match="no steps"):
+            stack_steps([])
+
+    def test_it_reads_a_sequence_that_only_supports_length_and_indexing(self):
+        """Which is all as_data_source promises: steps decode when indexed."""
+
+        class Lazy:
+            def __init__(self, frames):
+                self.frames = frames
+
+            def __len__(self):
+                return len(self.frames)
+
+            def __getitem__(self, index):
+                return self.frames[index]
+
+        lazy = Lazy([{"action": np.zeros(2)}, {"action": np.ones(2)}])
+        assert stack_steps(lazy)["action"].shape == (2, 2)
+
+
+class _Tensor:
+    """Something with .numpy(), which is all this walk knows about a tensor."""
+
+    def __init__(self, value):
+        self.value = value
+
+    def numpy(self):
+        return self.value
+
+
+class TestToNumpy:
+    def test_a_tensor_becomes_its_array(self):
+        assert to_numpy(_Tensor(np.zeros(3))).shape == (3,)
+
+    def test_it_reaches_into_nested_dicts(self):
+        out = to_numpy({"observation": {"image": _Tensor(np.ones(2))}})
+        assert out["observation"]["image"].tolist() == [1.0, 1.0]
+
+    def test_an_array_is_left_alone(self):
+        """Half of what the transform returns never went through TensorFlow: it comes
+        out of the reader as an array and stays one."""
+        array = np.arange(3)
+        assert to_numpy({"task": array})["task"] is array
+
+    def test_bytes_are_left_alone(self):
+        assert to_numpy({"task": b"lift"})["task"] == b"lift"
+
+
+def _standardize(traj, dataset_name):
+    """Stand-in for openx_rlds.standardize_trajectory, which imports TensorFlow.
+
+    Adds what the real one adds, and returns one field as a tensor so that the
+    conversion afterwards has something to do.
+    """
+    traj["proprio"] = _Tensor(np.zeros((traj["action"].shape[0], 8)))
+    traj["task"] = traj.pop("language_instruction")
+    return traj
+
+
+class _Builder:
+    """as_data_source's half of a tfds builder, and a refusal for the other half."""
+
+    def __init__(self, episodes):
+        self.episodes = episodes
+        self.asked_for = None
+
+    def as_data_source(self, split=None):
+        self.asked_for = split
+        return self.episodes
+
+    def as_dataset(self, split=None):
+        raise AssertionError("an array_record mirror cannot be read as a stream")
+
+
+def _task(split: str) -> ConversionTask:
+    return ConversionTask(
+        input_path=Path("/raw"),
+        output_path=Path("/out"),
+        local_repo_id="chunk",
+        metadata={"split": split},
+    )
+
+
+def _episode(steps, **fields):
+    return {"steps": steps, **fields}
+
+
+def _steps(count=2, **fields):
+    return [
+        {
+            "action": np.full(3, float(index)),
+            "language_instruction": b"lift the lid",
+            "observation": {"image": np.zeros((2, 2, 3), np.uint8)},
+            **fields,
+        }
+        for index in range(count)
+    ]
+
+
+@pytest.fixture
+def without_tensorflow(monkeypatch):
+    """openx_rlds imports TensorFlow at module level, so the reader is exercised
+    against a stand-in for it. What is under test is this module's plumbing -- which
+    reader is chosen, what shape reaches the transform, what is left afterwards --
+    and none of that is TensorFlow's to answer."""
+    module = types.ModuleType("openx_rlds")
+    module.standardize_trajectory = _standardize
+    module.transform_raw_dataset = lambda episode, dataset_name: episode
+    monkeypatch.setitem(sys.modules, "openx_rlds", module)
+    return module
+
+
+class TestWhichReaderRuns:
+    def _mirror(self, tmp_path, name, file_format):
+        raw = tmp_path / name / "1.0.0"
+        raw.mkdir(parents=True)
+        (raw / "dataset_info.json").write_text(json.dumps({"fileFormat": file_format}))
+        return raw
+
+    def _subject(self, tmp_path, name, file_format, episodes):
+        raw = self._mirror(tmp_path, name, file_format)
+        subject = OpenXAdapter(raw_dir=raw, output_path=tmp_path / "out")
+        builder = _Builder(episodes)
+        subject._builder = lambda: builder
+        return subject, builder
+
+    def test_an_array_record_mirror_is_read_by_index(
+        self, tmp_path, without_tensorflow
+    ):
+        """The stream reader on this mirror is the failure this replaces: tfds asserts
+        that download_and_prepare has not been run, naming a file rather than a format."""
+        subject, _ = self._subject(
+            tmp_path, "bc_z", "array_record", [_episode(_steps())]
+        )
+        assert len(list(subject.load_subset(_task("train[0:1]")))) == 1
+
+    def test_the_slice_reaches_the_data_source_unchanged(
+        self, tmp_path, without_tensorflow
+    ):
+        """A chunk is only a chunk if the reader honours it; otherwise every task
+        converts the whole dataset and the concatenation is 1024 copies."""
+        subject, builder = self._subject(
+            tmp_path, "bc_z", "array_record", [_episode(_steps())]
+        )
+        list(subject.load_subset(_task("train[300:400]")))
+        assert builder.asked_for == "train[300:400]"
+
+    def test_a_tfrecord_mirror_still_reads_as_a_stream(
+        self, tmp_path, without_tensorflow
+    ):
+        subject, _ = self._subject(tmp_path, "cmu_stretch", "tfrecord", [])
+        with pytest.raises(AssertionError, match="cannot be read as a stream"):
+            list(subject.load_subset(_task("train[0:1]")))
+
+    def test_a_mirror_with_no_metadata_reads_as_a_stream(
+        self, tmp_path, without_tensorflow
+    ):
+        """Which is what every mirror but bc_z is, so an unreadable dataset_info.json
+        should not silently switch readers."""
+        raw = tmp_path / "cmu_stretch" / "1.0.0"
+        raw.mkdir(parents=True)
+        subject = OpenXAdapter(raw_dir=raw, output_path=tmp_path / "out")
+        builder = _Builder([])
+        subject._builder = lambda: builder
+        with pytest.raises(AssertionError, match="cannot be read as a stream"):
+            list(subject.load_subset(_task("train[0:1]")))
+
+
+class TestReadingByIndex:
+    def _subject(self, tmp_path, name, episodes):
+        raw = tmp_path / name / "1.0.0"
+        raw.mkdir(parents=True)
+        (raw / "dataset_info.json").write_text(json.dumps({"fileFormat": "array_record"}))
+        subject = OpenXAdapter(raw_dir=raw, output_path=tmp_path / "out")
+        subject._builder = lambda: _Builder(episodes)
+        return subject
+
+    def test_the_transform_is_handed_a_trajectory_not_a_step(
+        self, tmp_path, without_tensorflow, monkeypatch
+    ):
+        """The one thing the two readers could disagree about: `as_dataset` batches the
+        steps before the transform sees them, so this reader has to as well."""
+        seen = {}
+
+        def spy(traj, dataset_name):
+            seen["action"] = traj["action"].shape
+            return _standardize(traj, dataset_name)
+
+        without_tensorflow.standardize_trajectory = spy
+        subject = self._subject(tmp_path, "bc_z", [_episode(_steps(count=7))])
+        list(subject.load_subset(_task("train[0:1]")))
+        assert seen["action"] == (7, 3)
+
+    def test_nothing_a_tensor_is_yielded(self, tmp_path, without_tensorflow):
+        """The writer takes arrays. The tfrecord reader gets there with
+        as_numpy_iterator over the whole stream; this one converts an episode."""
+        subject = self._subject(tmp_path, "bc_z", [_episode(_steps())])
+        [episode] = list(subject.load_subset(_task("train[0:1]")))
+        assert isinstance(episode["steps"]["proprio"], np.ndarray)
+
+    def test_an_episode_survives_the_round_trip_intact(
+        self, tmp_path, without_tensorflow
+    ):
+        subject = self._subject(tmp_path, "bc_z", [_episode(_steps(count=4))])
+        [episode] = list(subject.load_subset(_task("train[0:1]")))
+        traj = episode["steps"]
+        assert traj["action"].shape == (4, 3)
+        assert traj["observation"]["image"].shape == (4, 2, 2, 3)
+        assert traj["task"][0].decode() == "lift the lid"
+
+    def test_kukas_failed_episodes_are_dropped_here_too(
+        self, tmp_path, without_tensorflow
+    ):
+        """kuka is the one source that ships failures alongside successes. tf.data did
+        the filtering as a stream operation, so it had to be rewritten -- and getting it
+        wrong converts episodes the delivered copies do not contain."""
+        subject = self._subject(
+            tmp_path,
+            "kuka",
+            [
+                _episode(_steps(), success=np.bool_(True)),
+                _episode(_steps(), success=np.bool_(False)),
+                _episode(_steps(), success=np.bool_(True)),
+            ],
+        )
+        assert len(list(subject.load_subset(_task("train[0:3]")))) == 2
+
+    def test_every_other_dataset_keeps_every_episode(
+        self, tmp_path, without_tensorflow
+    ):
+        """No `success` field to read, so the predicate must not look for one."""
+        subject = self._subject(tmp_path, "bc_z", [_episode(_steps())] * 3)
+        assert len(list(subject.load_subset(_task("train[0:3]")))) == 3
