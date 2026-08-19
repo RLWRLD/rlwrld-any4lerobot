@@ -82,18 +82,24 @@ def resize_frame(frame, shape: tuple[int, int]):
 
     The distinction is not academic. OpenCV's INTER_CUBIC has no scale-dependent
     prefilter, so it keeps detail swscale would have low-passed away, and the encoder
-    pays for it. Measured against the delivered copies: every camera that is not
-    resized lands at 0.96-1.00x, which is the encoder build alone, while under
-    INTER_CUBIC every resized camera sat above it -- 1.04x at a 2.5x downscale,
-    1.14x at 1.2x, worse the gentler the resize, exactly the shape of a missing
-    prefilter.
-    """
-    import os
+    pays for it.
 
+    Bicubic within swscale is measured too, not assumed. The target is the 0.96-1.00x
+    that cameras which are *not* resized come out at, that being the encoder build
+    difference on its own:
+
+        filter            ucsd (2.5x down)   taco_play (1.2x down)
+        swscale BICUBIC         0.86           1.01 / 1.04    64/64 episodes
+        swscale SINC            0.97           1.10 / 1.15    14/64
+        cv2 INTER_CUBIC         1.03           1.13 / 1.14    46/64
+
+    No filter hits the target on both, and the reason is not the filter: the gentler
+    the downscale the larger everything comes out, and that offset survives whichever
+    one is chosen. So the question is which stays inside tolerance everywhere, and
+    only bicubic does -- which is also the one ffmpeg would have used.
+    """
     import av
     from av.video.reformatter import Interpolation
-
-    filt = getattr(Interpolation, os.environ.get('OXE_SWS', 'BICUBIC'))
 
     height, width = shape
     if frame.shape[:2] == (height, width):
@@ -103,7 +109,7 @@ def resize_frame(frame, shape: tuple[int, int]):
     scaled_h = max(height, round(frame.shape[0] * scale))
     scaled_w = max(width, round(frame.shape[1] * scale))
     picture = av.VideoFrame.from_ndarray(frame, format="rgb24").reformat(
-        width=scaled_w, height=scaled_h, interpolation=filt
+        width=scaled_w, height=scaled_h, interpolation=Interpolation.BICUBIC
     )
     resized = picture.to_ndarray(format="rgb24")
 
