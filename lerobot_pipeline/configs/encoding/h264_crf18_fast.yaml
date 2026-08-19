@@ -1,0 +1,20 @@
+# What humanoid_everyday's resized camera was encoded with.
+#
+# g1 and h1 each store one camera twice: the 640x480 original and the 256x192 copy
+# their meta/modality.json exposes. The two were made by different passes and are
+# not encoded alike -- measured 2026-08-19, the original is preset medium at crf 23
+# and the resized copy, the only one anything reads, is this.
+#
+# ref=2 subme=6 rc_lookahead=30 is preset fast. The same settings appear on the
+# 4,885 loose mp4 files sitting beside those datasets, which is the resizing pass
+# leaving its output in two places rather than a second encoding to account for.
+
+codec: libx264
+profile: high
+pix_fmt: yuv420p
+preset: fast
+crf: 18
+gop: 250
+bframes: 3
+# unset: leave x264's scene-cut detection on, as the original encode did
+sc_threshold: null

@@ -25,7 +25,10 @@ robocasa = ["h5py"]
 robomind = ["h5py"]
 # openx2lerobot reads RLDS/tfrecord through tfds, which only ships a TensorFlow
 # reader -- hence the heavyweight dependency for one converter.
-openx = ["tensorflow", "tensorflow-datasets"]
+# tensorflow-graphics for the quaternion-to-euler step three of the OXE
+# transforms need (furniture_bench, iamlab, droid); array-record because bc_z's
+# mirror is written in that format and tfds reads it through a separate reader.
+openx = ["tensorflow", "tensorflow-datasets", "tensorflow-graphics", "array-record"]
 # Distributed execution across cores or nodes (--executor ray).
 ray = ["datatrove[ray]>=0.6.0"]
 

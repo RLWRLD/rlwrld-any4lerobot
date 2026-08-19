@@ -59,7 +59,7 @@ lerobot:
     # only our encoder produces -- so the delivered copy was re-encoded, and
     # reproducing it means running the profile's resize step
     resize: resize_preserve_aspect_area
-    encoding: rldx1_reference
+    encoding: h264_crf21
     keeps_original: false
 
   features:

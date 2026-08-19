@@ -2,14 +2,24 @@
 # /data/taeyoung/data/vla_pretrain_dataset were encoded.
 #
 # The original preprocessing was ad-hoc and the code no longer exists (confirmed
-# by ALIN Lab, 2026-07-29). These values were recovered by probing the delivered
-# mp4 files, and every one of them is libx264's own default -- the conversion was
-# a plain `ffmpeg -c:v libx264` with no encoder flags. They are written out
-# explicitly here so the settings are inspectable and pinned rather than tracking
-# whatever the installed ffmpeg happens to default to.
+# by ALIN Lab, 2026-07-29). Codec, profile, pixel format, GOP and B-frames were
+# recovered by probing the delivered mp4 files. They are written out explicitly
+# here so the settings are inspectable and pinned rather than tracking whatever
+# the installed ffmpeg happens to default to.
 #
-# Measured on action_net, agibot, galaxea, neural_traj, robocurate and the
-# re-encoded OXE sources: h264 High / yuv420p / GOP 250 / 3 B-frames.
+# preset and crf were not probed. They were filled in from libx264's own defaults,
+# on the reading that a conversion which matched the defaults everywhere else had
+# passed no encoder flags at all. x264 in fact records its settings inside every
+# file it writes, and reading them back on 2026-08-19 showed that reading is wrong
+# for most of the collection: the H.264 datasets other than robocurate were encoded
+# at crf 21, and humanoid_everyday's resized camera at preset fast crf 18. See
+# h264_crf21.yaml and h264_crf18_fast.yaml, which those datasets now name.
+#
+# What remains under this name is what still measures crf 23: march_robocurate and
+# neural_robocurate. galaxea also still names it and measures crf 21, which is a
+# discrepancy left standing on purpose -- galaxea is outside the collection this
+# round covers, and correcting a record nobody is building from would be a change
+# made without a rebuild to check it against.
 
 codec: libx264
 profile: high

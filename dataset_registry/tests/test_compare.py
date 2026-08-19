@@ -7,6 +7,7 @@ would either pass everything or fail everything.
 """
 
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -215,3 +216,131 @@ class TestUnpairedReport:
 
         assert "0/0 episodes" in text
         assert "3 rebuilt episode(s)" in text
+
+
+class TestDeclaredCameras:
+    """Which cameras a comparison is about.
+
+    A delivered dataset can carry a camera its own meta/modality.json does not
+    expose -- bridge_orig keeps two spare views, humanoid_everyday keeps the
+    unresized original beside the resized one the training stack reads. Holding a
+    rebuild to a camera nothing consumes fails it for a file no one opens.
+    """
+
+    def _tree(self, root: Path, cameras, declared=None):
+        for camera in cameras:
+            path = root / "videos" / "chunk-000" / camera
+            path.mkdir(parents=True, exist_ok=True)
+            (path / "episode_000000.mp4").write_bytes(b"")
+        if declared is not None:
+            (root / "meta").mkdir(parents=True, exist_ok=True)
+            (root / "meta" / "modality.json").write_text(json.dumps({"video": {
+                c: {"original_key": f"observation.images.{c}"} for c in declared}}))
+        return root
+
+    def test_the_cameras_a_dataset_exposes_are_read_from_modality(self, tmp_path):
+        """Both spellings of the exposed camera, and neither spelling of the one
+        that is not: the directory it lives in may be named either way."""
+        root = self._tree(tmp_path / "d", ["wrist", "top"], declared=["top"])
+        assert compare.declared_cameras(root) == {"top", "observation.images.top"}
+
+    def test_a_dataset_without_modality_declares_nothing(self, tmp_path):
+        root = self._tree(tmp_path / "d", ["wrist", "top"])
+        assert compare.declared_cameras(root) is None
+
+    def test_a_camera_directory_named_by_its_full_key_is_recognised(self, tmp_path):
+        """Two naming conventions are in use. Most delivered datasets name the
+        directory after the modality entry's original_key in full --
+        observation.images.rgb_static -- while humanoid_everyday names it with the
+        last segment alone. Matching only one of the two silently empties the other."""
+        root = self._tree(
+            tmp_path / "d",
+            ["observation.images.top", "observation.images.wrist"],
+            declared=["top"],
+        )
+        assert set(compare.episode_videos(root, 0, compare.declared_cameras(root))) == {
+            "observation.images.top"
+        }
+
+    def test_an_undeclared_camera_is_left_out(self, tmp_path):
+        root = self._tree(tmp_path / "d", ["wrist", "top"], declared=["top"])
+        assert set(compare.episode_videos(root, 0, keep={"top"})) == {"top"}
+
+    def test_no_filter_keeps_every_camera(self, tmp_path):
+        root = self._tree(tmp_path / "d", ["wrist", "top"], declared=["top"])
+        assert set(compare.episode_videos(root, 0)) == {"wrist", "top"}
+
+    def test_a_comparison_is_about_the_cameras_the_delivered_copy_exposes(
+        self, tmp_path, monkeypatch
+    ):
+        """The delivered copy is the target, so its modality file is the one that
+        says what the comparison is about -- not the rebuild's, which would let a
+        rebuild narrow its own examination."""
+        rebuilt = self._tree(tmp_path / "r", ["wrist", "top"], declared=["top", "wrist"])
+        delivered = self._tree(tmp_path / "d", ["wrist", "top"], declared=["top"])
+        probed = []
+
+        def fake_probe(path):
+            probed.append(path.parent.name)
+            return {"width": 1, "height": 1, "nb_read_frames": 1, "codec_name": "av1",
+                    "profile": "Main", "pix_fmt": "yuv420p", "has_b_frames": 0,
+                    "gop": 2, "bytes": 100}
+
+        monkeypatch.setattr(compare, "probe", fake_probe)
+        # the fixtures are empty files, so the pixel read has nothing to decode; this
+        # test is about which cameras are reached, not about what is in them
+        monkeypatch.setattr(compare, "pixel_agreement", lambda *a, **k: 1.0)
+        summary, problems = compare.compare_video(rebuilt, delivered, 0)
+
+        assert set(probed) == {"top"}
+        assert set(summary) == {"top"}
+        assert not problems
+
+
+class TestPixels:
+    """Whether the pictures agree, not just their file sizes.
+
+    A size ratio cannot see a difference that does not change how well the frames
+    compress. Exchanging the red and blue channels is exactly that: measured on
+    utaustin_mutex, a rebuilt episode whose channels were reversed came within 1% of
+    the delivered size and passed, while its frames correlated 0.74 against the ones
+    it was meant to reproduce.
+    """
+
+    def _clip(self, path: Path, colour, frames=6, size=(64, 64)):
+        """A tiny mp4 of one flat colour, so the comparison is about the pixels."""
+        path.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run(
+            ["ffmpeg", "-v", "error", "-f", "lavfi", "-i",
+             f"color=c={colour}:s={size[0]}x{size[1]}:r=10:d={frames / 10}",
+             "-c:v", "libx264", "-pix_fmt", "yuv420p", "-y", str(path)],
+            check=True, capture_output=True)
+        return path
+
+    def test_the_same_picture_agrees(self, tmp_path):
+        a = self._clip(tmp_path / "a.mp4", "red")
+        b = self._clip(tmp_path / "b.mp4", "red")
+        assert compare.pixel_agreement(a, b) > 0.99
+
+    def test_reversed_channels_do_not_agree(self, tmp_path):
+        """Red against blue is the shape the real defect took."""
+        a = self._clip(tmp_path / "a.mp4", "0xFF4020")
+        b = self._clip(tmp_path / "b.mp4", "0x2040FF")
+        assert compare.pixel_agreement(a, b) < 0.99
+
+    def test_frames_are_sampled_rather_than_all_decoded(self, tmp_path):
+        """A long episode costs the same as a short one: only the sample is decoded."""
+        a = self._clip(tmp_path / "a.mp4", "green", frames=200)
+        assert len(compare.sample_frames(a, 4)) == 4
+
+    def test_a_reversed_episode_is_reported_even_though_its_size_matches(self, tmp_path):
+        """The whole point: two clips of the same flat colour with red and blue
+        exchanged encode to nearly the same number of bytes, so only the pixels can
+        tell them apart."""
+        for root, colour in ((tmp_path / "r", "0xFF4020"), (tmp_path / "d", "0x2040FF")):
+            self._clip(root / "videos" / "chunk-000" / "cam" / "episode_000000.mp4", colour)
+
+        summary, problems = compare.compare_video(tmp_path / "r", tmp_path / "d", 0)
+
+        assert any("frames agree" in p for p in problems), problems
+        assert "PIXELS" in summary["cam"]

@@ -17,6 +17,7 @@ worker that uses it, which keeps the adapter picklable across processes and lets
 task arithmetic be tested without the conversion environment installed.
 """
 
+import json
 import re
 import sys
 from collections.abc import Iterable
@@ -43,6 +44,37 @@ def read_raw_dir(raw_dir: Path) -> tuple[str, str, Path]:
     if _VERSION.match(last):
         return raw_dir.parent.name, last, raw_dir.parent.parent
     return last, "", raw_dir.parent
+
+
+def file_format(version_dir: Path) -> str | None:
+    """Which format a prepared tfds directory is written in, or ``None`` if unknown.
+
+    tfds writes two, and offers a different API for each: ``tfrecord`` is read with
+    ``as_dataset`` and ``array_record`` only with ``as_data_source``. Asking for the
+    wrong one fails with an assertion telling you to call ``download_and_prepare``,
+    which says nothing about the format and sends you looking for a missing file.
+
+    Worth knowing before a run rather than during one: bc_z's mirror is array_record
+    across 1024 shards, so finding out from the converter means finding out after
+    56 GB has been fetched.
+
+    A directory whose ``dataset_info.json`` predates the field reads as tfrecord,
+    which is what it will be -- the field arrived after the format. A directory with
+    no metadata at all reads as ``None`` rather than as a guess.
+    """
+    path = version_dir / "dataset_info.json"
+    if not path.is_file():
+        # a mirror is synced as <raw_root>/<name>/<version>/, and --raw-dir is often
+        # the name rather than the version
+        inner = [d for d in sorted(version_dir.glob("*/dataset_info.json"))]
+        if not inner:
+            return None
+        path = inner[0]
+    try:
+        info = json.loads(path.read_text())
+    except json.JSONDecodeError:
+        return None
+    return info.get("fileFormat") or "tfrecord"
 
 
 def episode_chunks(total: int, per_task: int) -> list[tuple[int, int]]:
@@ -121,6 +153,18 @@ class OpenXAdapter(BaseAdapter):
     # --- the work ------------------------------------------------------------
 
     def load_tasks(self) -> list[ConversionTask]:
+        # before anything imports tensorflow: an array_record mirror cannot be read by
+        # the path below, and finding that out from tfds means finding it out after the
+        # source has been fetched
+        written_as = file_format(self.raw_dir)
+        if written_as == "array_record":
+            raise NotImplementedError(
+                f"{self.raw_dir} is written in array_record, which this converter does "
+                "not read yet: it opens a builder with as_dataset, and tfds serves "
+                "array_record only through as_data_source. Nothing else about the "
+                "mirror is wrong."
+            )
+
         total = self._count_episodes()
         if self.max_episodes is not None:
             total = min(total, self.max_episodes)

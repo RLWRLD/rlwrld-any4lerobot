@@ -15,14 +15,18 @@ The two are held to different standards, because they can be:
   full -- which is the interesting part: if every shared row matches, the difference
   is a trimmed tail, and if they diverge partway the two are keeping *different*
   frames and the strategy is wrong.
-* **video must match in geometry, frame count, codec and keyframe interval; its
-  bytes will not match.** Two ffmpeg builds with the same flags do not emit the same
-  file, so the size is reported as a ratio and judged loosely. Everything else there
+* **video must match in geometry, frame count, codec, keyframe interval and the
+  pictures themselves; its bytes will not match.** Two ffmpeg builds with the same
+  flags do not emit the same file, so the size is reported as a ratio and judged
+  loosely. Everything else there
   is decided by our own settings rather than by the encoder build, so a difference is
   a real failure. The keyframe interval is included deliberately: it is not in the
   stream header and has to be read off the frames, and it is the one encoder setting
   the training loader feels, since sampling a random frame from a 250-frame GOP means
-  decoding back to the last keyframe.
+  decoding back to the last keyframe. The pictures are checked on a sample of frames
+  rather than all of them, because a video that is not the one it should be is wrong
+  in every frame -- and checked at all because the size ratio cannot see it: a rebuild
+  with red and blue exchanged came within 1% of the delivered size and passed.
 
 Episodes carry no source id in the delivered copy, so they are aligned by position
 and the alignment is *checked* rather than assumed: the task prompt of each pair
@@ -148,10 +152,48 @@ def episode_parquet(root: Path, index: int) -> Path | None:
     return matches[0] if matches else None
 
 
-def episode_videos(root: Path, index: int) -> dict[str, Path]:
+def declared_cameras(root: Path) -> set[str] | None:
+    """The cameras ``meta/modality.json`` exposes, or ``None`` if it declares none.
+
+    A dataset can carry a camera it does not expose. bridge_orig keeps two spare
+    views of four; humanoid_everyday keeps the unresized 640x480 original beside the
+    256x192 the training stack actually reads. Those files are on disk and nothing
+    opens them, so a rebuild that differs there differs in a way no one can see.
+
+    ``None`` rather than every camera, because "declares nothing" and "declares all
+    of them" are different: the first is a dataset that has not been given a modality
+    file, and guessing on its behalf would quietly narrow a comparison.
+
+    Both spellings of each camera come back, because the delivered copies use two
+    conventions for the directory a camera's videos sit in: most name it after the
+    ``original_key`` in full -- ``observation.images.rgb_static`` -- while
+    humanoid_everyday names it ``egocentric_resized``, the last segment alone.
+    Recognising one spelling would leave every dataset using the other with no
+    cameras to compare at all, which reads as a pass.
+    """
+    path = root / "meta" / "modality.json"
+    if not path.is_file():
+        return None
+    try:
+        video = (json.loads(path.read_text()) or {}).get("video") or {}
+    except json.JSONDecodeError:
+        return None
+    if not video:
+        return None
+    names: set[str] = set()
+    for name, entry in video.items():
+        key = str(entry.get("original_key") or f"observation.images.{name}")
+        names.update({key, key.rsplit(".", 1)[-1]})
+    return names
+
+
+def episode_videos(
+    root: Path, index: int, keep: set[str] | None = None
+) -> dict[str, Path]:
     out = {}
     for path in sorted(root.glob(f"videos/**/episode_{index:06d}.mp4")):
-        out[path.parent.name] = path
+        if keep is None or path.parent.name in keep:
+            out[path.parent.name] = path
     return out
 
 
@@ -195,6 +237,89 @@ def keyframe_interval(path: Path) -> int | None:
     flags = [value.strip().strip(",") for value in payload.split() if value.strip()]
     keyframes = [index for index, value in enumerate(flags) if value == "1"]
     return keyframes[1] - keyframes[0] if len(keyframes) > 1 else None
+
+
+# Frames decoded per camera per episode. The point is to catch a picture that is
+# not the one it should be -- reversed channels, a shifted clip, the wrong episode
+# -- and any of those is wrong in every frame, so a handful spread across the
+# episode says as much as all of them at a fraction of the cost.
+PIXEL_FRAMES = 6
+
+# Below this, the two are not the same picture. Measured 2026-08-19 on delivered
+# episodes of ucsd_kitchen (av1), action_net (h264 crf 21) and humanoid_everyday
+# (h264 fast crf 18), by decoding each and encoding it again with the settings its
+# own spec names -- a second lossy generation, so a floor rather than an estimate:
+#
+#     re-encoded from the delivered frames      0.9993  0.9994  0.9997
+#     red and blue exchanged                    0.8871
+#     shifted four pixels and rescaled          0.8887
+#     a different episode of the same task      0.55      (utaustin_mutex)
+#
+# Nothing lands between 0.89 and 0.999, so the threshold is not a judgement call
+# about how close is close enough.
+#
+# The size ratio cannot stand in for this. The same channel reversal that costs
+# action_net 24% of its bytes cost utaustin_mutex under 1%, which is how a reversed
+# rebuild passed a size check at 64/64 -- how much a wrong picture changes the byte
+# count depends on the picture.
+PIXEL_AGREEMENT = 0.98
+
+
+def sample_frames(path: Path, count: int = PIXEL_FRAMES):
+    """``count`` frames spread through ``path``, as one uint8 array.
+
+    Decoded through ffmpeg rather than a decoding library, for the same reason the
+    rest of this module shells out to ffprobe: the comparison should see what ffmpeg
+    sees, and a second decoder in the dependency list is a second answer to what a
+    file contains.
+    """
+    import numpy as np
+
+    total = int(probe(path).get("nb_read_frames") or 0)
+    if total <= 0:
+        raise CompareError(f"no frames to sample in {path}")
+    picks = sorted({round(i * (total - 1) / max(count - 1, 1)) for i in range(count)})
+    width, height = int(probe(path)["width"]), int(probe(path)["height"])
+    # one select filter rather than one ffmpeg per frame: seeking is the expensive
+    # part, and an episode is short enough to read straight through
+    expression = "+".join(f"eq(n\\,{n})" for n in picks)
+    result = subprocess.run(
+        ["ffmpeg", "-v", "error", "-i", str(path), "-vf", f"select={expression}",
+         "-fps_mode", "passthrough", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"],
+        capture_output=True, timeout=300,
+    )
+    if result.returncode != 0:
+        raise CompareError(f"ffmpeg failed reading {path}: {result.stderr.decode()[:300]}")
+    frames = np.frombuffer(result.stdout, dtype=np.uint8)
+    return frames.reshape(-1, height, width, 3)[: len(picks)]
+
+
+def pixel_agreement(a: Path, b: Path, count: int = PIXEL_FRAMES) -> float:
+    """How well two videos' frames agree, as the weakest of the sampled frames.
+
+    The weakest rather than the average, because a difference that shows up in one
+    frame is still a difference; averaging lets a good majority hide it.
+    """
+    import numpy as np
+
+    left, right = sample_frames(a, count), sample_frames(b, count)
+    if left.shape[1:] != right.shape[1:]:
+        return 0.0
+    n = min(len(left), len(right))
+    scores = []
+    for index in range(n):
+        x = left[index].astype(np.float64).ravel()
+        y = right[index].astype(np.float64).ravel()
+        if x.std() == 0 and y.std() == 0:
+            # a flat frame against a flat frame: correlation is undefined, so fall
+            # back to whether the two flats are the same colour
+            scores.append(1.0 if np.allclose(x, y, atol=2) else 0.0)
+            continue
+        if x.std() == 0 or y.std() == 0:
+            scores.append(0.0)
+            continue
+        scores.append(float(np.corrcoef(x, y)[0, 1]))
+    return min(scores) if scores else 0.0
 
 
 def probe(path: Path) -> dict[str, Any]:
@@ -312,7 +437,12 @@ def compare_video(
     rebuilt: Path, delivered: Path, index: int, delivered_index: int | None = None
 ) -> tuple[dict, list[str]]:
     other = index if delivered_index is None else delivered_index
-    videos_a, videos_b = episode_videos(rebuilt, index), episode_videos(delivered, other)
+    # the delivered copy is the target, so it is the one that says which cameras the
+    # comparison is about; reading the rebuild's would let a rebuild narrow its own
+    # examination
+    keep = declared_cameras(delivered)
+    videos_a = episode_videos(rebuilt, index, keep)
+    videos_b = episode_videos(delivered, other, keep)
     summary: dict[str, str] = {}
     problems: list[str] = []
 
@@ -340,10 +470,20 @@ def compare_video(
                 f"video {key}: {a['bytes']} bytes against delivered {b['bytes']} "
                 f"({ratio:.2f}x) -- beyond what a different ffmpeg build explains"
             )
+        # the pictures themselves, which the size ratio cannot see: reversing the red
+        # and blue channels leaves a file the same size and the frames unrecognisable
+        agreement = pixel_agreement(videos_a[key], videos_b[key])
+        if agreement < PIXEL_AGREEMENT:
+            verdict = "PIXELS"
+            problems.append(
+                f"video {key}: frames agree {agreement:.3f} against delivered, below "
+                f"{PIXEL_AGREEMENT} -- the same size encoded from a different picture"
+            )
+
         summary[key] = (
             f"{a.get('width')}x{a.get('height')} {a.get('nb_read_frames')}f "
             f"{a.get('codec_name')}/GOP{a.get('gop') or '>' + str(GOP_PROBE_FRAMES)} "
-            f"{a['bytes']}B vs {b['bytes']}B ({ratio:.2f}x) {verdict}"
+            f"{a['bytes']}B vs {b['bytes']}B ({ratio:.2f}x) px{agreement:.3f} {verdict}"
         )
     return summary, problems
 

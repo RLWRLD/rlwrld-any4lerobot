@@ -291,3 +291,47 @@ class TestOpenXMirrors:
         for spec in self.openx():
             tail = spec.foundry_uri.rstrip("/").split("/")[-1]
             assert tail == spec.id, f"{spec.id}: {spec.foundry_uri}"
+
+
+class TestMeasuredEncodings:
+    """What the delivered copies were actually encoded with.
+
+    x264 records its own settings inside every file it writes, so preset and crf
+    are readable off the delivered mp4s rather than guessed at. These are the
+    values read on 2026-08-19, sampled across the cameras each dataset's
+    meta/modality.json exposes. Holding the specs to them here means a later edit
+    that changes what a dataset claims has to change the measurement it claims it
+    from, rather than drifting quietly -- crf in particular is invisible in a probe
+    of the stream header and moves file size, which is what a rebuild is checked on.
+    """
+
+    MEASURED = {
+        "h264_crf21": ("action_net", "agibot_dexhand", "agibot_gripper", "bc_z",
+                       "bridge_orig", "droid", "fmb_dataset", "fractal20220817_data",
+                       "furniture_bench_dataset_converted_externally_to_rlds",
+                       "iamlab_cmu_pickup_insert_converted_externally_to_rlds",
+                       "kuka", "language_table"),
+        "h264_crf18_fast": ("humanoid_everyday_g1", "humanoid_everyday_h1"),
+        "lerobot_av1_default": ("taco_play", "utaustin_mutex", "viola", "toto",
+                                "ucsd_kitchen_dataset_converted_externally_to_rlds"),
+    }
+    SETTINGS = {
+        "h264_crf21": {"codec": "libx264", "preset": "medium", "crf": 21, "gop": 250,
+                       "bframes": 3},
+        "h264_crf18_fast": {"codec": "libx264", "preset": "fast", "crf": 18,
+                            "gop": 250, "bframes": 3},
+        "lerobot_av1_default": {"codec": "libsvtav1", "gop": 2, "bframes": 0},
+    }
+
+    @pytest.mark.parametrize(
+        "dataset,expected",
+        [(d, p) for p, datasets in MEASURED.items() for d in datasets],
+    )
+    def test_a_dataset_names_the_encoding_it_was_delivered_in(self, dataset, expected):
+        assert load(dataset).encoding == expected
+
+    @pytest.mark.parametrize("name,settings", SETTINGS.items())
+    def test_the_named_encoding_carries_the_measured_settings(self, name, settings):
+        from lerobot_pipeline.encoding import load_profile
+
+        assert load_profile(name) | settings == load_profile(name)
