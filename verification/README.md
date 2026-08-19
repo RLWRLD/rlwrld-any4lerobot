@@ -10,6 +10,44 @@ taken on 2026-08-19 from `jy-park-data-pod` in namespace `p-rlwrld`, which mount
 the training storage at `/data/taeyoung/data/vla_pretrain_dataset`. Where a
 question can be settled by reading the real thing, read the real thing.
 
+## What this round covers
+
+29 of the 36 datasets in the registry: the 27 Open X-Embodiment sets, plus
+humanoid_everyday's g1 and h1.
+
+Out of scope, and not for any reason to do with the data: `action_net`,
+`agibot_dexhand`, `agibot_gripper`, `galaxea`, `march_robocurate`,
+`neural_robocurate`, `oneuniverse_simul`. Their rows stay in `addresses.tsv` and
+their modality files stay in `modality/`, because leaving them out of a table is how
+a dataset gets forgotten rather than deferred.
+
+### humanoid_everyday is the shape nothing else in scope has
+
+Three ways, each of which the rest of the collection does not need:
+
+**Its upstream is already LeRobot.** Not RLDS. The mirror is an `hf_repo` snapshot
+with `data/`, `meta/` and `videos/` and `codebase_version: 2.1`, so a rebuild is a
+resize and a re-encode rather than a conversion. `builder: none` in those two specs
+means "needs no converter", not "upstream unknown".
+
+**One upstream, two datasets.** The snapshot's prefix says `humanoid_everyday_g1`
+but it holds both robots -- its `meta/info.json` counts 8949 episodes and 3436171
+frames, exactly g1's 4064 + h1's 4885 and 1779287 + 1656884. Every episode in
+`meta/episodes.jsonl` carries a `robot_type`, so the split is recoverable, and both
+specs now point at the same snapshot. h1 had no mirror recorded before this; it was
+not missing, it was in here.
+
+The split itself is not a build step. It decides which episodes a dataset contains,
+which is settled before a build rather than inside one: the two trees are staged
+separately, each from the robot_type its episodes carry, and each build then sees
+only its own.
+
+**One upstream camera, two delivered ones.** The upstream has
+`observation.images.egocentric` at 480x640 and nothing else. The delivered copies
+carry that plus `egocentric_resized` at 192x256, and the two were encoded
+differently -- medium crf 23 for the original, fast crf 18 for the resized. Only the
+resized one is in `modality.json`, so only that one is read, rebuilt and checked.
+
 ## `modality/<dataset>.json`
 
 Each delivered dataset's own `meta/modality.json`, verbatim, for all 36.
