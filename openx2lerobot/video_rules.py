@@ -1,4 +1,4 @@
-"""The resize and encoding rules this converter is handed, resolved to what it needs.
+"""The video rules this converter is handed, resolved to what it needs.
 
 openx2lerobot does not transcode an existing file: it decodes RLDS frames and hands
 them to LeRobot's own video writer. So the two decisions the rest of the pipeline
@@ -7,10 +7,11 @@ expresses as a transform stage -- what size the frames are, and how they are enc
 re-encode what this converter just produced, a second lossy generation that the
 delivered datasets do not have.
 
-Both rules arrive as inputs rather than being decided here: a step mapping (or the
-name of one) for the resize, and the name of a file in
-``lerobot_pipeline/configs/encoding`` (or an inline mapping) for the encoder. Naming
-a different pair converts the same source a different way, with no code change.
+The rules arrive as inputs rather than being decided here: a step mapping (or the
+name of one) for the resize, the name of a file in
+``lerobot_pipeline/configs/encoding`` (or an inline mapping) for the encoder, and a
+name for the channel order. Naming a different set converts the same source a
+different way, with no code change.
 """
 
 import json
@@ -55,6 +56,53 @@ def parse_rule(value: str | Mapping[str, Any] | None) -> Mapping[str, Any] | Non
     if not isinstance(parsed, Mapping):
         raise VideoRuleError(f"a rule must be a mapping, got {parsed!r}")
     return parsed
+
+
+# Cameras Open X-Embodiment reads as BGR, and the datasets they belong to.
+#
+# The upstream standardisation transforms flip these to RGB, with the comment "flip
+# image & wrist_image from bgr to rgb". The delivered copies were written without that
+# flip, so their colours are the source bytes read as RGB -- red and blue exchanged
+# against what the camera saw. Measured on utaustin_mutex against the RLDS source:
+# the delivered frames correlate 0.99 with the source read as-is and 0.73 with it
+# flipped, and the delivered channel means track the source's exactly.
+#
+# The list lives here rather than inside the transforms because *whether* to flip is
+# a rule a run is given. The transforms no longer flip; this does, when asked to.
+BGR_CAMERAS = {
+    "berkeley_autolab_ur5": ("hand_image",),
+    "stanford_hydra_dataset_converted_externally_to_rlds": ("image", "wrist_image"),
+    "utaustin_mutex": ("image", "wrist_image"),
+    "berkeley_fanuc_manipulation": ("image", "wrist_image"),
+    "fmb_dataset": (
+        "image_wrist_1",
+        "image_wrist_2",
+        "image_side_1",
+        "image_side_2",
+    ),
+}
+
+CHANNEL_RULES = ("as_source", "bgr_to_rgb")
+
+
+def flips_channels(channels, dataset_name: str, key: str) -> bool:
+    """Whether frames from camera ``key`` should have their channels reversed.
+
+    ``as_source`` writes the bytes in the order the RLDS file stores them, which is
+    what the delivered copies did. ``bgr_to_rgb`` reverses the cameras listed in
+    :data:`BGR_CAMERAS`, which is what Open X-Embodiment's own transforms do and what
+    makes the colours match the scene. Every camera not on that list is unaffected by
+    either, so most datasets convert the same way under both.
+    """
+    rule = parse_rule(channels)
+    if not rule:
+        return False
+    name = rule.get("type")
+    if name not in CHANNEL_RULES:
+        raise VideoRuleError(
+            f"unknown channel rule {name!r}; expected one of {', '.join(CHANNEL_RULES)}"
+        )
+    return name == "bgr_to_rgb" and key in BGR_CAMERAS.get(dataset_name, ())
 
 
 def target_shape(

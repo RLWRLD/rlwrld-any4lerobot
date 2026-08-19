@@ -3,7 +3,9 @@ import json
 import pytest
 
 from video_rules import (
+    BGR_CAMERAS,
     VideoRuleError,
+    flips_channels,
     parse_rule,
     resize_frame,
     rgb_encoder,
@@ -72,3 +74,53 @@ class TestRgbEncoder:
         with pytest.raises(VideoRuleError) as exc:
             rgb_encoder("rldx1_reference")
         assert "bframes=3" in str(exc.value)
+
+
+class TestFlipsChannels:
+    """The rule decides the channel order; the table decides which cameras it reaches."""
+
+    def test_as_source_never_flips(self):
+        assert not flips_channels("as_source", "utaustin_mutex", "image")
+
+    def test_bgr_to_rgb_flips_the_cameras_oxe_reads_as_bgr(self):
+        assert flips_channels("bgr_to_rgb", "utaustin_mutex", "image")
+        assert flips_channels("bgr_to_rgb", "berkeley_autolab_ur5", "hand_image")
+
+    def test_it_leaves_the_other_cameras_of_a_listed_dataset_alone(self):
+        """berkeley_autolab_ur5 has several cameras and OXE reads only hand_image
+        as BGR, so naming the dataset is not enough to flip the rest."""
+        assert not flips_channels("bgr_to_rgb", "berkeley_autolab_ur5", "image")
+
+    def test_a_dataset_with_no_bgr_camera_is_the_same_under_both_rules(self):
+        for rule in ("as_source", "bgr_to_rgb"):
+            assert not flips_channels(rule, "taco_play", "rgb_static")
+
+    def test_no_rule_at_all_keeps_the_source_order(self):
+        assert not flips_channels(None, "utaustin_mutex", "image")
+
+    def test_an_unknown_rule_is_refused_rather_than_ignored(self):
+        with pytest.raises(VideoRuleError, match="unknown channel rule"):
+            flips_channels("rgb_to_bgr", "utaustin_mutex", "image")
+
+    def test_the_table_names_the_datasets_whose_transforms_used_to_flip(self):
+        """The flip moved out of oxe_utils/transforms.py and into this table. If a
+        transform grows one back, the two would disagree and this catches it."""
+        from pathlib import Path
+
+        transforms = Path(__file__).resolve().parents[1] / "oxe_utils" / "transforms.py"
+        assert "[..., ::-1]" not in transforms.read_text()
+        assert set(BGR_CAMERAS) == {
+            "berkeley_autolab_ur5",
+            "stanford_hydra_dataset_converted_externally_to_rlds",
+            "utaustin_mutex",
+            "berkeley_fanuc_manipulation",
+            "fmb_dataset",
+        }
+
+
+def test_an_encoding_may_arrive_as_json():
+    """--encoding advertises "a name ... or the JSON of one", and the pipeline sends
+    JSON whenever the run asks for settings rather than a named profile."""
+    config = rgb_encoder('{"gop": 50}')
+
+    assert config.g == 50
