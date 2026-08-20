@@ -198,3 +198,133 @@ artefact of the stall, since the four largest builds never ran. On the 15 datase
 completed the split is 14% fetch and 86% build, which is the figure to plan with. The
 orchestrator's decision not to overlap the stages is unaffected either way: it was taken
 on a 1.3-hour saving over a full pass, and nothing here moves that.
+
+
+# 2026-08-21: m8i.16xlarge, and the dataset that never finished
+
+`toto` is the dataset `orchestrator/bootstrap/README.md` records as OOM-killed. It hung
+twice more at the start of this session. Everything below is one node --
+**m8i.16xlarge**, 64 vCPU, 247 GB, 30 Gb/s NIC, EBS good for 20 Gb/s and 80,000 IOPS --
+with `/scratch` on **four gp3 volumes striped**, because one gp3 volume tops out at
+16,000 IOPS and that was the download ceiling on the previous node.
+
+## Download: 447.9 to 2,916.4 MB/s, six and a half times
+
+| change | MB/s | Gb/s |
+| --- | --: | --: |
+| the 3.9 TB production pass, as it ran | 447.9 | 3.58 |
+| CRT client, now carried by the image | 676.6 | 5.41 |
+| + four-way gp3 stripe | 1,370.7 | 10.97 |
+| + `target_bandwidth` declared at the NIC rate | 2,687.7 | 21.50 |
+| **end to end from the image, `orchestrator fetch`** | **2,916.4** | **23.33** |
+
+**`target_bandwidth` is worth 2x, and this file previously said 3%.** That earlier
+figure was taken on a node pinned at 677 MB/s by a single gp3 volume -- a measurement
+made where the answer could not vary. Same node, same 130.7 GB, nothing else changed:
+1,330.8 MB/s undeclared, 2,687.7 declared.
+
+Chunk size matters less and not monotonically: 16 MB gave 2,797.4 and 128 MB gave
+1,877.7, against 64 MB's 2,687.7. 64 MB stays, since 16 MB's 4% is inside the run-to-run
+spread and 128 MB is clearly worse.
+
+**What is left.** 2,916.4 MB/s is 78% of this instance's 30 Gb/s NIC and 117% of its
+nominal 20 Gb/s EBS budget, so the remaining headroom is small and the next constraint
+is the link. A faster download now needs a bigger instance, not a better setting.
+
+## The build: two hangs, both with names
+
+Both found with `py-spy`, which is the tool this needed all along -- neither failure
+produces a log line, a return code, or CPU.
+
+**One: `start_method` reached the pool and not the manager.** datatrove's
+`LocalPipelineExecutor.run` calls `multiprocess.Manager()` with the default context and
+`multiprocess.get_context(self.start_method)` only for the pool. The manager is forked
+from a parent holding TensorFlow, inherits a lock no thread in it owns, and wedges; the
+pool workers block on the queue it serves. Parent in `pool.py:861 next`, child in
+`managers.py:176 serve_forever` via `popen_fork`. Fixed by setting the process default.
+
+**Two: an OOM-killed worker hangs the run instead of failing it.** With the manager
+fixed it hung again, differently: 42 workers all in `synchronize.py:101` inside
+`Queue.get`, parent in `pool.next`, 128 GB resident, output frozen at 1,472 MB, load
+average 0.00. `dmesg`: `Killed process ... anon-rss:9278632kB`. A worker killed while
+holding the pool's task-queue lock never releases it.
+
+That one is the more important, because no worker-count estimate will be right always.
+`watch_for_oom` reads `/proc/vmstat`'s `oom_kill` counter -- whole-machine, no root, and
+it exits 76 within ten seconds naming the mechanism and how to retry.
+
+And the estimate that allowed it: 6 GB a worker, a constant, where toto's workers reach
+9.3 GB and jaco_play's 4.74. Now fitted on both against source bytes per episode, and
+toto gets 22 workers on this node rather than 41.
+
+## Parallelism is not the constraint any more
+
+toto, worker count forced by lowering the per-worker estimate:
+
+| workers | s | frames/s | peak resident | CPU idle |
+| --: | --: | --: | --: | --: |
+| **22** (what the model picks) | 249 | 1,181 | 169 GB | 34% |
+| 35 | 260 | 1,131 | 244 GB | 9% |
+| 49 | 248 | 1,186 | 253 GB | 5% |
+| 61 | 247 | 1,191 | 260 GB | 5% |
+
+**Flat from 22 to 61.** Thirty-nine more workers buy 0.8% and cost 91 GB and all the
+CPU headroom. The model's 22 is the right number and it is not leaving throughput on the
+table.
+
+Task size does help, on both axes at once, and is now 8 rather than 25:
+
+| episodes per task | tasks | frames/s | peak resident |
+| --: | --: | --: | --: |
+| 25 | 37 | 1,177 | 160.7 GB |
+| **8** | 113 | **1,262** | **132.5 GB** |
+| 3 | 301 | 1,158 | 103.6 GB |
+
+## Where a worker's time actually goes -- and the earlier answer was wrong
+
+Sixty stacks sampled from one worker mid-build:
+
+| | share |
+| --- | --: |
+| **`resize_frame`** | **55%** |
+| PIL JPEG decode | 20% |
+| numpy reductions, the episode statistics | 12% |
+| `encode_video_frames` | 5% |
+| the TensorFlow iterator | 2% |
+
+The earlier entry in this file put decode at 89% and resize at 1%. That measurement
+resized 224x224 frames to 224x224 -- `resize_frame` returns early when the shape already
+matches, so it timed a no-op and called it cheap. On a dataset that actually downscales,
+the resize is the largest single cost.
+
+### The fidelity choice costs 24% of build throughput
+
+`by_scale` picks sinc above 1.3x down, and toto is 2.5x, so toto pays for the widest
+kernel libswscale has:
+
+Speed against the fidelity each filter was chosen or rejected on. The last column is
+the video-size ratio from `resize-filter-sweep.md`, on the two strong-downscale datasets:
+
+| filter | s | frames/s | video written | fidelity (dlr_edan / ucsd) |
+| --- | --: | --: | --: | --: |
+| **sinc -- what ships** | 231 | **1,273** | 1,429 MB | **0.959 / 0.988** |
+| lanczos | 194 | 1,516 | 1,303 MB | 0.857 / 0.913 |
+| area | 192 | 1,532 | 1,257 MB | 0.778 / 0.875 |
+| bicubic | 186 | 1,581 | 1,254 MB | 0.811 / 0.885 |
+| bilinear | 186 | 1,581 | 1,116 MB | 0.698 / 0.809 |
+
+Bicubic and bilinear tie exactly, so below sinc the resize stops being the bottleneck --
+this is sinc's own cost, not the resize step's.
+
+**Sinc stays, and now the price is known.** It is 19% slower than lanczos and 24% slower
+than bicubic, and it is the only filter that put both strong-downscale datasets inside
+5%: lanczos clears the 15% tolerance on dlr_edan by 0.7 points, which is not a margin
+when four more cameras sit at that scale factor. The ordering is also a warning about
+reading this table the other way -- speed and fidelity are almost perfectly inverted
+here, so any future move down this list is buying throughput with reproduction.
+
+`resize_frame` also converts RGB24 to RGB24 through libswscale, which cannot take the
+fast paths it has for planar formats, and the frame is encoded as yuv420p afterwards
+anyway. Resizing straight into the encoder's format would remove one conversion. Not
+attempted: LeRobot's writer takes RGB arrays, so it is a change to the boundary rather
+than to this function.
