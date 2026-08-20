@@ -1340,3 +1340,75 @@ class TestImageStatAllowance:
         """state and action are copied float32; there is no lossy step to excuse."""
         assert compare._allowed("observation.state", "max", {"min": [0.0], "max": [1.0]}) \
             == compare.STAT_TOLERANCE
+
+
+class TestUndeclaredColumn:
+    """A statistic for a column its own info.json never declared.
+
+    austin_buds' delivered parquet carries `absolute_action` -- real derived data,
+    `state + action`, matching to the last digit on every column but the gripper --
+    which its own info.json does not list and the RLDS source does not contain. A
+    LeRobot loader takes its features from info.json, so nothing downstream reads it.
+    """
+
+    def _stats(self, tmp_path, mine_features, theirs_features,
+               mine_declared, theirs_declared):
+        block = {"mean": [0.5], "std": [0.1], "min": [0.0], "max": [1.0]}
+        for root, features, declared in (
+            (tmp_path / "a", mine_features, mine_declared),
+            (tmp_path / "b", theirs_features, theirs_declared),
+        ):
+            write_meta(root, "stats.json", {f: dict(block) for f in features})
+            write_meta(root, "info.json", {"features": {f: {} for f in declared}})
+        return compare.compare_stats_json(tmp_path / "a", tmp_path / "b")
+
+    def test_an_undeclared_column_is_set_aside(self, tmp_path):
+        result = self._stats(
+            tmp_path,
+            mine_features=["action"], theirs_features=["action", "absolute_action"],
+            mine_declared=["action"], theirs_declared=["action"],
+        )
+        assert "absolute_action" in result.set_aside
+        assert "absolute_action" not in result.differences
+        assert result.agree
+
+    def test_a_declared_column_the_rebuild_dropped_still_fails(self, tmp_path):
+        """The reverse case must not be swept up. A feature both copies declare and
+        only one computes is a writer that dropped something."""
+        result = self._stats(
+            tmp_path,
+            mine_features=["action"], theirs_features=["action", "observation.state"],
+            mine_declared=["action", "observation.state"],
+            theirs_declared=["action", "observation.state"],
+        )
+        assert "observation.state" in result.differences
+        assert not result.agree
+
+    def test_the_reason_is_printed_beside_it(self, tmp_path):
+        """Every set-aside carries its reason -- that is the standing rule for
+        everything under meta/."""
+        result = self._stats(
+            tmp_path,
+            mine_features=["action"], theirs_features=["action", "absolute_action"],
+            mine_declared=["action"], theirs_declared=["action"],
+        )
+        assert "does not declare" in result.reason
+
+    def test_it_applies_to_per_episode_stats_too(self, tmp_path):
+        """austin_buds failed in both places: stats.json and episodes_stats.jsonl."""
+        mine = [episode_stats(0, 0.2)]
+        theirs = [episode_stats(0, 0.2)]
+        theirs[0]["stats"]["absolute_action"] = {
+            "mean": [0.5], "std": [0.1], "min": [0.0], "max": [1.0], "count": [10]}
+        for root, lines, declared in (
+            (tmp_path / "a", mine, ["observation.state", "observation.images.image"]),
+            (tmp_path / "b", theirs, ["observation.state", "observation.images.image"]),
+        ):
+            write_meta(root, "episodes_stats.jsonl", lines)
+            write_meta(root, "episodes.jsonl", [
+                {"episode_index": e["episode_index"], "tasks": ["t"], "length": 10}
+                for e in lines])
+            write_meta(root, "info.json", {"features": {f: {} for f in declared}})
+        result = compare.compare_episode_meta(tmp_path / "a", tmp_path / "b", {0: 0})
+        assert "episodes_stats.jsonl.absolute_action" in result.set_aside
+        assert "episodes_stats.jsonl.absolute_action" not in result.differences

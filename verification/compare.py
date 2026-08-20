@@ -400,13 +400,40 @@ def _allowed(feature: str, stat: str, delivered_stats: dict) -> float:
     return fraction * span
 
 
+def declared_features(root: Path) -> set[str]:
+    """What a copy's own ``meta/info.json`` says it contains."""
+    return set((meta_json(root, "info.json") or {}).get("features") or {})
+
+
+def undeclared(feature: str, mine: dict, declared_a: set, declared_b: set) -> bool:
+    """Is this a statistic for a column its own copy never declared as a feature?
+
+    austin_buds' delivered parquet carries an eighth column, ``absolute_action``,
+    that its own ``info.json`` does not list -- real derived data (``state + action``,
+    the delta action resolved to an absolute pose) which nothing downstream reads,
+    because a LeRobot loader builds its feature set from ``info.json``. The RLDS
+    source has no such field, so nothing in the source says to build it either.
+
+    Only the copy that *has* the statistic is consulted. A feature both copies
+    declare and only one computes is a writer that dropped something, which stays a
+    difference; this catches only the reverse -- a column that was never part of the
+    schema on the side that carries it.
+    """
+    holder = declared_a if feature in mine else declared_b
+    return feature not in holder
+
+
 def compare_stat_blocks(
-    mine: dict, theirs: dict, label: str, result: Finding
+    mine: dict, theirs: dict, label: str, result: Finding,
+    declared_a: set = frozenset(), declared_b: set = frozenset(),
 ) -> None:
     """One ``{feature: {stat: values}}`` pair, bucketed by what explains a difference."""
     for feature in sorted(set(mine) | set(theirs)):
         if feature not in mine or feature not in theirs:
-            result.differences[f"{label}{feature}"] = (
+            bucket = (result.set_aside
+                      if undeclared(feature, mine, declared_a, declared_b)
+                      else result.differences)
+            bucket[f"{label}{feature}"] = (
                 "present" if feature in mine else ABSENT,
                 "present" if feature in theirs else ABSENT,
             )
@@ -435,13 +462,15 @@ def compare_stats_json(rebuilt: Path, delivered: Path) -> Finding:
     result = Finding(
         subject="meta/stats.json",
         reason="ordering features follow the episode and task order; missing "
-               "quantiles are the keys the v2.1 downgrade drops",
+               "quantiles are the keys the v2.1 downgrade drops; a column its own "
+               "info.json does not declare is read by nothing downstream",
     )
     if _absence(rebuilt, delivered, "stats.json", result):
         return result
     mine = meta_json(rebuilt, "stats.json")
     theirs = meta_json(delivered, "stats.json")
-    compare_stat_blocks(mine, theirs, "", result)
+    compare_stat_blocks(mine, theirs, "", result,
+                        declared_features(rebuilt), declared_features(delivered))
     return result
 
 
@@ -471,7 +500,8 @@ def compare_episode_meta(
         subject="meta/episodes.jsonl + meta/episodes_stats.jsonl",
         reason="ordering features follow the episode and task order, which the "
                "episode question already reports; absent quantiles are the five "
-               "keys the v3.0 to v2.1 downgrade drops",
+               "keys the v3.0 to v2.1 downgrade drops; a column its own info.json "
+               "does not declare is read by nothing downstream",
     )
     episodes_a = {e["episode_index"]: e
                   for e in meta_lines(rebuilt, "episodes.jsonl") or []}
@@ -481,6 +511,7 @@ def compare_episode_meta(
                for e in meta_lines(rebuilt, "episodes_stats.jsonl") or []}
     stats_b = {e["episode_index"]: e["stats"]
                for e in meta_lines(delivered, "episodes_stats.jsonl") or []}
+    declared_a, declared_b = declared_features(rebuilt), declared_features(delivered)
 
     # (feature, stat) -> [pairs compared, pairs differing, worst gap, allowed,
     #                     delivered was all zero]
@@ -497,7 +528,10 @@ def compare_episode_meta(
         mine, theirs = stats_a[one], stats_b[other]
         for feature in sorted(set(mine) | set(theirs)):
             if feature not in mine or feature not in theirs:
-                result.differences[f"episodes_stats.jsonl.{feature}"] = (
+                bucket = (result.set_aside
+                          if undeclared(feature, mine, declared_a, declared_b)
+                          else result.differences)
+                bucket[f"episodes_stats.jsonl.{feature}"] = (
                     "present" if feature in mine else ABSENT,
                     "present" if feature in theirs else ABSENT)
                 continue

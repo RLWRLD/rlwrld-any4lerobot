@@ -46,13 +46,33 @@ on an arm64 machine that means an emulated build, which is slow but correct:
 
 ```bash
 REPO=487592470682.dkr.ecr.us-east-1.amazonaws.com/rlwrld/inhouse-services/any4lerobot/node
+FOUNDRY=../rlwrld-foundry            # a checkout at the revision in foundry-cli.pin
 
 aws ecr get-login-password --region us-east-1 \
   | docker login --username AWS --password-stdin "${REPO%%/*}"
 
+git -C "$FOUNDRY" fetch -q origin && git -C "$FOUNDRY" checkout -q "$(cat foundry-cli.pin)"
+
 docker buildx build --platform linux/amd64 --provenance=false \
+  --build-context foundry="$FOUNDRY" \
+  --build-arg FOUNDRY_REVISION="$(git -C "$FOUNDRY" rev-parse HEAD)" \
   -t "$REPO:$(git rev-parse --short HEAD)" --push .
 ```
+
+The **foundry build context** is what puts the `foundry` CLI and its SDK in the image,
+for the delivered copies a comparison is measured against and for publishing a
+preprocessed dataset back. Neither package is on PyPI or in an internal index, so the
+source has to come from a checkout, and the build refuses to proceed unless that
+checkout's revision matches [`foundry-cli.pin`](../../foundry-cli.pin) — which CLI an
+image carries should be a reviewed fact, not whatever the builder had lying around.
+The image records it at `/opt/foundry/REVISION`. Bumping the CLI is an edit to the pin.
+
+**On a build node**, which has no GitHub credentials, both trees arrive through
+`s3://rlwrld-foundry-data/tmp/any4lerobot-build/` — the one prefix
+`rlwrld-any4lerobot-build` is allowed to read, and what it is for. Upload this working
+tree and the pinned foundry packages there, extract them on the node, and point
+`--build-context` at the second. Clear the prefix afterwards; it is a transit, not a
+store.
 
 Tag with the commit, not `latest`. A run should be able to say which image produced
 its output, and `latest` cannot answer that. Pull by digest in anything scheduled:
@@ -88,17 +108,22 @@ replaces, and a node launched that way cannot reach Foundry.
 
 ### Reaching Foundry from a node
 
-The delivered copies come from the Foundry API, and a node has to use the **internal**
-ALB:
+The image sets this already; it is here because the value is the surprising part:
 
 ```bash
-export FOUNDRY_URL=http://internal-rlwrld-foundry-api-425985869.us-east-1.elb.amazonaws.com/api
+FOUNDRY_URL=http://internal-rlwrld-foundry-api-425985869.us-east-1.elb.amazonaws.com/api
+FOUNDRY_HOME_LOCATION=aws-ssot
 ```
 
 `http`, not `https` — the internal ALB has one listener and it is plain HTTP on 80.
+Both values are the ones `rlwrld-foundry`'s own `deploy/agents/targets.yaml` declares
+for this cluster, under `skt`. `FOUNDRY_HOME_LOCATION` decides where an *upload* is
+stored, which matters once preprocessed datasets are published back.
 
 `foundry.internal.rlwrld.ai` does not work from a node despite the name: it resolves
-to the *public* ALB's addresses, which do not hairpin from inside the VPC. The bytes
+to the *public* ALB's addresses, which do not hairpin from inside the VPC. Measured on
+a node: the internal ALB answers `HTTP 200` in 27 ms, the public name times out after
+15 s. The bytes
 do not cross either ALB in any case — Foundry answers with presigned S3 URLs, and the
 VPC has an S3 gateway endpoint, so the download is S3 to instance and never leaves the
 network.

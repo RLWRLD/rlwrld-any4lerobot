@@ -7,7 +7,7 @@
 # source directory missing whole modules, silently. Layers are content-addressed: a
 # damaged one fails to pull rather than booting and misbehaving four hours later.
 #
-# Build:  docker build -t any4lerobot .
+# Build:  see orchestrator/bootstrap/README.md -- it needs a foundry build context
 # Run:    docker run --rm -e DATASETS="taco_play toto" -v /scratch:/scratch any4lerobot
 
 FROM python:3.12-slim-bookworm
@@ -76,15 +76,61 @@ RUN --mount=type=cache,target=/root/.cache/uv \
  && if [ -n "$orphans" ]; then uv pip uninstall --python /app/.venv $orphans; fi \
  && /app/.venv/bin/python -c "import torch, torchvision; print('torch', torch.__version__)"
 
+# The Foundry CLI and SDK, for the delivered copies a comparison is measured against
+# and for publishing a preprocessed dataset back. Not on PyPI and not in an internal
+# index, so the source arrives as a named build context:
+#
+#   docker buildx build --build-context foundry=../rlwrld-foundry \
+#     --build-arg FOUNDRY_REVISION=$(git -C ../rlwrld-foundry rev-parse HEAD) ...
+#
+# The revision is checked against foundry-cli.pin rather than trusted, so which CLI
+# an image carries is a reviewed fact and not whatever the builder happened to have
+# checked out. Bumping it is an edit to that file.
+#
+# Installed the way foundry's own CI installs it: the locked dependency set, then each
+# package with --no-deps.
+#
+# The workspace root pyproject.toml is copied with them and the packages/ path is kept,
+# which is not tidiness. foundry-cli's pyproject says
+# `foundry-client = { workspace = true }`, and uv parses that whatever it is asked to
+# do -- --no-deps does not skip it. Without a workspace root above the two packages the
+# build fails with "references a workspace ... but is not a workspace member". The root
+# globs `packages/*`, so a copy holding only these two resolves to exactly them.
+ARG FOUNDRY_REVISION
+COPY foundry-cli.pin /tmp/foundry-cli.pin
+COPY --from=foundry pyproject.toml /tmp/foundry/pyproject.toml
+COPY --from=foundry packages/foundry-cli /tmp/foundry/packages/foundry-cli
+COPY --from=foundry packages/foundry-client /tmp/foundry/packages/foundry-client
+RUN --mount=type=cache,target=/root/.cache/uv \
+    pinned=$(tr -d " \t\r\n" < /tmp/foundry-cli.pin) \
+ && if [ "$FOUNDRY_REVISION" != "$pinned" ]; then \
+      echo "FOUNDRY_REVISION=${FOUNDRY_REVISION:-(unset)} does not match foundry-cli.pin=$pinned" >&2; \
+      exit 1; \
+    fi \
+ && uv pip install --python /app/.venv \
+      --requirement /tmp/foundry/packages/foundry-cli/requirements.lock \
+ && uv pip install --python /app/.venv --no-deps /tmp/foundry/packages/foundry-client \
+ && uv pip install --python /app/.venv --no-deps /tmp/foundry/packages/foundry-cli \
+ && mkdir -p /opt/foundry && echo "$FOUNDRY_REVISION" > /opt/foundry/REVISION \
+ && rm -rf /tmp/foundry /tmp/foundry-cli.pin \
+ && /app/.venv/bin/foundry --version
+
 COPY . .
 
 # Where the orchestrator stages sources and writes output. Mount a volume over it --
 # a node handling taco_play alone needs 48 GB, which is not container-sized.
+# FOUNDRY_URL is the *internal* ALB. The name foundry.internal.rlwrld.ai resolves to
+# the public ALB's addresses, which do not hairpin from inside the VPC -- a node using
+# it gets a 15-second timeout. Both values are the ones rlwrld-foundry's own
+# deploy/agents/targets.yaml declares for this cluster, under `skt`. http, not https:
+# the internal ALB has one listener and it is plain HTTP on 80.
 ENV SCRATCH=/scratch \
     REPO_DIR=/app \
     UV=/usr/local/bin/uv \
     PATH=/app/.venv/bin:$PATH \
-    PYTHON=python
+    PYTHON=python \
+    FOUNDRY_URL=http://internal-rlwrld-foundry-api-425985869.us-east-1.elb.amazonaws.com/api \
+    FOUNDRY_HOME_LOCATION=aws-ssot
 RUN mkdir -p /scratch/raw /scratch/out /scratch/state /scratch/log /scratch/delivered
 
 # preflight.sh looks for this before believing the machine was prepared.
