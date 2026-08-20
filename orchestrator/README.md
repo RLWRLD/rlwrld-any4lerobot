@@ -7,7 +7,17 @@ python -m orchestrator run     --env ec2                  # all of it
 python -m orchestrator fetch   --env ec2                  # one stage
 python -m orchestrator build   --env ec2 --dataset droid  # one dataset
 python -m orchestrator status  --env ec2                  # how far it got
+python -m orchestrator timings --env ec2                  # how long it took
 ```
+
+`timings` measures nothing. Every step already records `started`, `finished` and, for
+`fetch`, `bytes` -- a record that cannot say when it ran cannot answer whether a re-run
+got slower -- so the report only reads them, and works on a run nobody was watching.
+`--json` dumps the records instead, for aggregating several nodes into one table.
+
+Only `fetch` gets a rate. It is the S3-to-instance leg and the one stage whose work is a
+known number of bytes; `build` is reported per episode, because how many frames the
+converter was handed is a property of the source and not of the record.
 
 Every step records what it did, so a re-run picks up where the last one stopped and
 skips what is already done. That is also what lets a stage be run by hand without

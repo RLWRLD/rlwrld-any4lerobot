@@ -369,3 +369,71 @@ def test_outcomes_carry_the_dataset_and_step_they_describe(env, steps):
 
     assert isinstance(outcome, Outcome)
     assert (outcome.dataset, outcome.step) == ("droid", "fetch")
+
+
+class TestTimings:
+    """Durations come out of the records rather than out of a wrapper script.
+
+    Every step already writes `started`, `finished` and, for fetch, `bytes` -- a
+    record that cannot say when it ran cannot answer whether a re-run got slower.
+    The report only reads them, which is why it works on records written by a run
+    nobody was watching.
+    """
+
+    def _steps(self, tmp_path):
+        from orchestrator.steps import Record, Steps
+
+        steps = Steps(tmp_path)
+        steps.write(Record(
+            step="fetch", dataset="viola", status="ok",
+            started="2026-08-20T00:00:00+00:00",
+            finished="2026-08-20T00:01:40+00:00",   # 100s
+            bytes=11_200_000_000,                    # 112 MB/s
+        ))
+        steps.write(Record(
+            step="build", dataset="viola", status="ok",
+            started="2026-08-20T00:02:00+00:00",
+            finished="2026-08-20T00:07:00+00:00",   # 300s
+        ))
+        return steps
+
+    def test_the_fetch_rate_is_bytes_over_its_own_seconds(self, tmp_path):
+        from orchestrator.__main__ import render_timings
+
+        class Spec:
+            id = "viola"
+            delivered_episodes = 135
+
+        out = render_timings(self._steps(tmp_path), [Spec()])
+        assert "112.0" in out, out
+        assert "11.2 GB" in out, out
+
+    def test_build_is_reported_per_episode(self, tmp_path):
+        from orchestrator.__main__ import render_timings
+
+        class Spec:
+            id = "viola"
+            delivered_episodes = 135
+
+        out = render_timings(self._steps(tmp_path), [Spec()])
+        assert "0.45" in out, out          # 135 episodes / 300s
+
+    def test_a_step_that_never_ran_is_a_dash_not_a_zero(self, tmp_path):
+        """A missing publish must not read as an instant one."""
+        from orchestrator.__main__ import render_timings
+
+        class Spec:
+            id = "viola"
+            delivered_episodes = 135
+
+        out = render_timings(self._steps(tmp_path), [Spec()])
+        assert out.rstrip().splitlines()[2].rstrip().endswith("-"), out
+
+    def test_a_record_missing_a_stamp_yields_no_duration(self, tmp_path):
+        """Records written before `started` existed must not crash the report."""
+        from orchestrator.__main__ import _seconds
+        from orchestrator.steps import Record
+
+        assert _seconds(Record(step="fetch", dataset="v", status="ok",
+                               finished="2026-08-20T00:00:00+00:00")) is None
+        assert _seconds(None) is None
