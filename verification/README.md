@@ -376,7 +376,8 @@ other, which is the failure the declared value was introduced to prevent.
 
 ### Verified: the threshold improves both sides, and it is not a trade
 
-Run end-to-end on image `node:by-scale` over four datasets chosen to straddle 1.3x —
+Run end-to-end on an image built from `85a9252` over four datasets chosen to
+straddle 1.3x —
 `taco_play` 1.21x and `stanford_hydra` 1.25x below it, `austin_sirius` 1.31x and
 `dlr_edan` 1.94x above:
 
