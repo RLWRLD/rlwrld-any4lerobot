@@ -285,3 +285,50 @@ done < <(awk -F'\t' 'NR>1 {print $1, $3}' verification/addresses.tsv)
 `</dev/null` is not decoration: `kubectl cp` reads standard input, and without it the
 first copy swallows the rest of the loop's input. Under zsh, name the loop variable
 anything but `path` -- `$path` is tied to `$PATH`, and assigning to it empties it.
+
+## A verification run needs `--keep`
+
+The orchestrator deletes an output once it has been published, which is correct for a
+production run and fatal for a verification one — the first attempt on austin_buds ran
+`fetch build publish` and then had nothing left to compare:
+
+```
+rebuilt dataset not found: /scratch/out/austin_buds_dataset_converted_externally_to_rlds
+```
+
+So a node that is going to compare passes `--keep`, or compares between `build` and
+`publish`. This is not a bug to fix in the orchestrator: reclaiming disk is what lets a
+27 TB pass run at all, and verification is deliberately not one of its steps.
+
+## What the records say so far
+
+| dataset | episodes | verdict | why |
+|---|--:|---|---|
+| `cmu_stretch` | 135/135 | FAIL | delivered image `std` is zero in every episode |
+| `austin_buds_…_rlds` | 50/50 | FAIL | same, both cameras; plus an undeclared `absolute_action` column |
+
+Both reproduce their data exactly — every episode byte-identical on state and action,
+every sampled episode identical, distributions agreeing to 1e-15. Both fail on what the
+*delivered* copy contains.
+
+### The delivered image `std` is zero
+
+Every delivered episode of both datasets records image `std` as exactly `[0,0,0]` where
+the pixels have a spread of 0.22 to 0.29. Two datasets and three cameras in, this looks
+like a property of how the collection was made rather than one bad run. It is reported
+as a difference with its cause named, not tolerated: the rebuild computed the statistic
+and the delivered copy did not.
+
+### `absolute_action`, and why the rebuild has none
+
+austin_buds' delivered parquet carries an eighth column its own `meta/info.json` does
+not declare. It is real derived data — `state + action`, the delta action resolved to an
+absolute pose, matching to the last digit on every column but the gripper — and it is in
+`meta/stats.json` too. The RLDS source has no such field, so nothing in the source says
+to build it.
+
+Undeclared is the load-bearing word. A LeRobot loader builds its feature set from
+`info.json`, so a column absent from there is not read by anything downstream, which is
+also why this is a difference to decide about rather than a hole to fill. Of the three
+delivered copies examined it appears in one, so it is not a collection-wide convention
+either.
