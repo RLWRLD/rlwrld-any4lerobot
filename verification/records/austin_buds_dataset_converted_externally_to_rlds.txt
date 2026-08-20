@@ -1,0 +1,83 @@
+austin_buds_dataset_converted_externally_to_rlds
+
+1  declaration    [FAIL]  everything under meta/ that needs no pairing
+     [ ok ] meta/info.json
+     every field both copies declare is the same on both sides
+     one-sided    16 field(s); only one copy declares them, so there is nothing to compare, and they are not judged here
+                  features.observation.images.image.info.is_depth_map False vs '(absent)'
+                  features.observation.images.image.info.video.crf 30 vs '(absent)'
+                  features.observation.images.image.info.video.extra_options {} vs '(absent)'
+                  features.observation.images.image.info.video.fast_decode 0 vs '(absent)'
+                  features.observation.images.image.info.video.g 2 vs '(absent)'
+                  features.observation.images.image.info.video.is_depth_map '(absent)' vs False
+                  features.observation.images.image.info.video.preset 12 vs '(absent)'
+                  features.observation.images.image.info.video.video_backend 'pyav' vs '(absent)'
+                  features.observation.images.wrist_image.info.is_depth_map False vs '(absent)'
+                  features.observation.images.wrist_image.info.video.crf 30 vs '(absent)'
+                  features.observation.images.wrist_image.info.video.extra_options {} vs '(absent)'
+                  features.observation.images.wrist_image.info.video.fast_decode 0 vs '(absent)'
+                  features.observation.images.wrist_image.info.video.g 2 vs '(absent)'
+                  features.observation.images.wrist_image.info.video.is_depth_map '(absent)' vs False
+                  features.observation.images.wrist_image.info.video.preset 12 vs '(absent)'
+                  features.observation.images.wrist_image.info.video.video_backend 'pyav' vs '(absent)'
+     [ ok ] meta/
+         1 set aside -- excluded from the comparison by decision
+           relative_stats.json                          'not compared' vs 'not compared'
+     [ ok ] meta/tasks.jsonl
+     [ ok ] meta/modality.json
+     [FAIL] meta/stats.json
+       ! absolute_action                                '(absent)' vs 'present'
+       ! observation.images.image.std                   'differs by 0.2885' vs 'allowed 0.05'
+       ! observation.images.wrist_image.std             'differs by 0.2204' vs 'allowed 0.05'
+         16 set aside -- ordering features follow the episode and task order; missing quantiles are the keys the v2.1 downgrade drops
+           episode_index.max                            'differs by 25' vs 'allowed 1e-06'
+           episode_index.mean                           'differs by 12.47' vs 'allowed 1e-06'
+           episode_index.q01                            'differs by 12.47' vs 'allowed 1e-06'
+           episode_index.q10                            'differs by 12.47' vs 'allowed 1e-06'
+           episode_index.q50                            'differs by 12.47' vs 'allowed 1e-06'
+           episode_index.q90                            'differs by 12.47' vs 'allowed 1e-06'
+           episode_index.q99                            'differs by 12.47' vs 'allowed 1e-06'
+           episode_index.std                            'differs by 7.122' vs 'allowed 1e-06'
+           index.max                                    'differs by 1.684e+04' vs 'allowed 1e-06'
+           index.mean                                   'differs by 8527' vs 'allowed 1e-06'
+           index.q01                                    'differs by 8527' vs 'allowed 1e-06'
+           index.q10                                    'differs by 8527' vs 'allowed 1e-06'
+           ... and 4 more
+
+2  episodes       [ -- ]  counted, never failed -- which episodes a rebuild has is decided elsewhere
+     rebuilt          50 episodes     34,112 rows
+     delivered        50 episodes     34,112 rows
+     reproduced       50  (50 identical, 0 agreeing on their first 8 rows only)
+     unmatched         0 of the delivered episodes have no counterpart; 0 of the rebuild's do not either
+     reordered        50 of 50 paired episodes carry a different index
+
+3  sample         [FAIL]  the episodes that are there, compared in full
+     compared         50 of 50 paired episodes, half from each end of the index range
+     identical        50
+     video observation.images.image     50 files,   1,517,729B each against 50 / 1,536,317B (0.99x)
+     video observation.images.wrist_image     50 files,     279,863B each against 50 / 288,462B (0.97x)
+     prompts          50 paired episodes checked; all agree
+     [FAIL] meta/episodes.jsonl + meta/episodes_stats.jsonl
+       ! episodes_stats.jsonl.absolute_action           '(absent)' vs 'present'
+       ! episodes_stats.jsonl.observation.images.image.std '50 of 50 pairs differ, worst 0.2937' vs 'the delivered copy records zero in every episode'
+       ! episodes_stats.jsonl.observation.images.wrist_image.std '50 of 50 pairs differ, worst 0.2701' vs 'the delivered copy records zero in every episode'
+         16 set aside -- ordering features follow the episode and task order, which the episode question already reports; absent quantiles are the five keys the v3.0 to v2.1 downgrade drops
+           episodes_stats.jsonl.episode_index.max       '50 of 50 pairs differ, worst 45' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.mean      '50 of 50 pairs differ, worst 45' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.min       '50 of 50 pairs differ, worst 45' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q01       '50 of 50 pairs differ, worst 45' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q10       '50 of 50 pairs differ, worst 45' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q50       '50 of 50 pairs differ, worst 45' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q90       '50 of 50 pairs differ, worst 45' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q99       '50 of 50 pairs differ, worst 45' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.max               '50 of 50 pairs differ, worst 3.07e+04' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.mean              '50 of 50 pairs differ, worst 3.07e+04' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.min               '50 of 50 pairs differ, worst 3.07e+04' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.q01               '50 of 50 pairs differ, worst 3.07e+04' vs 'allowed 1e-06'
+           ... and 4 more
+
+4  distributions  [ ok ]  max difference per column, as a fraction of its range
+     every episode        action 7.5e-16   observation.state 6.5e-15
+     the shared ones      action 7.5e-16   observation.state 6.5e-15
+
+verdict          [FAIL]  meta/stats.json differs; per-episode metadata differs
