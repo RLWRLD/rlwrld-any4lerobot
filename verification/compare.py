@@ -1934,11 +1934,24 @@ def as_dict(
             "same_length_but_differing": p.same_length,
             "reordered": p.moved,
             "worst_row_delta": p.worst_row_delta,
-            # the index map itself, because it is the only record of which rebuilt
+            # The index map itself, because it is the only record of which rebuilt
             # episode was compared against which delivered one -- and without it a
-            # finding about "episode 12" cannot be looked up again
-            "pairs": {str(k): v for k, v in sorted(p.pairs.items())},
-            "row_deltas": {str(k): v for k, v in sorted(p.row_deltas.items())},
+            # finding about "episode 12" cannot be looked up again.
+            #
+            # Whole, and it has to be: openx2lerobot writes in tfds read order, so
+            # essentially every episode lands somewhere else. 57,784 of the 57,804
+            # pairs recorded so far are at a different index, which leaves nothing
+            # redundant to drop -- keeping "only the ones that disagree" would keep
+            # all but twenty. Two parallel arrays, one line each, rather than one
+            # line per pair.
+            "pairs": {
+                "rebuilt": Inline(one for one, _ in sorted(p.pairs.items())),
+                "delivered": Inline(other for _, other in sorted(p.pairs.items())),
+            },
+            "row_deltas": {
+                "episode": Inline(one for one, _ in sorted(p.row_deltas.items())),
+                "delta": Inline(delta for _, delta in sorted(p.row_deltas.items())),
+            },
             "rebuilt_only": p.rebuilt_only,
             "delivered_only": p.delivered_only,
         },
@@ -1967,6 +1980,49 @@ def as_dict(
     })
 
 
+class Inline(list):
+    """A list the record writer keeps on one line.
+
+    ``indent=2`` puts every element of every list on its own line, which is what a
+    handful of findings wants and the wrong shape for a per-episode index map. bc_z's
+    map is 39,350 entries: one line each made its record 42,009 lines, of which 39,352
+    were the map, and a diff no reviewer can read.
+
+    Shortening the map is not an option -- see the note on ``pairs`` for why there is
+    nothing in it to drop -- so what changes is the shape and not the content.
+    """
+
+
+_INLINE = "@@inline:"
+
+
+def _mark_inline(value: Any, collected: list[str]) -> Any:
+    """Swap each ``Inline`` for a placeholder, keeping its compact rendering aside."""
+    if isinstance(value, Inline):
+        collected.append(json.dumps(value, separators=(",", ":")))
+        return f"{_INLINE}{len(collected) - 1}@@"
+    if isinstance(value, dict):
+        return {k: _mark_inline(v, collected) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_mark_inline(v, collected) for v in value]
+    return value
+
+
+def render_report(payload: dict[str, Any]) -> str:
+    """The JSON text a record is written as, indented except for the index maps.
+
+    Two passes because ``json`` has no per-node indent: the placeholders go in as
+    strings, the document is indented, and each placeholder is then swapped for the
+    compact array it stood for. The result is ordinary JSON -- a reader sees arrays,
+    not encoded text -- so nothing downstream has to know this happened.
+    """
+    collected: list[str] = []
+    text = json.dumps(_mark_inline(payload, collected), indent=2, sort_keys=False)
+    for index, compact in enumerate(collected):
+        text = text.replace(f'"{_INLINE}{index}@@"', compact)
+    return text + "\n"
+
+
 def write_report(payload: dict[str, Any], text: str, into: Path) -> list[Path]:
     """One JSON and one text file per dataset, named after it.
 
@@ -1979,7 +2035,7 @@ def write_report(payload: dict[str, Any], text: str, into: Path) -> list[Path]:
     into.mkdir(parents=True, exist_ok=True)
     name = payload["dataset"]
     paths = [into / f"{name}.json", into / f"{name}.txt"]
-    paths[0].write_text(json.dumps(payload, indent=2, sort_keys=False) + "\n")
+    paths[0].write_text(render_report(payload))
     paths[1].write_text(text + "\n")
     return paths
 

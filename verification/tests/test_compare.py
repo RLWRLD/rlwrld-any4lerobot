@@ -1030,9 +1030,38 @@ class TestReportFile:
         assert recorded["sample_episodes"] == 2
 
     def test_the_index_map_is_kept(self, spec, tmp_path):
-        """Without it, a finding about 'episode 12' cannot be looked up again."""
+        """Without it, a finding about 'episode 12' cannot be looked up again.
+
+        Whole, not summarised: openx2lerobot writes in tfds read order, so 57,784 of
+        the 57,804 pairs recorded so far sit at a different index and there is nothing
+        in the map that agreeing pairs could be dropped from."""
         assert self._payload(spec, tmp_path)["episodes"]["pairs"] == {
-            "0": 0, "1": 1, "2": 2, "3": 3}
+            "rebuilt": [0, 1, 2, 3], "delivered": [0, 1, 2, 3]}
+
+    def test_the_index_map_costs_one_line_and_not_one_per_episode(
+        self, spec, tmp_path
+    ):
+        """bc_z's map is 39,350 pairs. A line each made its record 42,009 lines and
+        40% of a pull request, and the map is the part of a record no reviewer reads
+        and every later lookup needs -- so it stays, on one line per side."""
+        def lines(episodes: int) -> int:
+            payload = self._payload(spec, tmp_path)
+            payload["episodes"]["pairs"] = {
+                "rebuilt": compare.Inline(range(episodes)),
+                "delivered": compare.Inline(range(episodes)),
+            }
+            return len(compare.render_report(payload).splitlines())
+
+        # The map's cost in lines does not depend on how many episodes it maps, which
+        # is the property that matters: the datasets still to run are larger than bc_z.
+        assert lines(40_000) == lines(4)
+
+        rendered = compare.render_report(
+            {"pairs": {"rebuilt": compare.Inline(range(4000))}}
+        )
+        assert '"rebuilt": [0,1,2,3,' in rendered
+        # and it is still ordinary JSON: a reader sees arrays, not encoded text
+        assert json.loads(rendered)["pairs"]["rebuilt"][3999] == 3999
 
     def test_the_statistics_are_kept_and_not_only_the_gap(self, spec, tmp_path):
         """The datasets are far too large to keep beside the record, so a number
