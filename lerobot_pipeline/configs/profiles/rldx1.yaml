@@ -41,13 +41,26 @@ video:
     # profile: it decides what the output looks like, so it should be a declared value
     # and not a default nobody chose.
     #
-    # It is only visible on a dataset that actually downscales, which is why it went
-    # unnoticed. cmu_stretch and austin_buds are 128x128 at the source, already the
-    # target size, so the resize composes to nothing and their video lands within 1-2%
-    # of the delivered files. dlr_edan is 360x640 down to 192x320 and came out 0.79x,
-    # keeping 78% of the delivered high-frequency detail: a softer picture costs the
-    # encoder less. See verification/records for the measurement.
-    filter: bicubic
+    # It is only visible on a dataset that actually downscales, which is why bicubic
+    # went unnoticed for so long: cmu_stretch and austin_buds are 128x128 at the source,
+    # already the target size, so the resize composes to nothing.
+    #
+    # sinc, measured. Every filter, rebuilt through the real pipeline, compared as total
+    # video bytes per camera against the delivered copies -- see
+    # verification/records/resize-filter-sweep.md:
+    #
+    #                dlr_edan 2.0x   ucsd 2.5x   austin_sirius 1.31x   worst
+    #   bicubic          0.811         0.885        0.985 / 1.019      18.9%  FAILS
+    #   lanczos          0.857         0.913        1.021 / 1.053      14.3%
+    #   sinc             0.959         0.988        1.100 / 1.088      10.0%
+    #
+    # No filter is flat across scale factors -- every one of them comes out larger the
+    # gentler the downscale, which is the offset resize_frame's docstring already
+    # described and which picking a filter cannot remove. So the choice is which one
+    # stays inside SIZE_TOLERANCE everywhere, and only sinc does it with room: 10.0%
+    # against a 15% bound, where bicubic misses dlr_edan outright and lanczos clears it
+    # by 0.7 points.
+    filter: sinc
   # No encoding, on purpose. The collection was not delivered in one: 19 of the
   # datasets carry LeRobot's own AV1 and 17 carry the H.264 only ffmpeg produces,
   # and which one a dataset is belongs in that dataset's spec, where it is a record

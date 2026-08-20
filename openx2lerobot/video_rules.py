@@ -146,19 +146,21 @@ def resize_frame(frame, shape: tuple[int, int], filter: str | None = None):
     prefilter, so it keeps detail swscale would have low-passed away, and the encoder
     pays for it.
 
-    Bicubic within swscale is measured too, not assumed. The target is the 0.96-1.00x
-    that cameras which are *not* resized come out at, that being the encoder build
-    difference on its own:
+    Which resampler is the profile's to say -- ``video.resize.filter`` -- and this
+    reads it rather than naming one, so the value cannot disagree with the one the
+    transform stage puts in its ``scale`` filter chain.
 
-        filter            ucsd (2.5x down)   taco_play (1.2x down)
-        swscale BICUBIC         0.86           1.01 / 1.04    64/64 episodes
-        swscale SINC            0.97           1.10 / 1.15    14/64
-        cv2 INTER_CUBIC         1.03           1.13 / 1.14    46/64
+    The measurement behind the profile's default lives in
+    ``verification/records/resize-filter-sweep.md``. In short: no filter is flat across
+    scale factors -- every one comes out larger the gentler the downscale, and that
+    offset survives whichever is chosen -- so the question is which stays inside
+    ``SIZE_TOLERANCE`` everywhere. sinc does, at 10.0% against a 15% bound.
 
-    No filter hits the target on both, and the reason is not the filter: the gentler
-    the downscale the larger everything comes out, and that offset survives whichever
-    one is chosen. So the question is which stays inside tolerance everywhere, and
-    only bicubic does -- which is also the one ffmpeg would have used.
+    An earlier table here reached the opposite conclusion and named bicubic. Two things
+    were wrong with it. It measured per-episode ratios paired by filename, and the
+    rebuild does not write episodes in the delivered order, so most of what it compared
+    was two different episodes; and it never tried lanczos. Redone on total bytes per
+    camera, bicubic misses dlr_edan by 18.9% against a 15% bound.
     """
     import av
     from av.video.reformatter import Interpolation

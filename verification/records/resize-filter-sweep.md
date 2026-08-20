@@ -47,16 +47,60 @@ wrong filter first. Detail and encoded size move together but not tightly enough
 choose on; the size metric is the one that decides the comparison, so it is the one
 that decides the filter.
 
-## What is still open
+## The gentle end
 
-The gentle end. The old table's other dataset, taco_play at 1.2x down, is where bicubic
-looked best (1.01/1.04) and sinc overshot (1.10/1.15) -- and those numbers may carry the
-same filename-pairing flaw as my first attempt, since taco_play is reordered too. If
-they hold, no single filter fits both ends and the choice becomes a per-scale rule
-rather than one value.
+`austin_sirius` at 1.31x down, which is **taco_play's `rgb_gripper` geometry exactly**
+(84x84 to 64x64) at a sixth of taco_play's episodes:
 
-`stanford_hydra` at 1.25x down is the cheap probe for that regime: 570 episodes against
-taco_play's 3,242, near the same scale factor, and two cameras rather than one.
+| filter | image | wrist_image |
+| --- | --: | --: |
+| **bicubic** | **0.985** | **1.019** |
+| lanczos | 1.021 | 1.053 |
+| sinc | 1.100 | 1.088 |
+
+The ranking inverts. Bicubic is nearly exact here and sinc is 9-10% over -- which
+matches the old table's taco_play sinc figures (1.10/1.15) closely enough to say that
+row was sound too.
+
+`stanford_hydra` at 1.25x was tried first and abandoned: 2.1 GB of delivered video made
+each build a two-hour job on the original node, and after moving to a larger one the
+build **hung** -- three live processes at load 0.00, output stalled at 2178 MB with the
+aggregation never starting. Worth a look on its own; not worth blocking a filter
+decision on when austin_sirius answers the same question in a tenth of the pixels.
+
+## The decision: sinc
+
+No filter is flat across scale factors. Every one comes out larger the gentler the
+downscale, which is the offset `resize_frame`'s docstring already described, and
+picking a filter does not remove it -- it only slides the whole curve. So the question
+is not which filter is *right* but which one keeps every dataset inside
+`SIZE_TOLERANCE`, which is 15%.
+
+| filter | dlr_edan 2.0x | ucsd 2.5x | sirius 1.31x | worst deviation |
+| --- | --: | --: | --: | --: |
+| bicubic | 0.811 | 0.885 | 0.985 / 1.019 | **18.9% -- fails dlr_edan** |
+| lanczos | 0.857 | 0.913 | 1.021 / 1.053 | 14.3% -- passes by 0.7 points |
+| **sinc** | **0.959** | **0.988** | 1.100 / 1.088 | **10.0%** |
+
+Sinc, and not because it wins the most columns -- bicubic wins the gentle ones outright.
+Because its curve is the flattest of the three, so it is the only one with room at both
+ends. Lanczos clears dlr_edan by 0.7 points, which is not a margin; one dataset at a
+slightly stronger downscale would take it out, and the collection has four more cameras
+at 2.5x.
+
+That the residual offset survives every filter says the remaining difference is not the
+resampler -- most likely the encoder build, which is the same thing that puts unresized
+datasets at 0.98-0.99 rather than 1.00. Nothing here can close that, and a filter chosen
+to hide it would be fitting noise.
+
+### Scope of the change
+
+Eight cameras across five datasets resize at all; the rest of the collection is already
+at its target size and is untouched by this. The five: `dlr_edan` (2.0x), `ucsd_kitchen`,
+`berkeley_autolab_ur5` (2 cameras), `toto`, `roboturk` (all 2.5x), plus the gentle three
+`taco_play` (2), `stanford_hydra` (2) and `austin_sirius` (2). Datasets already verified
+under bicubic that do **not** resize -- cmu_stretch, austin_buds -- produce identical
+output and need no rebuild.
 
 ## Incidental: `workers: -1` overcommits on a 2 GB/core node
 

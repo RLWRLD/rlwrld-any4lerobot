@@ -159,7 +159,7 @@ def test_the_resize_reaches_the_converter_with_the_profile_s_parameters():
         "type": "resize_preserve_aspect_area",
         "max_area": 65536,
         "multiple": 32,
-        "filter": "bicubic",
+        "filter": "sinc",
     }
 
 
@@ -270,9 +270,10 @@ class TestResizeFilter:
         plan = step.plan((360, 640))
         assert any("flags=lanczos" in f for f in plan.filters), plan.filters
 
-    def test_the_default_is_what_shipped(self):
-        """bicubic, so declaring the key changes no output. ffmpeg's `scale` defaults
-        to it and video_rules asked PyAV for it by name."""
+    def test_the_step_default_is_libswscale_s_own(self):
+        """A step built with no profile behind it behaves like plain ffmpeg, whose
+        `scale` defaults to bicubic. What the collection is built with is a separate
+        question, answered by the profile below."""
         from lerobot_pipeline.steps.resize import ResizePreserveAspectArea
 
         plan = ResizePreserveAspectArea(max_area=65536, multiple=32).plan((360, 640))
@@ -295,15 +296,17 @@ class TestResizeFilter:
 
         assert ResizePreserveAspectArea(filter="lanczos").plan((128, 128)) is None
 
-    def test_the_profile_declares_it(self):
-        """Reading it off the shipped profile, not a fixture -- the point of the
-        change is that the collection's own convention names the resampler."""
+    def test_the_profile_declares_the_measured_filter(self):
+        """Read off the shipped profile, not a fixture. sinc is the only filter that
+        stays inside SIZE_TOLERANCE at every scale factor in the collection --
+        0.959 at 2.0x down and 1.100 at 1.31x, against a 15% bound. bicubic misses
+        dlr_edan by 18.9%. See verification/records/resize-filter-sweep.md."""
         import yaml
 
         root = Path(__file__).resolve().parents[2]
         profile = yaml.safe_load(
             (root / "lerobot_pipeline/configs/profiles/rldx1.yaml").read_text())
-        assert profile["video"]["resize"]["filter"] == "bicubic"
+        assert profile["video"]["resize"]["filter"] == "sinc"
 
     def test_both_paths_read_one_declaration(self):
         """openx2lerobot's resize_filter and the transform stage's scale filter must
