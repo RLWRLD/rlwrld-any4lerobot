@@ -1,6 +1,6 @@
 {
   "dataset": "austin_buds_dataset_converted_externally_to_rlds",
-  "measured_at": "2026-08-20T01:48:31+00:00",
+  "measured_at": "2026-08-20T05:54:17+00:00",
   "rebuilt": "/scratch/out/austin_buds_dataset_converted_externally_to_rlds",
   "delivered": "/scratch/delivered_tree/austin_buds_dataset_converted_externally_to_rlds",
   "settings": {
@@ -145,12 +145,8 @@
       "subject": "meta/stats.json",
       "agree": false,
       "absent": [],
-      "reason": "ordering features follow the episode and task order; missing quantiles are the keys the v2.1 downgrade drops",
+      "reason": "ordering features follow the episode and task order; missing quantiles are the keys the v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream",
       "differences": {
-        "absolute_action": [
-          "(absent)",
-          "present"
-        ],
         "observation.images.image.std": [
           "differs by 0.2885",
           "allowed 0.05"
@@ -161,6 +157,10 @@
         ]
       },
       "set_aside": {
+        "absolute_action": [
+          "(absent)",
+          "present"
+        ],
         "episode_index.max": [
           "differs by 25",
           "allowed 1e-06"
@@ -231,12 +231,8 @@
       "subject": "meta/episodes.jsonl + meta/episodes_stats.jsonl",
       "agree": false,
       "absent": [],
-      "reason": "ordering features follow the episode and task order, which the episode question already reports; absent quantiles are the five keys the v3.0 to v2.1 downgrade drops",
+      "reason": "ordering features follow the episode and task order, which the episode question already reports; absent quantiles are the five keys the v3.0 to v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream",
       "differences": {
-        "episodes_stats.jsonl.absolute_action": [
-          "(absent)",
-          "present"
-        ],
         "episodes_stats.jsonl.observation.images.image.std": [
           "50 of 50 pairs differ, worst 0.2937",
           "the delivered copy records zero in every episode"
@@ -247,6 +243,10 @@
         ]
       },
       "set_aside": {
+        "episodes_stats.jsonl.absolute_action": [
+          "(absent)",
+          "present"
+        ],
         "episodes_stats.jsonl.episode_index.max": [
           "50 of 50 pairs differ, worst 45",
           "allowed 1e-06"
@@ -325,58 +325,13 @@
     "reordered": 50,
     "worst_row_delta": 0,
     "pairs": {
-      "0": 32,
-      "1": 36,
-      "2": 47,
-      "3": 35,
-      "4": 26,
-      "5": 12,
-      "6": 2,
-      "7": 43,
-      "8": 33,
-      "9": 42,
-      "10": 28,
-      "11": 46,
-      "12": 8,
-      "13": 18,
-      "14": 9,
-      "15": 20,
-      "16": 5,
-      "17": 30,
-      "18": 11,
-      "19": 7,
-      "20": 40,
-      "21": 24,
-      "22": 29,
-      "23": 34,
-      "24": 38,
-      "25": 10,
-      "26": 15,
-      "27": 13,
-      "28": 1,
-      "29": 27,
-      "30": 37,
-      "31": 23,
-      "32": 21,
-      "33": 4,
-      "34": 14,
-      "35": 19,
-      "36": 17,
-      "37": 49,
-      "38": 45,
-      "39": 0,
-      "40": 6,
-      "41": 31,
-      "42": 41,
-      "43": 44,
-      "44": 39,
-      "45": 25,
-      "46": 48,
-      "47": 3,
-      "48": 16,
-      "49": 22
+      "rebuilt": [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49],
+      "delivered": [32,36,47,35,26,12,2,43,33,42,28,46,8,18,9,20,5,30,11,7,40,24,29,34,38,10,15,13,1,27,37,23,21,4,14,19,17,49,45,0,6,31,41,44,39,25,48,3,16,22]
     },
-    "row_deltas": {},
+    "row_deltas": {
+      "episode": [],
+      "delta": []
+    },
     "rebuilt_only": [],
     "delivered_only": []
   },

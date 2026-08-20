@@ -1,0 +1,2582 @@
+{
+  "dataset": "jaco_play",
+  "measured_at": "2026-08-20T08:17:08+00:00",
+  "rebuilt": "/scratch/out/jaco_play",
+  "delivered": "/scratch/delivered_tree/jaco_play",
+  "settings": {
+    "sample_episodes": 64,
+    "row_tolerance": 2,
+    "video_checked": true,
+    "size_tolerance": 0.15,
+    "pixel_agreement": 0.98,
+    "pixel_frames": 6,
+    "distribution_tolerance": 1e-06,
+    "prefix_rows": 8,
+    "gop_probe_frames": 320,
+    "distribution_stats": [
+      "mean",
+      "std",
+      "min",
+      "max",
+      "q01",
+      "q50",
+      "q99"
+    ],
+    "count_fields": [
+      "total_episodes",
+      "total_frames",
+      "total_videos",
+      "total_chunks",
+      "splits"
+    ]
+  },
+  "verdict": {
+    "overall": false,
+    "declaration": false,
+    "sample": false,
+    "distributions": true,
+    "reasons": [
+      "meta/stats.json differs",
+      "per-episode metadata differs"
+    ]
+  },
+  "declaration": {
+    "missing": [],
+    "differences": {},
+    "counts": {},
+    "one_sided": {
+      "features.observation.images.image.info.is_depth_map": [
+        false,
+        "(absent)"
+      ],
+      "features.observation.images.image.info.video.crf": [
+        30,
+        "(absent)"
+      ],
+      "features.observation.images.image.info.video.extra_options": [
+        {},
+        "(absent)"
+      ],
+      "features.observation.images.image.info.video.fast_decode": [
+        0,
+        "(absent)"
+      ],
+      "features.observation.images.image.info.video.g": [
+        2,
+        "(absent)"
+      ],
+      "features.observation.images.image.info.video.is_depth_map": [
+        "(absent)",
+        false
+      ],
+      "features.observation.images.image.info.video.preset": [
+        12,
+        "(absent)"
+      ],
+      "features.observation.images.image.info.video.video_backend": [
+        "pyav",
+        "(absent)"
+      ],
+      "features.observation.images.image_wrist.info.is_depth_map": [
+        false,
+        "(absent)"
+      ],
+      "features.observation.images.image_wrist.info.video.crf": [
+        30,
+        "(absent)"
+      ],
+      "features.observation.images.image_wrist.info.video.extra_options": [
+        {},
+        "(absent)"
+      ],
+      "features.observation.images.image_wrist.info.video.fast_decode": [
+        0,
+        "(absent)"
+      ],
+      "features.observation.images.image_wrist.info.video.g": [
+        2,
+        "(absent)"
+      ],
+      "features.observation.images.image_wrist.info.video.is_depth_map": [
+        "(absent)",
+        false
+      ],
+      "features.observation.images.image_wrist.info.video.preset": [
+        12,
+        "(absent)"
+      ],
+      "features.observation.images.image_wrist.info.video.video_backend": [
+        "pyav",
+        "(absent)"
+      ]
+    }
+  },
+  "meta": [
+    {
+      "subject": "meta/",
+      "agree": true,
+      "absent": [],
+      "reason": "excluded from the comparison by decision",
+      "differences": {},
+      "set_aside": {
+        "relative_stats.json": [
+          "not compared",
+          "not compared"
+        ]
+      }
+    },
+    {
+      "subject": "meta/tasks.jsonl",
+      "agree": true,
+      "absent": [],
+      "reason": "the index a task is given follows the order it was first seen, not the data",
+      "differences": {},
+      "set_aside": {
+        "task_index 0": [
+          "pick up the butter dairy",
+          "pick up the apple fruit"
+        ],
+        "task_index 1": [
+          "place the gray bowl in the dish rack",
+          "pick up the black bowl"
+        ],
+        "task_index 10": [
+          "pick up the black bowl",
+          "pick up the steak meat"
+        ],
+        "task_index 11": [
+          "place the milk dairy in the white plate",
+          "pick up the yellow cup"
+        ],
+        "task_index 12": [
+          "pick up the apple fruit",
+          "place the apple fruit in the black bowl"
+        ],
+        "task_index 13": [
+          "place the long bread in the sink",
+          "place the apple fruit in the blue bowl"
+        ],
+        "task_index 14": [
+          "pick up the long bread",
+          "place the apple fruit in the gray bowl"
+        ],
+        "task_index 15": [
+          "place the burger meat in the oven",
+          "place the apple fruit in the gray plate"
+        ],
+        "task_index 16": [
+          "place the green cup in the gray plate",
+          "place the apple fruit in the sink"
+        ],
+        "task_index 17": [
+          "place the milk dairy in the table",
+          "place the apple fruit in the table"
+        ],
+        "task_index 18": [
+          "place the burger meat in the black bowl",
+          "place the apple fruit in the white plate"
+        ],
+        "task_index 19": [
+          "place the yellow cup in the dish rack",
+          "place the black bowl in the dish rack"
+        ],
+        "task_index 2": [
+          "pick up the square bread",
+          "pick up the burger meat"
+        ],
+        "task_index 20": [
+          "place the black bowl in the dish rack",
+          "place the black bowl in the gray plate"
+        ],
+        "task_index 21": [
+          "place the black bowl in the gray plate",
+          "place the black bowl in the oven"
+        ],
+        "task_index 22": [
+          "place the apple fruit in the sink",
+          "place the black bowl in the sink"
+        ],
+        "task_index 23": [
+          "place the yellow cup in the white plate",
+          "place the black bowl in the table"
+        ],
+        "task_index 24": [
+          "pick up the steak meat",
+          "place the black bowl in the white plate"
+        ],
+        "task_index 25": [
+          "place the long bread in the gray bowl",
+          "place the burger meat in the black bowl"
+        ],
+        "task_index 26": [
+          "place the butter dairy in the gray bowl",
+          "place the burger meat in the blue bowl"
+        ],
+        "task_index 27": [
+          "pick up the green cup",
+          "place the burger meat in the oven"
+        ],
+        "task_index 28": [
+          "place the green cup in the dish rack",
+          "place the burger meat in the sink"
+        ],
+        "task_index 29": [
+          "place the gray bowl in the sink",
+          "place the burger meat in the table"
+        ],
+        "task_index 3": [
+          "pick up the gray bowl",
+          "pick up the butter dairy"
+        ],
+        "task_index 30": [
+          "place the black bowl in the oven",
+          "place the burger meat in the white plate"
+        ],
+        "task_index 31": [
+          "place the butter dairy in the sink",
+          "place the butter dairy in the black bowl"
+        ],
+        "task_index 32": [
+          "place the gray bowl in the oven",
+          "place the butter dairy in the blue bowl"
+        ],
+        "task_index 33": [
+          "place the milk dairy in the black bowl",
+          "place the butter dairy in the gray bowl"
+        ],
+        "task_index 34": [
+          "place the butter dairy in the table",
+          "place the butter dairy in the gray plate"
+        ],
+        "task_index 35": [
+          "place the apple fruit in the white plate",
+          "place the butter dairy in the sink"
+        ],
+        "task_index 36": [
+          "place the steak meat in the black bowl",
+          "place the butter dairy in the table"
+        ],
+        "task_index 37": [
+          "place the orange fruit in the sink",
+          "place the butter dairy in the white plate"
+        ],
+        "task_index 38": [
+          "place the butter dairy in the black bowl",
+          "place the gray bowl in the dish rack"
+        ],
+        "task_index 39": [
+          "place the yellow cup in the oven",
+          "place the gray bowl in the gray plate"
+        ],
+        "task_index 4": [
+          "pick up the orange fruit",
+          "pick up the gray bowl"
+        ],
+        "task_index 40": [
+          "place the square bread in the blue bowl",
+          "place the gray bowl in the oven"
+        ],
+        "task_index 41": [
+          "place the apple fruit in the black bowl",
+          "place the gray bowl in the sink"
+        ],
+        "task_index 42": [
+          "place the orange fruit in the table",
+          "place the gray bowl in the table"
+        ],
+        "task_index 43": [
+          "place the apple fruit in the table",
+          "place the gray bowl in the white plate"
+        ],
+        "task_index 44": [
+          "place the apple fruit in the gray plate",
+          "place the green cup in the dish rack"
+        ],
+        "task_index 45": [
+          "place the black bowl in the sink",
+          "place the green cup in the gray plate"
+        ],
+        "task_index 46": [
+          "place the steak meat in the oven",
+          "place the green cup in the oven"
+        ],
+        "task_index 47": [
+          "place the square bread in the table",
+          "place the green cup in the sink"
+        ],
+        "task_index 48": [
+          "place the square bread in the oven",
+          "place the green cup in the table"
+        ],
+        "task_index 49": [
+          "place the long bread in the table",
+          "place the long bread in the black bowl"
+        ],
+        "task_index 5": [
+          "pick up the milk dairy",
+          "pick up the green cup"
+        ],
+        "task_index 50": [
+          "place the milk dairy in the sink",
+          "place the long bread in the gray bowl"
+        ],
+        "task_index 51": [
+          "place the burger meat in the sink",
+          "place the long bread in the oven"
+        ],
+        "task_index 52": [
+          "place the gray bowl in the white plate",
+          "place the long bread in the sink"
+        ],
+        "task_index 53": [
+          "place the yellow cup in the sink",
+          "place the long bread in the table"
+        ],
+        "task_index 54": [
+          "place the steak meat in the white plate",
+          "place the milk dairy in the black bowl"
+        ],
+        "task_index 55": [
+          "place the orange fruit in the gray plate",
+          "place the milk dairy in the blue bowl"
+        ],
+        "task_index 56": [
+          "place the butter dairy in the white plate",
+          "place the milk dairy in the gray bowl"
+        ],
+        "task_index 57": [
+          "place the steak meat in the table",
+          "place the milk dairy in the gray plate"
+        ],
+        "task_index 58": [
+          "place the steak meat in the sink",
+          "place the milk dairy in the sink"
+        ],
+        "task_index 59": [
+          "place the black bowl in the table",
+          "place the milk dairy in the table"
+        ],
+        "task_index 6": [
+          "place the gray bowl in the table",
+          "pick up the long bread"
+        ],
+        "task_index 60": [
+          "place the gray bowl in the gray plate",
+          "place the milk dairy in the white plate"
+        ],
+        "task_index 61": [
+          "place the steak meat in the gray bowl",
+          "place the orange fruit in the black bowl"
+        ],
+        "task_index 63": [
+          "place the green cup in the table",
+          "place the orange fruit in the gray bowl"
+        ],
+        "task_index 64": [
+          "place the butter dairy in the gray plate",
+          "place the orange fruit in the gray plate"
+        ],
+        "task_index 65": [
+          "place the orange fruit in the white plate",
+          "place the orange fruit in the sink"
+        ],
+        "task_index 66": [
+          "place the apple fruit in the gray bowl",
+          "place the orange fruit in the table"
+        ],
+        "task_index 67": [
+          "place the orange fruit in the gray bowl",
+          "place the orange fruit in the white plate"
+        ],
+        "task_index 68": [
+          "place the milk dairy in the blue bowl",
+          "place the square bread in the blue bowl"
+        ],
+        "task_index 69": [
+          "place the yellow cup in the table",
+          "place the square bread in the gray plate"
+        ],
+        "task_index 7": [
+          "place the green cup in the oven",
+          "pick up the milk dairy"
+        ],
+        "task_index 70": [
+          "place the apple fruit in the blue bowl",
+          "place the square bread in the oven"
+        ],
+        "task_index 71": [
+          "place the square bread in the white plate",
+          "place the square bread in the sink"
+        ],
+        "task_index 72": [
+          "place the burger meat in the blue bowl",
+          "place the square bread in the table"
+        ],
+        "task_index 73": [
+          "place the square bread in the sink",
+          "place the square bread in the white plate"
+        ],
+        "task_index 74": [
+          "place the long bread in the oven",
+          "place the steak meat in the black bowl"
+        ],
+        "task_index 75": [
+          "place the burger meat in the table",
+          "place the steak meat in the blue bowl"
+        ],
+        "task_index 76": [
+          "place the milk dairy in the gray bowl",
+          "place the steak meat in the gray bowl"
+        ],
+        "task_index 77": [
+          "place the burger meat in the white plate",
+          "place the steak meat in the gray plate"
+        ],
+        "task_index 78": [
+          "place the butter dairy in the blue bowl",
+          "place the steak meat in the oven"
+        ],
+        "task_index 79": [
+          "place the black bowl in the white plate",
+          "place the steak meat in the sink"
+        ],
+        "task_index 8": [
+          "pick up the burger meat",
+          "pick up the orange fruit"
+        ],
+        "task_index 80": [
+          "place the yellow cup in the gray plate",
+          "place the steak meat in the table"
+        ],
+        "task_index 81": [
+          "place the milk dairy in the gray plate",
+          "place the steak meat in the white plate"
+        ],
+        "task_index 82": [
+          "place the green cup in the sink",
+          "place the yellow cup in the dish rack"
+        ],
+        "task_index 83": [
+          "place the orange fruit in the black bowl",
+          "place the yellow cup in the gray plate"
+        ],
+        "task_index 84": [
+          "place the steak meat in the blue bowl",
+          "place the yellow cup in the oven"
+        ],
+        "task_index 85": [
+          "place the long bread in the black bowl",
+          "place the yellow cup in the sink"
+        ],
+        "task_index 86": [
+          "place the steak meat in the gray plate",
+          "place the yellow cup in the table"
+        ],
+        "task_index 87": [
+          "place the square bread in the gray plate",
+          "place the yellow cup in the white plate"
+        ],
+        "task_index 9": [
+          "pick up the yellow cup",
+          "pick up the square bread"
+        ]
+      }
+    },
+    {
+      "subject": "meta/modality.json",
+      "agree": true,
+      "absent": [],
+      "reason": "",
+      "differences": {},
+      "set_aside": {}
+    },
+    {
+      "subject": "meta/stats.json",
+      "agree": false,
+      "absent": [],
+      "reason": "ordering features follow the episode and task order; missing quantiles are the keys the v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream",
+      "differences": {
+        "observation.images.image.std": [
+          "differs by 0.2734",
+          "allowed 0.05"
+        ],
+        "observation.images.image_wrist.std": [
+          "differs by 0.187",
+          "allowed 0.05"
+        ]
+      },
+      "set_aside": {
+        "episode_index.max": [
+          "differs by 951",
+          "allowed 1e-06"
+        ],
+        "episode_index.mean": [
+          "differs by 482.4",
+          "allowed 1e-06"
+        ],
+        "episode_index.q01": [
+          "differs by 482.4",
+          "allowed 1e-06"
+        ],
+        "episode_index.q10": [
+          "differs by 482.4",
+          "allowed 1e-06"
+        ],
+        "episode_index.q50": [
+          "differs by 482.4",
+          "allowed 1e-06"
+        ],
+        "episode_index.q90": [
+          "differs by 482.4",
+          "allowed 1e-06"
+        ],
+        "episode_index.q99": [
+          "differs by 482.4",
+          "allowed 1e-06"
+        ],
+        "episode_index.std": [
+          "differs by 274",
+          "allowed 1e-06"
+        ],
+        "index.max": [
+          "differs by 6.807e+04",
+          "allowed 1e-06"
+        ],
+        "index.mean": [
+          "differs by 3.416e+04",
+          "allowed 1e-06"
+        ],
+        "index.q01": [
+          "differs by 3.416e+04",
+          "allowed 1e-06"
+        ],
+        "index.q10": [
+          "differs by 3.416e+04",
+          "allowed 1e-06"
+        ],
+        "index.q50": [
+          "differs by 3.416e+04",
+          "allowed 1e-06"
+        ],
+        "index.q90": [
+          "differs by 3.416e+04",
+          "allowed 1e-06"
+        ],
+        "index.q99": [
+          "differs by 3.416e+04",
+          "allowed 1e-06"
+        ],
+        "index.std": [
+          "differs by 1.972e+04",
+          "allowed 1e-06"
+        ],
+        "task_index.max": [
+          "differs by 66",
+          "allowed 1e-06"
+        ],
+        "task_index.mean": [
+          "differs by 18.04",
+          "allowed 1e-06"
+        ],
+        "task_index.q01": [
+          "differs by 18.04",
+          "allowed 1e-06"
+        ],
+        "task_index.q10": [
+          "differs by 18.04",
+          "allowed 1e-06"
+        ],
+        "task_index.q50": [
+          "differs by 18.04",
+          "allowed 1e-06"
+        ],
+        "task_index.q90": [
+          "differs by 18.04",
+          "allowed 1e-06"
+        ],
+        "task_index.q99": [
+          "differs by 18.04",
+          "allowed 1e-06"
+        ],
+        "task_index.std": [
+          "differs by 16.36",
+          "allowed 1e-06"
+        ]
+      }
+    },
+    {
+      "subject": "meta/episodes.jsonl + meta/episodes_stats.jsonl",
+      "agree": false,
+      "absent": [],
+      "reason": "ordering features follow the episode and task order, which the episode question already reports; absent quantiles are the five keys the v3.0 to v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream",
+      "differences": {
+        "episodes_stats.jsonl.observation.images.image.max": [
+          "12 of 976 pairs differ, worst 0.1373",
+          "allowed 0.1"
+        ],
+        "episodes_stats.jsonl.observation.images.image.std": [
+          "976 of 976 pairs differ, worst 0.3076",
+          "the delivered copy records zero in every episode"
+        ],
+        "episodes_stats.jsonl.observation.images.image_wrist.max": [
+          "2 of 976 pairs differ, worst 0.102",
+          "allowed 0.1"
+        ],
+        "episodes_stats.jsonl.observation.images.image_wrist.std": [
+          "976 of 976 pairs differ, worst 0.3732",
+          "the delivered copy records zero in every episode"
+        ]
+      },
+      "set_aside": {
+        "episodes_stats.jsonl.episode_index.max": [
+          "976 of 976 pairs differ, worst 971",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.episode_index.mean": [
+          "976 of 976 pairs differ, worst 971",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.episode_index.min": [
+          "976 of 976 pairs differ, worst 971",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.episode_index.q01": [
+          "976 of 976 pairs differ, worst 971",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.episode_index.q10": [
+          "976 of 976 pairs differ, worst 971",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.episode_index.q50": [
+          "976 of 976 pairs differ, worst 971",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.episode_index.q90": [
+          "976 of 976 pairs differ, worst 971",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.episode_index.q99": [
+          "976 of 976 pairs differ, worst 971",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.index.max": [
+          "976 of 976 pairs differ, worst 6.961e+04",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.index.mean": [
+          "976 of 976 pairs differ, worst 6.961e+04",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.index.min": [
+          "976 of 976 pairs differ, worst 6.961e+04",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.index.q01": [
+          "976 of 976 pairs differ, worst 6.961e+04",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.index.q10": [
+          "976 of 976 pairs differ, worst 6.961e+04",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.index.q50": [
+          "976 of 976 pairs differ, worst 6.961e+04",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.index.q90": [
+          "976 of 976 pairs differ, worst 6.961e+04",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.index.q99": [
+          "976 of 976 pairs differ, worst 6.961e+04",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.task_index.max": [
+          "934 of 976 pairs differ, worst 83",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.task_index.mean": [
+          "934 of 976 pairs differ, worst 83",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.task_index.min": [
+          "934 of 976 pairs differ, worst 83",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.task_index.q01": [
+          "934 of 976 pairs differ, worst 83",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.task_index.q10": [
+          "934 of 976 pairs differ, worst 83",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.task_index.q50": [
+          "934 of 976 pairs differ, worst 83",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.task_index.q90": [
+          "934 of 976 pairs differ, worst 83",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.task_index.q99": [
+          "934 of 976 pairs differ, worst 83",
+          "allowed 1e-06"
+        ]
+      }
+    }
+  ],
+  "episodes": {
+    "rebuilt_total": 976,
+    "delivered_total": 976,
+    "rebuilt_rows": 70127,
+    "delivered_rows": 70127,
+    "exact": 976,
+    "prefix_only": 0,
+    "same_length_but_differing": [],
+    "reordered": 975,
+    "worst_row_delta": 0,
+    "pairs": {
+      "rebuilt": [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,248,249,250,251,252,253,254,255,256,257,258,259,260,261,262,263,264,265,266,267,268,269,270,271,272,273,274,275,276,277,278,279,280,281,282,283,284,285,286,287,288,289,290,291,292,293,294,295,296,297,298,299,300,301,302,303,304,305,306,307,308,309,310,311,312,313,314,315,316,317,318,319,320,321,322,323,324,325,326,327,328,329,330,331,332,333,334,335,336,337,338,339,340,341,342,343,344,345,346,347,348,349,350,351,352,353,354,355,356,357,358,359,360,361,362,363,364,365,366,367,368,369,370,371,372,373,374,375,376,377,378,379,380,381,382,383,384,385,386,387,388,389,390,391,392,393,394,395,396,397,398,399,400,401,402,403,404,405,406,407,408,409,410,411,412,413,414,415,416,417,418,419,420,421,422,423,424,425,426,427,428,429,430,431,432,433,434,435,436,437,438,439,440,441,442,443,444,445,446,447,448,449,450,451,452,453,454,455,456,457,458,459,460,461,462,463,464,465,466,467,468,469,470,471,472,473,474,475,476,477,478,479,480,481,482,483,484,485,486,487,488,489,490,491,492,493,494,495,496,497,498,499,500,501,502,503,504,505,506,507,508,509,510,511,512,513,514,515,516,517,518,519,520,521,522,523,524,525,526,527,528,529,530,531,532,533,534,535,536,537,538,539,540,541,542,543,544,545,546,547,548,549,550,551,552,553,554,555,556,557,558,559,560,561,562,563,564,565,566,567,568,569,570,571,572,573,574,575,576,577,578,579,580,581,582,583,584,585,586,587,588,589,590,591,592,593,594,595,596,597,598,599,600,601,602,603,604,605,606,607,608,609,610,611,612,613,614,615,616,617,618,619,620,621,622,623,624,625,626,627,628,629,630,631,632,633,634,635,636,637,638,639,640,641,642,643,644,645,646,647,648,649,650,651,652,653,654,655,656,657,658,659,660,661,662,663,664,665,666,667,668,669,670,671,672,673,674,675,676,677,678,679,680,681,682,683,684,685,686,687,688,689,690,691,692,693,694,695,696,697,698,699,700,701,702,703,704,705,706,707,708,709,710,711,712,713,714,715,716,717,718,719,720,721,722,723,724,725,726,727,728,729,730,731,732,733,734,735,736,737,738,739,740,741,742,743,744,745,746,747,748,749,750,751,752,753,754,755,756,757,758,759,760,761,762,763,764,765,766,767,768,769,770,771,772,773,774,775,776,777,778,779,780,781,782,783,784,785,786,787,788,789,790,791,792,793,794,795,796,797,798,799,800,801,802,803,804,805,806,807,808,809,810,811,812,813,814,815,816,817,818,819,820,821,822,823,824,825,826,827,828,829,830,831,832,833,834,835,836,837,838,839,840,841,842,843,844,845,846,847,848,849,850,851,852,853,854,855,856,857,858,859,860,861,862,863,864,865,866,867,868,869,870,871,872,873,874,875,876,877,878,879,880,881,882,883,884,885,886,887,888,889,890,891,892,893,894,895,896,897,898,899,900,901,902,903,904,905,906,907,908,909,910,911,912,913,914,915,916,917,918,919,920,921,922,923,924,925,926,927,928,929,930,931,932,933,934,935,936,937,938,939,940,941,942,943,944,945,946,947,948,949,950,951,952,953,954,955,956,957,958,959,960,961,962,963,964,965,966,967,968,969,970,971,972,973,974,975],
+      "delivered": [768,613,941,830,222,122,35,654,798,652,245,686,304,399,94,168,296,493,120,51,638,433,492,570,631,339,131,369,23,455,848,422,185,47,370,166,158,964,913,259,49,517,648,661,863,434,949,42,382,418,41,603,779,572,485,19,582,959,155,109,834,847,406,684,29,394,815,105,911,498,906,459,875,192,206,915,421,110,438,356,742,277,762,658,224,922,744,181,205,910,275,103,708,914,129,753,869,796,540,557,623,239,474,764,306,313,777,514,860,602,117,871,874,559,116,892,820,591,653,781,225,501,39,469,68,928,685,464,432,541,893,83,625,816,414,16,819,164,441,903,740,99,467,21,659,93,95,44,719,692,25,577,326,443,396,611,745,544,415,916,191,574,231,69,471,479,535,453,401,560,177,502,343,201,846,66,113,347,590,17,586,411,463,108,614,328,895,101,65,723,718,57,167,633,472,503,600,488,373,912,27,293,746,612,55,350,325,715,435,77,114,868,437,410,882,320,308,494,618,843,694,419,921,533,688,950,255,388,515,281,9,190,319,366,802,133,98,32,876,146,291,476,615,257,713,428,561,256,750,936,217,942,792,28,154,107,377,800,478,711,161,270,102,526,894,365,5,236,890,763,905,207,569,926,672,534,812,176,447,162,931,772,271,667,775,782,384,789,588,26,276,879,669,53,286,821,470,452,810,439,54,416,150,619,568,364,140,11,639,679,885,297,179,567,508,859,33,564,714,899,622,730,712,580,662,756,74,877,413,751,496,592,855,92,315,189,770,919,506,497,635,663,734,510,755,468,866,254,518,596,173,960,490,891,14,620,429,321,172,925,878,408,604,766,316,130,683,630,939,440,344,689,199,948,480,898,644,699,170,278,78,576,609,968,677,563,3,341,91,678,460,785,327,144,826,935,409,725,385,823,901,513,783,528,553,651,794,527,709,707,335,530,171,73,704,929,79,305,769,121,126,407,961,884,393,152,867,62,208,754,58,870,340,269,937,581,223,965,138,398,682,391,412,817,12,219,263,379,955,943,666,765,346,353,484,520,372,962,482,904,211,174,228,299,543,680,504,799,404,475,946,125,345,324,516,221,548,787,61,545,829,784,56,595,234,13,626,70,149,252,403,165,738,486,213,283,124,6,840,0,767,687,123,776,292,953,583,835,400,188,845,258,420,695,119,202,193,624,971,621,566,880,160,322,371,881,966,282,465,88,311,805,184,690,934,858,640,507,267,89,902,601,260,444,857,523,2,907,67,284,500,575,405,585,458,841,431,512,361,180,218,958,243,552,147,197,923,724,386,606,664,808,194,442,795,360,237,616,247,141,676,522,727,153,358,288,60,36,864,827,814,538,975,312,451,838,40,842,710,183,195,824,660,203,643,735,737,728,865,235,933,573,427,18,426,381,380,97,389,803,355,700,642,323,238,274,457,944,264,209,318,650,248,565,549,749,261,872,227,169,748,833,924,698,334,889,268,647,578,671,731,448,788,887,30,521,598,34,550,285,52,300,717,87,390,956,529,46,142,791,852,511,63,793,348,357,289,665,402,250,436,351,210,387,8,64,242,59,828,499,132,303,466,200,856,645,96,818,525,495,930,309,908,947,850,940,163,668,253,456,220,571,900,112,212,489,85,445,10,22,851,697,760,336,554,599,646,151,186,886,693,450,487,111,758,844,214,249,917,722,897,853,241,72,957,736,556,332,636,233,696,279,839,593,918,786,483,641,806,265,246,547,187,670,229,156,198,352,338,81,873,425,136,519,739,244,972,48,657,363,674,251,862,31,954,542,801,649,849,491,537,473,329,691,546,813,963,967,100,778,134,701,536,532,115,127,333,45,314,449,607,831,423,302,822,71,4,721,159,632,75,86,375,974,720,481,539,605,182,970,920,584,461,374,673,383,610,1,675,973,703,909,629,90,378,424,37,106,395,157,774,7,359,82,896,702,759,617,729,50,273,454,555,832,342,811,118,726,634,587,226,137,952,175,932,883,509,310,43,290,761,298,216,797,579,558,76,681,825,608,747,84,938,531,139,262,628,854,462,215,589,362,272,397,807,317,20,780,367,771,741,301,706,337,295,135,240,417,128,266,104,861,15,837,773,232,627,888,594,354,446,951,204,743,349,655,331,790,836,178,80,656,392,145,430,551,757,307,945,597,927,562,637,38,969,733,716,24,230,280,477,287,732,148,368,705,524,330,143,196,809,752,804,294,505,376]
+    },
+    "row_deltas": {
+      "episode": [],
+      "delta": []
+    },
+    "rebuilt_only": [],
+    "delivered_only": []
+  },
+  "sample": {
+    "chosen": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      944,
+      945,
+      946,
+      947,
+      948,
+      949,
+      950,
+      951,
+      952,
+      953,
+      954,
+      955,
+      956,
+      957,
+      958,
+      959,
+      960,
+      961,
+      962,
+      963,
+      964,
+      965,
+      966,
+      967,
+      968,
+      969,
+      970,
+      971,
+      972,
+      973,
+      974,
+      975
+    ],
+    "reports": [
+      {
+        "index": 0,
+        "delivered_index": 768,
+        "rows_rebuilt": 78,
+        "rows_delivered": 78,
+        "compared_rows": 78,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (78, 8)",
+          "action": "identical (78, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 78f av1/GOP2 308024B vs 314760B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 78f av1/GOP2 167328B vs 165460B (1.01x) px 0.996 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1,
+        "delivered_index": 613,
+        "rows_rebuilt": 49,
+        "rows_delivered": 49,
+        "compared_rows": 49,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (49, 8)",
+          "action": "identical (49, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 49f av1/GOP2 175945B vs 180558B (0.97x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 49f av1/GOP2 87927B vs 87351B (1.01x) px 0.999 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 2,
+        "delivered_index": 941,
+        "rows_rebuilt": 94,
+        "rows_delivered": 94,
+        "compared_rows": 94,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (94, 8)",
+          "action": "identical (94, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 94f av1/GOP2 369568B vs 379036B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 94f av1/GOP2 167240B vs 166898B (1.00x) px 0.995 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 3,
+        "delivered_index": 830,
+        "rows_rebuilt": 46,
+        "rows_delivered": 46,
+        "compared_rows": 46,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (46, 8)",
+          "action": "identical (46, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 46f av1/GOP2 182968B vs 185390B (0.99x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 46f av1/GOP2 91158B vs 91954B (0.99x) px 0.998 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 4,
+        "delivered_index": 222,
+        "rows_rebuilt": 75,
+        "rows_delivered": 75,
+        "compared_rows": 75,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (75, 8)",
+          "action": "identical (75, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 75f av1/GOP2 288077B vs 293324B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 75f av1/GOP2 133177B vs 132899B (1.00x) px 0.997 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 5,
+        "delivered_index": 122,
+        "rows_rebuilt": 115,
+        "rows_delivered": 115,
+        "compared_rows": 115,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (115, 8)",
+          "action": "identical (115, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 115f av1/GOP2 435083B vs 440985B (0.99x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 115f av1/GOP2 191351B vs 188814B (1.01x) px 0.998 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 6,
+        "delivered_index": 35,
+        "rows_rebuilt": 87,
+        "rows_delivered": 87,
+        "compared_rows": 87,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (87, 8)",
+          "action": "identical (87, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 87f av1/GOP2 321591B vs 329365B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 87f av1/GOP2 140352B vs 140015B (1.00x) px 0.997 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 7,
+        "delivered_index": 654,
+        "rows_rebuilt": 59,
+        "rows_delivered": 59,
+        "compared_rows": 59,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (59, 8)",
+          "action": "identical (59, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 59f av1/GOP2 237472B vs 239209B (0.99x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 59f av1/GOP2 129514B vs 129225B (1.00x) px 0.997 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 8,
+        "delivered_index": 798,
+        "rows_rebuilt": 102,
+        "rows_delivered": 102,
+        "compared_rows": 102,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (102, 8)",
+          "action": "identical (102, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 102f av1/GOP2 382585B vs 395085B (0.97x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 102f av1/GOP2 181205B vs 181035B (1.00x) px 0.998 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 9,
+        "delivered_index": 652,
+        "rows_rebuilt": 61,
+        "rows_delivered": 61,
+        "compared_rows": 61,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (61, 8)",
+          "action": "identical (61, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 61f av1/GOP2 228729B vs 231807B (0.99x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 61f av1/GOP2 124370B vs 124302B (1.00x) px 0.999 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 10,
+        "delivered_index": 245,
+        "rows_rebuilt": 68,
+        "rows_delivered": 68,
+        "compared_rows": 68,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (68, 8)",
+          "action": "identical (68, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 68f av1/GOP2 248819B vs 255891B (0.97x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 68f av1/GOP2 119492B vs 120194B (0.99x) px 0.997 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 11,
+        "delivered_index": 686,
+        "rows_rebuilt": 109,
+        "rows_delivered": 109,
+        "compared_rows": 109,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (109, 8)",
+          "action": "identical (109, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 109f av1/GOP2 450265B vs 459990B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 109f av1/GOP2 178569B vs 179464B (1.00x) px 0.997 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 12,
+        "delivered_index": 304,
+        "rows_rebuilt": 35,
+        "rows_delivered": 35,
+        "compared_rows": 35,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (35, 8)",
+          "action": "identical (35, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 35f av1/GOP2 145159B vs 148240B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 35f av1/GOP2 74365B vs 73901B (1.01x) px 0.999 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 13,
+        "delivered_index": 399,
+        "rows_rebuilt": 105,
+        "rows_delivered": 105,
+        "compared_rows": 105,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (105, 8)",
+          "action": "identical (105, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 105f av1/GOP2 380601B vs 390338B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 105f av1/GOP2 182704B vs 184641B (0.99x) px 0.995 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 14,
+        "delivered_index": 94,
+        "rows_rebuilt": 72,
+        "rows_delivered": 72,
+        "compared_rows": 72,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (72, 8)",
+          "action": "identical (72, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 72f av1/GOP2 281724B vs 286416B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 72f av1/GOP2 98566B vs 100019B (0.99x) px 0.998 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 15,
+        "delivered_index": 168,
+        "rows_rebuilt": 63,
+        "rows_delivered": 63,
+        "compared_rows": 63,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (63, 8)",
+          "action": "identical (63, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 63f av1/GOP2 252776B vs 258285B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 63f av1/GOP2 101171B vs 100835B (1.00x) px 0.998 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 16,
+        "delivered_index": 296,
+        "rows_rebuilt": 75,
+        "rows_delivered": 75,
+        "compared_rows": 75,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (75, 8)",
+          "action": "identical (75, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 75f av1/GOP2 302764B vs 308958B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 75f av1/GOP2 122055B vs 122043B (1.00x) px 0.998 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 17,
+        "delivered_index": 493,
+        "rows_rebuilt": 55,
+        "rows_delivered": 55,
+        "compared_rows": 55,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (55, 8)",
+          "action": "identical (55, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 55f av1/GOP2 215999B vs 217368B (0.99x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 55f av1/GOP2 134067B vs 135220B (0.99x) px 0.998 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 18,
+        "delivered_index": 120,
+        "rows_rebuilt": 56,
+        "rows_delivered": 56,
+        "compared_rows": 56,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (56, 8)",
+          "action": "identical (56, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 56f av1/GOP2 207755B vs 210894B (0.99x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 56f av1/GOP2 96585B vs 93384B (1.03x) px 0.999 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 19,
+        "delivered_index": 51,
+        "rows_rebuilt": 72,
+        "rows_delivered": 72,
+        "compared_rows": 72,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (72, 8)",
+          "action": "identical (72, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 72f av1/GOP2 270154B vs 276054B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 72f av1/GOP2 131529B vs 132691B (0.99x) px 0.999 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 20,
+        "delivered_index": 638,
+        "rows_rebuilt": 128,
+        "rows_delivered": 128,
+        "compared_rows": 128,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (128, 8)",
+          "action": "identical (128, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 128f av1/GOP2 494878B vs 505728B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 128f av1/GOP2 235228B vs 233396B (1.01x) px 0.997 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 21,
+        "delivered_index": 433,
+        "rows_rebuilt": 66,
+        "rows_delivered": 66,
+        "compared_rows": 66,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (66, 8)",
+          "action": "identical (66, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 66f av1/GOP2 268347B vs 270552B (0.99x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 66f av1/GOP2 156249B vs 154108B (1.01x) px 0.997 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 22,
+        "delivered_index": 492,
+        "rows_rebuilt": 30,
+        "rows_delivered": 30,
+        "compared_rows": 30,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (30, 8)",
+          "action": "identical (30, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 30f av1/GOP2 117300B vs 119646B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 30f av1/GOP2 39347B vs 38452B (1.02x) px 0.999 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 23,
+        "delivered_index": 570,
+        "rows_rebuilt": 109,
+        "rows_delivered": 109,
+        "compared_rows": 109,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (109, 8)",
+          "action": "identical (109, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 109f av1/GOP2 433483B vs 440971B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 109f av1/GOP2 193651B vs 195060B (0.99x) px 0.996 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 24,
+        "delivered_index": 631,
+        "rows_rebuilt": 30,
+        "rows_delivered": 30,
+        "compared_rows": 30,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (30, 8)",
+          "action": "identical (30, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 30f av1/GOP2 119560B vs 121398B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 30f av1/GOP2 52495B vs 53717B (0.98x) px 0.999 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 25,
+        "delivered_index": 339,
+        "rows_rebuilt": 42,
+        "rows_delivered": 42,
+        "compared_rows": 42,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (42, 8)",
+          "action": "identical (42, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 42f av1/GOP2 156173B vs 160335B (0.97x) px 0.997 ok",
+          "observation.images.image_wrist": "224x224 42f av1/GOP2 70420B vs 70105B (1.00x) px 0.997 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 26,
+        "delivered_index": 131,
+        "rows_rebuilt": 39,
+        "rows_delivered": 39,
+        "compared_rows": 39,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (39, 8)",
+          "action": "identical (39, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 39f av1/GOP2 147782B vs 150856B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 39f av1/GOP2 59778B vs 60654B (0.99x) px 0.997 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 27,
+        "delivered_index": 369,
+        "rows_rebuilt": 57,
+        "rows_delivered": 57,
+        "compared_rows": 57,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (57, 8)",
+          "action": "identical (57, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 57f av1/GOP2 215915B vs 220008B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 57f av1/GOP2 103795B vs 102748B (1.01x) px 0.998 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 28,
+        "delivered_index": 23,
+        "rows_rebuilt": 100,
+        "rows_delivered": 100,
+        "compared_rows": 100,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (100, 8)",
+          "action": "identical (100, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 100f av1/GOP2 359069B vs 368707B (0.97x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 100f av1/GOP2 207653B vs 207289B (1.00x) px 0.999 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 29,
+        "delivered_index": 455,
+        "rows_rebuilt": 82,
+        "rows_delivered": 82,
+        "compared_rows": 82,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (82, 8)",
+          "action": "identical (82, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 82f av1/GOP2 301621B vs 307653B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 82f av1/GOP2 189558B vs 187631B (1.01x) px 0.998 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 30,
+        "delivered_index": 848,
+        "rows_rebuilt": 116,
+        "rows_delivered": 116,
+        "compared_rows": 116,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (116, 8)",
+          "action": "identical (116, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 116f av1/GOP2 419720B vs 429430B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 116f av1/GOP2 214066B vs 212755B (1.01x) px 0.998 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 31,
+        "delivered_index": 422,
+        "rows_rebuilt": 105,
+        "rows_delivered": 105,
+        "compared_rows": 105,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (105, 8)",
+          "action": "identical (105, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 105f av1/GOP2 381182B vs 388971B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 105f av1/GOP2 246868B vs 244637B (1.01x) px 0.999 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 944,
+        "delivered_index": 430,
+        "rows_rebuilt": 75,
+        "rows_delivered": 75,
+        "compared_rows": 75,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (75, 8)",
+          "action": "identical (75, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 75f av1/GOP2 303502B vs 306608B (0.99x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 75f av1/GOP2 117450B vs 118848B (0.99x) px 0.998 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 945,
+        "delivered_index": 551,
+        "rows_rebuilt": 60,
+        "rows_delivered": 60,
+        "compared_rows": 60,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (60, 8)",
+          "action": "identical (60, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 60f av1/GOP2 234011B vs 239234B (0.98x) px 0.997 ok",
+          "observation.images.image_wrist": "224x224 60f av1/GOP2 95229B vs 94527B (1.01x) px 0.995 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 946,
+        "delivered_index": 757,
+        "rows_rebuilt": 41,
+        "rows_delivered": 41,
+        "compared_rows": 41,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (41, 8)",
+          "action": "identical (41, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 41f av1/GOP2 149895B vs 153282B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 41f av1/GOP2 104820B vs 105244B (1.00x) px 0.999 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 947,
+        "delivered_index": 307,
+        "rows_rebuilt": 62,
+        "rows_delivered": 62,
+        "compared_rows": 62,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (62, 8)",
+          "action": "identical (62, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 62f av1/GOP2 247901B vs 252132B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 62f av1/GOP2 97699B vs 98110B (1.00x) px 0.996 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 948,
+        "delivered_index": 945,
+        "rows_rebuilt": 87,
+        "rows_delivered": 87,
+        "compared_rows": 87,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (87, 8)",
+          "action": "identical (87, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 87f av1/GOP2 329126B vs 334669B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 87f av1/GOP2 152125B vs 153408B (0.99x) px 0.997 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 949,
+        "delivered_index": 597,
+        "rows_rebuilt": 60,
+        "rows_delivered": 60,
+        "compared_rows": 60,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (60, 8)",
+          "action": "identical (60, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 60f av1/GOP2 229563B vs 233255B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 60f av1/GOP2 142892B vs 139473B (1.02x) px 0.996 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 950,
+        "delivered_index": 927,
+        "rows_rebuilt": 44,
+        "rows_delivered": 44,
+        "compared_rows": 44,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (44, 8)",
+          "action": "identical (44, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 44f av1/GOP2 154895B vs 158226B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 44f av1/GOP2 92852B vs 91655B (1.01x) px 0.998 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 951,
+        "delivered_index": 562,
+        "rows_rebuilt": 60,
+        "rows_delivered": 60,
+        "compared_rows": 60,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (60, 8)",
+          "action": "identical (60, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 60f av1/GOP2 250717B vs 255756B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 60f av1/GOP2 134443B vs 134196B (1.00x) px 0.998 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 952,
+        "delivered_index": 637,
+        "rows_rebuilt": 54,
+        "rows_delivered": 54,
+        "compared_rows": 54,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (54, 8)",
+          "action": "identical (54, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 54f av1/GOP2 215396B vs 218788B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 54f av1/GOP2 100947B vs 102357B (0.99x) px 0.998 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 953,
+        "delivered_index": 38,
+        "rows_rebuilt": 74,
+        "rows_delivered": 74,
+        "compared_rows": 74,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (74, 8)",
+          "action": "identical (74, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 74f av1/GOP2 277827B vs 282827B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 74f av1/GOP2 131658B vs 129128B (1.02x) px 0.998 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 954,
+        "delivered_index": 969,
+        "rows_rebuilt": 56,
+        "rows_delivered": 56,
+        "compared_rows": 56,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (56, 8)",
+          "action": "identical (56, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 56f av1/GOP2 206067B vs 210479B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 56f av1/GOP2 114941B vs 114977B (1.00x) px 0.999 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 955,
+        "delivered_index": 733,
+        "rows_rebuilt": 43,
+        "rows_delivered": 43,
+        "compared_rows": 43,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (43, 8)",
+          "action": "identical (43, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 43f av1/GOP2 176514B vs 179015B (0.99x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 43f av1/GOP2 89210B vs 86899B (1.03x) px 0.998 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 956,
+        "delivered_index": 716,
+        "rows_rebuilt": 91,
+        "rows_delivered": 91,
+        "compared_rows": 91,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (91, 8)",
+          "action": "identical (91, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 91f av1/GOP2 344566B vs 350727B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 91f av1/GOP2 174355B vs 173194B (1.01x) px 0.999 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 957,
+        "delivered_index": 24,
+        "rows_rebuilt": 58,
+        "rows_delivered": 58,
+        "compared_rows": 58,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (58, 8)",
+          "action": "identical (58, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 58f av1/GOP2 225298B vs 229027B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 58f av1/GOP2 116755B vs 113409B (1.03x) px 0.999 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 958,
+        "delivered_index": 230,
+        "rows_rebuilt": 53,
+        "rows_delivered": 53,
+        "compared_rows": 53,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (53, 8)",
+          "action": "identical (53, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 53f av1/GOP2 222076B vs 225172B (0.99x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 53f av1/GOP2 104543B vs 103213B (1.01x) px 0.995 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 959,
+        "delivered_index": 280,
+        "rows_rebuilt": 131,
+        "rows_delivered": 131,
+        "compared_rows": 131,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (131, 8)",
+          "action": "identical (131, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 131f av1/GOP2 500391B vs 506798B (0.99x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 131f av1/GOP2 308816B vs 307286B (1.00x) px 0.998 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 960,
+        "delivered_index": 477,
+        "rows_rebuilt": 123,
+        "rows_delivered": 123,
+        "compared_rows": 123,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (123, 8)",
+          "action": "identical (123, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 123f av1/GOP2 449451B vs 460631B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 123f av1/GOP2 346981B vs 343487B (1.01x) px 0.998 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 961,
+        "delivered_index": 287,
+        "rows_rebuilt": 106,
+        "rows_delivered": 106,
+        "compared_rows": 106,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (106, 8)",
+          "action": "identical (106, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 106f av1/GOP2 456839B vs 466477B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 106f av1/GOP2 175716B vs 177176B (0.99x) px 0.998 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 962,
+        "delivered_index": 732,
+        "rows_rebuilt": 141,
+        "rows_delivered": 141,
+        "compared_rows": 141,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (141, 8)",
+          "action": "identical (141, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 141f av1/GOP2 555009B vs 568535B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 141f av1/GOP2 230125B vs 232049B (0.99x) px 0.996 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 963,
+        "delivered_index": 148,
+        "rows_rebuilt": 94,
+        "rows_delivered": 94,
+        "compared_rows": 94,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (94, 8)",
+          "action": "identical (94, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 94f av1/GOP2 344823B vs 353497B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 94f av1/GOP2 200692B vs 200029B (1.00x) px 0.999 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 964,
+        "delivered_index": 368,
+        "rows_rebuilt": 97,
+        "rows_delivered": 97,
+        "compared_rows": 97,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (97, 8)",
+          "action": "identical (97, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 97f av1/GOP2 343313B vs 349967B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 97f av1/GOP2 240794B vs 239786B (1.00x) px 0.998 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 965,
+        "delivered_index": 705,
+        "rows_rebuilt": 63,
+        "rows_delivered": 63,
+        "compared_rows": 63,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (63, 8)",
+          "action": "identical (63, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 63f av1/GOP2 232551B vs 238487B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 63f av1/GOP2 108301B vs 106938B (1.01x) px 0.997 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 966,
+        "delivered_index": 524,
+        "rows_rebuilt": 56,
+        "rows_delivered": 56,
+        "compared_rows": 56,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (56, 8)",
+          "action": "identical (56, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 56f av1/GOP2 221745B vs 224023B (0.99x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 56f av1/GOP2 122131B vs 122624B (1.00x) px 0.999 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 967,
+        "delivered_index": 330,
+        "rows_rebuilt": 49,
+        "rows_delivered": 49,
+        "compared_rows": 49,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (49, 8)",
+          "action": "identical (49, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 49f av1/GOP2 205306B vs 206860B (0.99x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 49f av1/GOP2 109183B vs 106458B (1.03x) px 0.998 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 968,
+        "delivered_index": 143,
+        "rows_rebuilt": 78,
+        "rows_delivered": 78,
+        "compared_rows": 78,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (78, 8)",
+          "action": "identical (78, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 78f av1/GOP2 312249B vs 319106B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 78f av1/GOP2 147806B vs 146557B (1.01x) px 0.998 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 969,
+        "delivered_index": 196,
+        "rows_rebuilt": 67,
+        "rows_delivered": 67,
+        "compared_rows": 67,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (67, 8)",
+          "action": "identical (67, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 67f av1/GOP2 252169B vs 257614B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 67f av1/GOP2 136595B vs 137640B (0.99x) px 0.998 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 970,
+        "delivered_index": 809,
+        "rows_rebuilt": 86,
+        "rows_delivered": 86,
+        "compared_rows": 86,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (86, 8)",
+          "action": "identical (86, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 86f av1/GOP2 325424B vs 332019B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 86f av1/GOP2 185163B vs 181371B (1.02x) px 0.998 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 971,
+        "delivered_index": 752,
+        "rows_rebuilt": 64,
+        "rows_delivered": 64,
+        "compared_rows": 64,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (64, 8)",
+          "action": "identical (64, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 64f av1/GOP2 250586B vs 254653B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 64f av1/GOP2 110039B vs 110522B (1.00x) px 0.998 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 972,
+        "delivered_index": 804,
+        "rows_rebuilt": 113,
+        "rows_delivered": 113,
+        "compared_rows": 113,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (113, 8)",
+          "action": "identical (113, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 113f av1/GOP2 416470B vs 424142B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 113f av1/GOP2 178856B vs 177280B (1.01x) px 0.997 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 973,
+        "delivered_index": 294,
+        "rows_rebuilt": 31,
+        "rows_delivered": 31,
+        "compared_rows": 31,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (31, 8)",
+          "action": "identical (31, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 31f av1/GOP2 128301B vs 130363B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 31f av1/GOP2 39290B vs 40069B (0.98x) px 0.999 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 974,
+        "delivered_index": 505,
+        "rows_rebuilt": 56,
+        "rows_delivered": 56,
+        "compared_rows": 56,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (56, 8)",
+          "action": "identical (56, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 56f av1/GOP2 213884B vs 218716B (0.98x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 56f av1/GOP2 97906B vs 97935B (1.00x) px 0.998 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 975,
+        "delivered_index": 376,
+        "rows_rebuilt": 137,
+        "rows_delivered": 137,
+        "compared_rows": 137,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (137, 8)",
+          "action": "identical (137, 7)"
+        },
+        "video": {
+          "observation.images.image": "224x224 137f av1/GOP2 531834B vs 539811B (0.99x) px 0.998 ok",
+          "observation.images.image_wrist": "224x224 137f av1/GOP2 259021B vs 259753B (1.00x) px 0.998 ok"
+        },
+        "problems": []
+      }
+    ]
+  },
+  "video": {
+    "rebuilt": {
+      "observation.images.image": {
+        "files": 976,
+        "bytes": 270353888
+      },
+      "observation.images.image_wrist": {
+        "files": 976,
+        "bytes": 130103493
+      }
+    },
+    "delivered": {
+      "observation.images.image": {
+        "files": 976,
+        "bytes": 275584063
+      },
+      "observation.images.image_wrist": {
+        "files": 976,
+        "bytes": 129856995
+      }
+    },
+    "problems": []
+  },
+  "prompts": {
+    "pairs_checked": 976,
+    "mismatched": {},
+    "rebuilt_only": {},
+    "delivered_only": {}
+  },
+  "distributions": {
+    "gap_overall": {
+      "action": 1.03042572938e-14,
+      "observation.state": 1.62412214203e-15
+    },
+    "gap_shared": {
+      "action": 1.03042572938e-14,
+      "observation.state": 1.62412214203e-15
+    },
+    "detail": {
+      "overall": {
+        "rebuilt": {
+          "observation.state": {
+            "rows": 70127,
+            "mean": [
+              -0.0735833109261,
+              -0.428294690216,
+              0.275505195943,
+              0.00452720895685,
+              -0.016899158348,
+              0.991407640527,
+              0.0,
+              0.127105992437
+            ],
+            "std": [
+              0.14047831962,
+              0.0908784624015,
+              0.0524183725872,
+              0.00869902110768,
+              0.0159169854568,
+              0.00248532056659,
+              0.0,
+              0.0177110053797
+            ],
+            "min": [
+              -0.442947387695,
+              -0.663545966148,
+              0.156866922975,
+              -0.0707522556186,
+              -0.0949645489454,
+              0.970318734646,
+              0.0,
+              0.0473826043308
+            ],
+            "max": [
+              0.225202023983,
+              -0.193582341075,
+              0.406618863344,
+              0.0378828123212,
+              0.0729249864817,
+              0.998160779476,
+              0.0,
+              0.231351807714
+            ],
+            "q01": [
+              -0.381711341143,
+              -0.619208341837,
+              0.168560541868,
+              -0.0506118216366,
+              -0.0677732485533,
+              0.978926423788,
+              0.0,
+              0.0805123005807
+            ],
+            "q50": [
+              -0.0810208618641,
+              -0.43335750699,
+              0.277738571167,
+              0.00527642387897,
+              -0.0162243489176,
+              0.991477787495,
+              0.0,
+              0.128534644842
+            ],
+            "q99": [
+              0.211735961139,
+              -0.269328596592,
+              0.38875421524,
+              0.0191759581864,
+              0.0618974401057,
+              0.996428347826,
+              0.0,
+              0.184656204581
+            ]
+          },
+          "action": {
+            "rows": 70127,
+            "mean": [
+              0.00123240306457,
+              -0.00539914295311,
+              -0.00351544823398,
+              0.0,
+              0.0,
+              0.0,
+              0.349152252342
+            ],
+            "std": [
+              0.122735477686,
+              0.0961373341035,
+              0.111711339553,
+              0.0,
+              0.0,
+              0.0,
+              0.476702168053
+            ],
+            "min": [
+              -0.20000000298,
+              -0.20000000298,
+              -0.20000000298,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "max": [
+              0.20000000298,
+              0.20000000298,
+              0.20000000298,
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "q01": [
+              -0.20000000298,
+              -0.20000000298,
+              -0.20000000298,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "q50": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "q99": [
+              0.20000000298,
+              0.20000000298,
+              0.20000000298,
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          }
+        },
+        "delivered": {
+          "observation.state": {
+            "rows": 70127,
+            "mean": [
+              -0.0735833109261,
+              -0.428294690216,
+              0.275505195943,
+              0.00452720895685,
+              -0.016899158348,
+              0.991407640527,
+              0.0,
+              0.127105992437
+            ],
+            "std": [
+              0.14047831962,
+              0.0908784624015,
+              0.0524183725872,
+              0.00869902110768,
+              0.0159169854568,
+              0.00248532056659,
+              0.0,
+              0.0177110053797
+            ],
+            "min": [
+              -0.442947387695,
+              -0.663545966148,
+              0.156866922975,
+              -0.0707522556186,
+              -0.0949645489454,
+              0.970318734646,
+              0.0,
+              0.0473826043308
+            ],
+            "max": [
+              0.225202023983,
+              -0.193582341075,
+              0.406618863344,
+              0.0378828123212,
+              0.0729249864817,
+              0.998160779476,
+              0.0,
+              0.231351807714
+            ],
+            "q01": [
+              -0.381711341143,
+              -0.619208341837,
+              0.168560541868,
+              -0.0506118216366,
+              -0.0677732485533,
+              0.978926423788,
+              0.0,
+              0.0805123005807
+            ],
+            "q50": [
+              -0.0810208618641,
+              -0.43335750699,
+              0.277738571167,
+              0.00527642387897,
+              -0.0162243489176,
+              0.991477787495,
+              0.0,
+              0.128534644842
+            ],
+            "q99": [
+              0.211735961139,
+              -0.269328596592,
+              0.38875421524,
+              0.0191759581864,
+              0.0618974401057,
+              0.996428347826,
+              0.0,
+              0.184656204581
+            ]
+          },
+          "action": {
+            "rows": 70127,
+            "mean": [
+              0.00123240306457,
+              -0.00539914295311,
+              -0.00351544823398,
+              0.0,
+              0.0,
+              0.0,
+              0.349152252342
+            ],
+            "std": [
+              0.122735477686,
+              0.0961373341035,
+              0.111711339553,
+              0.0,
+              0.0,
+              0.0,
+              0.476702168053
+            ],
+            "min": [
+              -0.20000000298,
+              -0.20000000298,
+              -0.20000000298,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "max": [
+              0.20000000298,
+              0.20000000298,
+              0.20000000298,
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "q01": [
+              -0.20000000298,
+              -0.20000000298,
+              -0.20000000298,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "q50": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "q99": [
+              0.20000000298,
+              0.20000000298,
+              0.20000000298,
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          }
+        }
+      },
+      "shared": {
+        "rebuilt": {
+          "observation.state": {
+            "rows": 70127,
+            "mean": [
+              -0.0735833109261,
+              -0.428294690216,
+              0.275505195943,
+              0.00452720895685,
+              -0.016899158348,
+              0.991407640527,
+              0.0,
+              0.127105992437
+            ],
+            "std": [
+              0.14047831962,
+              0.0908784624015,
+              0.0524183725872,
+              0.00869902110768,
+              0.0159169854568,
+              0.00248532056659,
+              0.0,
+              0.0177110053797
+            ],
+            "min": [
+              -0.442947387695,
+              -0.663545966148,
+              0.156866922975,
+              -0.0707522556186,
+              -0.0949645489454,
+              0.970318734646,
+              0.0,
+              0.0473826043308
+            ],
+            "max": [
+              0.225202023983,
+              -0.193582341075,
+              0.406618863344,
+              0.0378828123212,
+              0.0729249864817,
+              0.998160779476,
+              0.0,
+              0.231351807714
+            ],
+            "q01": [
+              -0.381711341143,
+              -0.619208341837,
+              0.168560541868,
+              -0.0506118216366,
+              -0.0677732485533,
+              0.978926423788,
+              0.0,
+              0.0805123005807
+            ],
+            "q50": [
+              -0.0810208618641,
+              -0.43335750699,
+              0.277738571167,
+              0.00527642387897,
+              -0.0162243489176,
+              0.991477787495,
+              0.0,
+              0.128534644842
+            ],
+            "q99": [
+              0.211735961139,
+              -0.269328596592,
+              0.38875421524,
+              0.0191759581864,
+              0.0618974401057,
+              0.996428347826,
+              0.0,
+              0.184656204581
+            ]
+          },
+          "action": {
+            "rows": 70127,
+            "mean": [
+              0.00123240306457,
+              -0.00539914295311,
+              -0.00351544823398,
+              0.0,
+              0.0,
+              0.0,
+              0.349152252342
+            ],
+            "std": [
+              0.122735477686,
+              0.0961373341035,
+              0.111711339553,
+              0.0,
+              0.0,
+              0.0,
+              0.476702168053
+            ],
+            "min": [
+              -0.20000000298,
+              -0.20000000298,
+              -0.20000000298,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "max": [
+              0.20000000298,
+              0.20000000298,
+              0.20000000298,
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "q01": [
+              -0.20000000298,
+              -0.20000000298,
+              -0.20000000298,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "q50": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "q99": [
+              0.20000000298,
+              0.20000000298,
+              0.20000000298,
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          }
+        },
+        "delivered": {
+          "observation.state": {
+            "rows": 70127,
+            "mean": [
+              -0.0735833109261,
+              -0.428294690216,
+              0.275505195943,
+              0.00452720895685,
+              -0.016899158348,
+              0.991407640527,
+              0.0,
+              0.127105992437
+            ],
+            "std": [
+              0.14047831962,
+              0.0908784624015,
+              0.0524183725872,
+              0.00869902110768,
+              0.0159169854568,
+              0.00248532056659,
+              0.0,
+              0.0177110053797
+            ],
+            "min": [
+              -0.442947387695,
+              -0.663545966148,
+              0.156866922975,
+              -0.0707522556186,
+              -0.0949645489454,
+              0.970318734646,
+              0.0,
+              0.0473826043308
+            ],
+            "max": [
+              0.225202023983,
+              -0.193582341075,
+              0.406618863344,
+              0.0378828123212,
+              0.0729249864817,
+              0.998160779476,
+              0.0,
+              0.231351807714
+            ],
+            "q01": [
+              -0.381711341143,
+              -0.619208341837,
+              0.168560541868,
+              -0.0506118216366,
+              -0.0677732485533,
+              0.978926423788,
+              0.0,
+              0.0805123005807
+            ],
+            "q50": [
+              -0.0810208618641,
+              -0.43335750699,
+              0.277738571167,
+              0.00527642387897,
+              -0.0162243489176,
+              0.991477787495,
+              0.0,
+              0.128534644842
+            ],
+            "q99": [
+              0.211735961139,
+              -0.269328596592,
+              0.38875421524,
+              0.0191759581864,
+              0.0618974401057,
+              0.996428347826,
+              0.0,
+              0.184656204581
+            ]
+          },
+          "action": {
+            "rows": 70127,
+            "mean": [
+              0.00123240306457,
+              -0.00539914295311,
+              -0.00351544823398,
+              0.0,
+              0.0,
+              0.0,
+              0.349152252342
+            ],
+            "std": [
+              0.122735477686,
+              0.0961373341035,
+              0.111711339553,
+              0.0,
+              0.0,
+              0.0,
+              0.476702168053
+            ],
+            "min": [
+              -0.20000000298,
+              -0.20000000298,
+              -0.20000000298,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "max": [
+              0.20000000298,
+              0.20000000298,
+              0.20000000298,
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "q01": [
+              -0.20000000298,
+              -0.20000000298,
+              -0.20000000298,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "q50": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "q99": [
+              0.20000000298,
+              0.20000000298,
+              0.20000000298,
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          }
+        }
+      }
+    }
+  }
+}

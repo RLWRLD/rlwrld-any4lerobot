@@ -1,0 +1,96 @@
+berkeley_fanuc_manipulation
+
+1  declaration    [FAIL]  everything under meta/ that needs no pairing
+     [ ok ] meta/info.json
+     every field both copies declare is the same on both sides
+     one-sided    16 field(s); only one copy declares them, so there is nothing to compare, and they are not judged here
+                  features.observation.images.image.info.is_depth_map False vs '(absent)'
+                  features.observation.images.image.info.video.crf 30 vs '(absent)'
+                  features.observation.images.image.info.video.extra_options {} vs '(absent)'
+                  features.observation.images.image.info.video.fast_decode 0 vs '(absent)'
+                  features.observation.images.image.info.video.g 2 vs '(absent)'
+                  features.observation.images.image.info.video.is_depth_map '(absent)' vs False
+                  features.observation.images.image.info.video.preset 12 vs '(absent)'
+                  features.observation.images.image.info.video.video_backend 'pyav' vs '(absent)'
+                  features.observation.images.wrist_image.info.is_depth_map False vs '(absent)'
+                  features.observation.images.wrist_image.info.video.crf 30 vs '(absent)'
+                  features.observation.images.wrist_image.info.video.extra_options {} vs '(absent)'
+                  features.observation.images.wrist_image.info.video.fast_decode 0 vs '(absent)'
+                  features.observation.images.wrist_image.info.video.g 2 vs '(absent)'
+                  features.observation.images.wrist_image.info.video.is_depth_map '(absent)' vs False
+                  features.observation.images.wrist_image.info.video.preset 12 vs '(absent)'
+                  features.observation.images.wrist_image.info.video.video_backend 'pyav' vs '(absent)'
+     [ ok ] meta/
+         1 set aside -- excluded from the comparison by decision
+           relative_stats.json                          'not compared' vs 'not compared'
+     [ ok ] meta/tasks.jsonl
+         31 set aside -- the index a task is given follows the order it was first seen, not the data
+           task_index 0                                 'Press the stapler.' vs 'Close Water kettle .'
+           task_index 1                                 'Open the drawer.' vs 'Close the drawer.'
+           task_index 10                                'Pick up the object and place it in the box.' vs 'Pick up the battery.'
+           task_index 11                                'Separate the stacked cups..' vs 'Pick up the brush and put it on the table.'
+           task_index 12                                'Pick up the screw driver and place it in the box.' vs 'Pick up the brush and sweep the table.'
+           task_index 13                                'Pick up the object on the table and place it in the cup.' vs 'Pick up the cup and put it on the table.'
+           task_index 14                                'Pick up the banana and place it in the drawer.' vs 'Pick up the level and place it on the cup.'
+           task_index 15                                'Pour the objects in the blue cup to the white cup.' vs 'Pick up the object and place it in the box.'
+           task_index 16                                'Pick up the level and place it on the cup.' vs 'Pick up the object on the table and place it in the cup.'
+           task_index 17                                'open the box' vs 'Pick up the object on the table then put it down.'
+           task_index 18                                'Close the drawer.' vs 'Pick up the object under the table and put it on top of the table.'
+           task_index 19                                'Handover the object on the table to the human.' vs 'Pick up the pen and place it in the cup.'
+           ... and 19 more
+     [ ok ] meta/modality.json
+     [FAIL] meta/stats.json
+       ! observation.images.image.std                   'differs by 0.181' vs 'allowed 0.05'
+       ! observation.images.wrist_image.std             'differs by 0.1483' vs 'allowed 0.05'
+         24 set aside -- ordering features follow the episode and task order; missing quantiles are the keys the v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream
+           episode_index.max                            'differs by 390' vs 'allowed 1e-06'
+           episode_index.mean                           'differs by 200.1' vs 'allowed 1e-06'
+           episode_index.q01                            'differs by 200.1' vs 'allowed 1e-06'
+           episode_index.q10                            'differs by 200.1' vs 'allowed 1e-06'
+           episode_index.q50                            'differs by 200.1' vs 'allowed 1e-06'
+           episode_index.q90                            'differs by 200.1' vs 'allowed 1e-06'
+           episode_index.q99                            'differs by 200.1' vs 'allowed 1e-06'
+           episode_index.std                            'differs by 114.6' vs 'allowed 1e-06'
+           index.max                                    'differs by 5.833e+04' vs 'allowed 1e-06'
+           index.mean                                   'differs by 2.944e+04' vs 'allowed 1e-06'
+           index.q01                                    'differs by 2.944e+04' vs 'allowed 1e-06'
+           index.q10                                    'differs by 2.944e+04' vs 'allowed 1e-06'
+           ... and 12 more
+
+2  episodes       [ -- ]  counted, never failed -- which episodes a rebuild has is decided elsewhere
+     rebuilt         415 episodes     62,613 rows
+     delivered       415 episodes     62,613 rows
+     reproduced      415  (415 identical, 0 agreeing on their first 8 rows only)
+     unmatched         0 of the delivered episodes have no counterpart; 0 of the rebuild's do not either
+     reordered       414 of 415 paired episodes carry a different index
+
+3  sample         [FAIL]  the episodes that are there, compared in full
+     compared         64 of 415 paired episodes, half from each end of the index range
+     identical        64
+     video observation.images.image    415 files,     490,703B each against 415 / 498,935B (0.98x)
+     video observation.images.wrist_image    415 files,     329,873B each against 415 / 333,341B (0.99x)
+     prompts         415 paired episodes checked; all agree
+     [FAIL] meta/episodes.jsonl + meta/episodes_stats.jsonl
+       ! episodes_stats.jsonl.observation.images.image.std '415 of 415 pairs differ, worst 0.2528' vs 'the delivered copy records zero in every episode'
+       ! episodes_stats.jsonl.observation.images.wrist_image.q50 '1 of 415 pairs differ, worst 0.05492' vs 'allowed 0.05'
+       ! episodes_stats.jsonl.observation.images.wrist_image.std '415 of 415 pairs differ, worst 0.3659' vs 'the delivered copy records zero in every episode'
+         24 set aside -- ordering features follow the episode and task order, which the episode question already reports; absent quantiles are the five keys the v3.0 to v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream
+           episodes_stats.jsonl.episode_index.max       '413 of 415 pairs differ, worst 407' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.mean      '413 of 415 pairs differ, worst 407' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.min       '413 of 415 pairs differ, worst 407' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q01       '413 of 415 pairs differ, worst 407' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q10       '413 of 415 pairs differ, worst 407' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q50       '413 of 415 pairs differ, worst 407' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q90       '413 of 415 pairs differ, worst 407' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q99       '413 of 415 pairs differ, worst 407' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.max               '415 of 415 pairs differ, worst 6.121e+04' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.mean              '415 of 415 pairs differ, worst 6.121e+04' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.min               '415 of 415 pairs differ, worst 6.121e+04' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.q01               '415 of 415 pairs differ, worst 6.121e+04' vs 'allowed 1e-06'
+           ... and 12 more
+
+4  distributions  [ ok ]  max difference per column, as a fraction of its range
+     every episode        action 1.6e-14   observation.state 4.4e-15
+     the shared ones      action 1.6e-14   observation.state 4.4e-15
+
+verdict          [FAIL]  meta/stats.json differs; per-episode metadata differs

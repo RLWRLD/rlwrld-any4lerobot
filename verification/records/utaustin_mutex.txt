@@ -1,0 +1,173 @@
+utaustin_mutex
+
+1  declaration    [FAIL]  everything under meta/ that needs no pairing
+     [ ok ] meta/info.json
+     every field both copies declare is the same on both sides
+     one-sided    19 field(s); only one copy declares them, so there is nothing to compare, and they are not judged here
+                  features.absolute_action.dtype             '(absent)' vs 'float32'
+                  features.absolute_action.names.motors      '(absent)' vs ['x', 'y', 'z', 'roll', 'pitch', 'yaw', 'gripper']
+                  features.absolute_action.shape             '(absent)' vs [7]
+                  features.observation.images.image.info.is_depth_map False vs '(absent)'
+                  features.observation.images.image.info.video.crf 30 vs '(absent)'
+                  features.observation.images.image.info.video.extra_options {} vs '(absent)'
+                  features.observation.images.image.info.video.fast_decode 0 vs '(absent)'
+                  features.observation.images.image.info.video.g 2 vs '(absent)'
+                  features.observation.images.image.info.video.is_depth_map '(absent)' vs False
+                  features.observation.images.image.info.video.preset 12 vs '(absent)'
+                  features.observation.images.image.info.video.video_backend 'pyav' vs '(absent)'
+                  features.observation.images.wrist_image.info.is_depth_map False vs '(absent)'
+                  features.observation.images.wrist_image.info.video.crf 30 vs '(absent)'
+                  features.observation.images.wrist_image.info.video.extra_options {} vs '(absent)'
+                  features.observation.images.wrist_image.info.video.fast_decode 0 vs '(absent)'
+                  features.observation.images.wrist_image.info.video.g 2 vs '(absent)'
+                  features.observation.images.wrist_image.info.video.is_depth_map '(absent)' vs False
+                  features.observation.images.wrist_image.info.video.preset 12 vs '(absent)'
+                  features.observation.images.wrist_image.info.video.video_backend 'pyav' vs '(absent)'
+     [ ok ] meta/
+         1 set aside -- excluded from the comparison by decision
+           relative_stats.json                          'not compared' vs 'not compared'
+     [FAIL] meta/tasks.jsonl
+       ! 
+Aim the gripper at the oven handle and steadily take hold of the handle.
+Carefully extract the tray from the oven.
+Position the gripper over the red cup and softly grip it, being sure of a safe hold.
+Place the red cup on the tray with the utmost care. 'present' vs '(absent)'
+       ! 
+Bring your hand's grasp to the bread.
+Hold the bread tenderly using the grip of your hand.
+Carefully pick up the bread and hover it over the white plate.
+Politely place it atop the plate. 'present' vs '(absent)'
+       ! 
+Carefully approach the cobalt cup with your gripper.
+Make sure to hold the cobalt cup delicately with your gripper.
+Carefully elevate the cobalt cup, moving it off the surface.
+Position the cobalt cup to hover above the alabaster dining ware.
+Gently lower the cobalt cup onto the alabaster dining ware.
+Gradually release your hold on the cobalt cup. 'present' vs '(absent)'
+       ! 
+Carefully direct your gripping tool toward the mac and cheese carton.
+Clutch the mac and cheese carton gently but firmly in your gripping tool.
+Slide your gripping tool, with the carton in hand, above the container.
+Loosen your grip, letting the carton of mac and cheese effortlessly fall into the container. 'present' vs '(absent)'
+       ! 
+Carefully navigate your gripper to the air fryer's handle.
+Confidently seize the handle using your gripper.
+Gradually bring the handle toward yourself to access the air fryer. 'present' vs '(absent)'
+       ! 
+Carefully stretch the hand toward the upper drawer's knob.
+Grasp the knob with conviction using the gripping tool.
+Close the drawer by pushing it.
+Disengage from the upper drawer knob.
+Proceed to extend the hand to the lower drawer's knob.
+Use the gripping tool to effectively hold the knob.
+Open the lower drawer by guiding the hand further outward.
+Finally, liberate the lower drawer knob. 'present' vs '(absent)'
+       ! 
+Caressingly guide your clamp towards the toast.
+Compassionately possess the toast with your clamp.
+Gradually tag the toast up from the worktable.
+Complaisantly, cruise the held-toasty-pillow to your white crockery.
+Last but notably, liberate the toast onto the shiny white tableware. 'present' vs '(absent)'
+       ! 
+Compassionately, move the pinch receptors towards pink recepticle.
+Embrace the recepticle delicately and rise accordingly.
+Progress forward guided by applied tension and move towards the highest section of the storage unit.
+Place the recepticle delicately and shut the storage unit. 'present' vs '(absent)'
+       ! 
+Discover the targeted book and set your gripper to the appropriate amplitude.
+Smoothly guide your gripper in the direction of the book and snatch it firmly.
+Search for the back section of the caddy.
+Move the held book towards the back section and lightly deposit it inside. 'present' vs '(absent)'
+       ! 
+Draw close to the oven tray handle and pull it smoothly until the tray is entirely removed.
+Find the blue cup before you and put it gently onto the wide-open tray. 'present' vs '(absent)'
+       ! 
+Find the cornflower hued bowl that lies before your eyes.
+Extend your limb whilst freeing your grasp instrument.
+Steer it towards the box with interest and hold the cup.
+Uplift and rotate till the further part of the holder comes in sight.
+Decently toss the cup into caddie's back pocket whilst freeing your hand. 'present' vs '(absent)'
+       ! 
+Gently grip the air fryer handle with your gripper and kindly pull it open by sliding your gripper away from the base.
+Gradually bring your gripper in line with the blue bowl and gently capture it, without tightening your grip too much.
+Securely place the blue bowl inside the opened air fryer with a steady position.
+Liberate your robot's gripper, and withdraw your gripper from the proximity of the air fryer. 'present' vs '(absent)'
+       ! ... and 72 more
+         50 set aside -- the index a task is given follows the order it was first seen, not the data
+           task_index 0                                 '\nKindly spot and seek the red cup placed ahead of you.\nCautiously adjust your gripper towards the red cup, gripping it gently.\nFind the after-storage area of the caddy.\nRelocate the red cup in your grip over the rear portion and softly release it into the compartment.' vs 'Aim the gripper at the oven handle and steadily take hold of the handle.\nCarefully extract the tray from the oven.\nPosition the gripper over the red cup and softly grip it, being sure of a safe hold.\nPlace the red cup on the tray with the utmost care.'
+           task_index 1                                 '\nPlease move the gripper into proximity with the fryer handle.\nOnce close enough, gingerly grasp the handle and gently tug the fryer basket open in your direction.' vs "Bring your hand's grasp to the bread.\nHold the bread tenderly using the grip of your hand.\nCarefully pick up the bread and hover it over the white plate.\nPolitely place it atop the plate."
+           task_index 10                                '\nObserve the blue drinking vessel close to you.\nPoint your gripping mechanism towards the blue drinking vessel.\nSoftly grip the blue drinking vessel using your gripping mechanism.\nMove your gripping mechanism and the blue drinking vessel above the receptacle.\nLet go of the blue drinking vessel into the receptacle.' vs 'Extend the gripper towards the air fryer handle.\nGrasp the air fryer handle and pull it to open the air fryer.\nRelease the air fryer handle and move the gripper to the bread.\nGrasp the bread with the gripper and move it to the air fryer basket.\nRelease the bread inside the air fryer and retract the gripper.'
+           task_index 11                                "\nFind the cornflower hued bowl that lies before your eyes.\nExtend your limb whilst freeing your grasp instrument.\nSteer it towards the box with interest and hold the cup.\nUplift and rotate till the further part of the holder comes in sight.\nDecently toss the cup into caddie's back pocket whilst freeing your hand." vs 'Extend the gripper towards the oven tray handle.\nGrasp the handle and carefully pull the tray out of the oven.\nMove the gripper above the red bowl.\nGrab the red bowl gently.\nLift the bowl and place it onto the oven tray.'
+           task_index 12                                'Move your gripper towards the pink mug and hold it gently.\nLift the pink mug from the surface.\nPosition it above the basket, lowering it gently until it is placed inside.\nRelease the grip on the pink mug, completing the task.' vs "Find the cornflower hued bowl that lies before your eyes.\nExtend your limb whilst freeing your grasp instrument.\nSteer it towards the box with interest and hold the cup.\nUplift and rotate till the further part of the holder comes in sight.\nDecently toss the cup into caddie's back pocket whilst freeing your hand."
+           task_index 13                                '\nPlease spot the blue cup positioned before you and pinpoint its location.\nCarefully open your gripper and guide it in the direction of the cup.\nSecure a firm hold on the blue cup using your gripper, ensuring not to crush or let it slip from your grasp.\nWith caution, shift the gripper carrying the cup above the baking sheet.\nTenderly set the cup down on the baking sheet, and unclasp your gripper to release the cup.' vs "Gently grip the air fryer handle with your gripper and kindly pull it open by sliding your gripper away from the base.\nGradually bring your gripper in line with the blue bowl and gently capture it, without tightening your grip too much.\nSecurely place the blue bowl inside the opened air fryer with a steady position.\nLiberate your robot's gripper, and withdraw your gripper from the proximity of the air fryer."
+           task_index 14                                "\nWith caution, bring your gripper towards the upper drawer's hold.\nGrasp the drawer hold tightly with your gripper tool.\nPull the drawer in your direction to reveal the contents of the top drawer." vs "Gently maneuver your gripper in the book's direction.\nConfidently hold the book by angling your gripper properly.\nRelocate the book to the caddy.\nPinpoint the back pocket of the caddy and set the book down inside it."
+           task_index 15                                "\nGently stretch your hand towards the oven tray's handle, obtaining a firm grip, and draw it cautiously out of the oven.\nTransition your grip to the hot dog bowl, gingerly seizing the edge, and elevate it from the surface.\nHover the bowl over the tray, delicately lower it, and temper your grip, establishing the bowl's equilibrium." vs "Gently stretch your hand towards the oven tray's handle, obtaining a firm grip, and draw it cautiously out of the oven.\nTransition your grip to the hot dog bowl, gingerly seizing the edge, and elevate it from the surface.\nHover the bowl over the tray, delicately lower it, and temper your grip, establishing the bowl's equilibrium."
+           task_index 16                                '\nKindly get your arm to the topmost drawer handle.\nGet a good grip on it, then softly pull to open it.' vs 'Kindly direct your grabber toward the cereal bar.\nDelicately grip the cereal bar using your grabber.\nTransport the clutched cereal bar to the rear part of the organizer.\nSet the cereal bar down and place it in the rear section of the organizer.'
+           task_index 17                                'Move your gripper towards the bottom drawer handle.\nGrasp the handle gently with your gripper.\nApply gentle outward force to slide the bottom drawer open.' vs 'Kindly employ your clamp to softly take hold of the bread.\nDelicately rest it on the oven pan, verifying that it is even on the surface.\nUsing your clamp and attentiveness, smoothly glide the pan into the oven and along the appropriate brackets, securing it in position.'
+           task_index 18                                'Look closely at the bright blue vase near you.\nGently move your arm towards it, carefully releasing your grip to hold the vase delicately.\nLift it slightly and place it securely on a sturdy surface, making sure it is balanced perfectly.\nWithdraw your supporting hand, leaving the vase in its stable position.' vs 'Kindly get your arm to the topmost drawer handle.\nGet a good grip on it, then softly pull to open it.'
+           task_index 19                                "\nPlease reach out your grabber to the yellow dish.\nTenderly grip the yellow dish using your grabber.\nSet the yellow dish on the baking sheet.\nPosit your grabber on the rim of the baking sheet carrying the yellow dish.\nMindfully slide the baking sheet with the yellow dish into the oven.\nLet go of your grabber's hold on the baking sheet's edge when it is entirely in the oven." vs 'Kindly guide your pinchers towards the book laid out on the table.\nEnsure a firm grip on the book using your pinchers.\nNow, move both the pinchers and the book to the foremost compartment of the rack.\nThen, gently free the book into the leading segment of the rack.'
+           ... and 38 more
+     [ ok ] meta/modality.json
+     [FAIL] meta/stats.json
+       ! absolute_action                                '(absent)' vs 'present'
+       ! observation.images.image.std                   'differs by 0.1974' vs 'allowed 0.05'
+       ! observation.images.wrist_image.std             'differs by 0.1785' vs 'allowed 0.05'
+         24 set aside -- ordering features follow the episode and task order; missing quantiles are the keys the v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream
+           episode_index.max                            'differs by 1475' vs 'allowed 1e-06'
+           episode_index.mean                           'differs by 747.1' vs 'allowed 1e-06'
+           episode_index.q01                            'differs by 747.1' vs 'allowed 1e-06'
+           episode_index.q10                            'differs by 747.1' vs 'allowed 1e-06'
+           episode_index.q50                            'differs by 747.1' vs 'allowed 1e-06'
+           episode_index.q90                            'differs by 747.1' vs 'allowed 1e-06'
+           episode_index.q99                            'differs by 747.1' vs 'allowed 1e-06'
+           episode_index.std                            'differs by 425.9' vs 'allowed 1e-06'
+           index.max                                    'differs by 3.546e+05' vs 'allowed 1e-06'
+           index.mean                                   'differs by 1.779e+05' vs 'allowed 1e-06'
+           index.q01                                    'differs by 1.779e+05' vs 'allowed 1e-06'
+           index.q10                                    'differs by 1.779e+05' vs 'allowed 1e-06'
+           ... and 12 more
+
+2  episodes       [ -- ]  counted, never failed -- which episodes a rebuild has is decided elsewhere
+     rebuilt        1500 episodes    361,883 rows
+     delivered      1500 episodes    361,883 rows
+     reproduced     1500  (1500 identical, 0 agreeing on their first 8 rows only)
+     unmatched         0 of the delivered episodes have no counterpart; 0 of the rebuild's do not either
+     reordered      1498 of 1500 paired episodes carry a different index
+
+3  sample         [FAIL]  the episodes that are there, compared in full
+     compared         64 of 1500 paired episodes, half from each end of the index range
+     identical        63  (1 differ)
+     [FAIL] episode    16->298  362 rows
+              observation.state    identical (362, 8)
+              action               identical (362, 7)
+              video observation.images.image 128x128 362f av1/GOP2 1108917B vs 1116861B (0.99x) px 0.997 ok
+              video observation.images.wrist_image 128x128 362f av1/GOP2 239121B vs 243252B (0.98x) px 0.974 PIXELS
+              ! video observation.images.wrist_image: frames agree 0.974 against delivered, below 0.98 -- the same size encoded from a different picture
+     video observation.images.image   1500 files,     769,303B each against 1500 / 768,596B (1.00x)
+     video observation.images.wrist_image   1500 files,     221,859B each against 1500 / 220,857B (1.00x)
+     prompts        1500 paired episodes checked; all agree
+     [FAIL] meta/episodes.jsonl + meta/episodes_stats.jsonl
+       ! episodes_stats.jsonl.absolute_action           '(absent)' vs 'present'
+       ! episodes_stats.jsonl.observation.images.image.std '1500 of 1500 pairs differ, worst 0.2853' vs 'the delivered copy records zero in every episode'
+       ! episodes_stats.jsonl.observation.images.wrist_image.q99 '3 of 1500 pairs differ, worst 0.05887' vs 'allowed 0.05'
+       ! episodes_stats.jsonl.observation.images.wrist_image.std '1500 of 1500 pairs differ, worst 0.2998' vs 'the delivered copy records zero in every episode'
+         24 set aside -- ordering features follow the episode and task order, which the episode question already reports; absent quantiles are the five keys the v3.0 to v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream
+           episodes_stats.jsonl.episode_index.max       '1499 of 1500 pairs differ, worst 1495' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.mean      '1499 of 1500 pairs differ, worst 1495' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.min       '1499 of 1500 pairs differ, worst 1495' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q01       '1499 of 1500 pairs differ, worst 1495' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q10       '1499 of 1500 pairs differ, worst 1495' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q50       '1499 of 1500 pairs differ, worst 1495' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q90       '1499 of 1500 pairs differ, worst 1495' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q99       '1499 of 1500 pairs differ, worst 1495' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.max               '1500 of 1500 pairs differ, worst 3.611e+05' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.mean              '1500 of 1500 pairs differ, worst 3.611e+05' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.min               '1500 of 1500 pairs differ, worst 3.611e+05' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.q01               '1500 of 1500 pairs differ, worst 3.611e+05' vs 'allowed 1e-06'
+           ... and 12 more
+
+4  distributions  [ ok ]  max difference per column, as a fraction of its range
+     every episode        action 1.3e-14   observation.state 1.4e-14
+     the shared ones      action 1.3e-14   observation.state 1.4e-14
+
+verdict          [FAIL]  meta/tasks.jsonl differs; meta/stats.json differs; per-episode metadata differs; sampled episodes differ

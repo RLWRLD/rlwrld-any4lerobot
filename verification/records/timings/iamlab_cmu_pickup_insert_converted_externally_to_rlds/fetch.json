@@ -1,0 +1,16 @@
+{
+  "bytes": 54003201090,
+  "created": [
+    "/scratch/raw/iamlab_cmu_pickup_insert_converted_externally_to_rlds"
+  ],
+  "dataset": "iamlab_cmu_pickup_insert_converted_externally_to_rlds",
+  "dest_uri": null,
+  "error": null,
+  "finished": "2026-08-20T08:37:17+00:00",
+  "profile": null,
+  "source_uri": "s3://rlwrld-foundry-data/external/iamlab_cmu_pickup_insert_converted_externally_to_rlds/",
+  "spec_sha": null,
+  "started": "2026-08-20T08:35:08+00:00",
+  "status": "ok",
+  "step": "fetch"
+}

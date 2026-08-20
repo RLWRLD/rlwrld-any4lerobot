@@ -1,0 +1,16 @@
+{
+  "bytes": 22326291434,
+  "created": [
+    "/scratch/raw/utaustin_mutex"
+  ],
+  "dataset": "utaustin_mutex",
+  "dest_uri": null,
+  "error": null,
+  "finished": "2026-08-20T08:26:50+00:00",
+  "profile": null,
+  "source_uri": "s3://rlwrld-foundry-data/external/utaustin_mutex/",
+  "spec_sha": null,
+  "started": "2026-08-20T08:25:53+00:00",
+  "status": "ok",
+  "step": "fetch"
+}

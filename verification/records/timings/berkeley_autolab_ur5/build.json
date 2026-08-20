@@ -1,0 +1,16 @@
+{
+  "bytes": 687686222,
+  "created": [
+    "/scratch/out/berkeley_autolab_ur5"
+  ],
+  "dataset": "berkeley_autolab_ur5",
+  "dest_uri": null,
+  "error": null,
+  "finished": "2026-08-20T08:53:25+00:00",
+  "profile": "rldx1",
+  "source_uri": null,
+  "spec_sha": "396d44240d4918d8",
+  "started": "2026-08-20T08:49:28+00:00",
+  "status": "ok",
+  "step": "build"
+}

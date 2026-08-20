@@ -32,7 +32,8 @@ DEST_TYPES = LEROBOT_SOURCES
 _TOP_LEVEL_KEYS = {"name", "dataset", "profile", "source", "steps", "dest", "runtime"}
 _SOURCE_KEYS = {"type", "path", "args"}
 _DEST_KEYS = {"type", "path"}
-_RUNTIME_KEYS = {"workers", "threads_per_ffmpeg", "preset", "crf", "encoding"}
+_RUNTIME_KEYS = {"workers", "threads_per_ffmpeg", "nic_rate",
+                 "preset", "crf", "encoding"}
 
 
 class ConfigError(ValueError):

@@ -145,6 +145,58 @@ machine for its core count rather than writing one down. That is safe at roughly
 the worker count has to be capped below the core count or the largest datasets will
 be killed.
 
+**This has now been hit, and on a node picked for verification rather than a full run.**
+c7i.2xlarge is 8 vCPU and 16 GB, so 2 GB per core, and stanford_hydra's build died
+immediately: 570 episodes at 240x320, two cameras, eight workers. Capping to 4 fixed it.
+The three datasets verified before it — 50, 104 and 150 episodes — were small enough not
+to reach it, which is exactly how this stays hidden until a real dataset arrives.
+
+So a verification node is an `m7i` too, even though it handles one dataset at a time.
+Picking a c-family instance because the work looks small trades 2 GB per core for a
+failure that reads like a dataset problem.
+
+**And m7i was not enough either.** On 2026-08-20 three m7i.12xlarge nodes -- 48 cores,
+185 GB, 4 GB per core exactly as recommended -- were killed anyway: furniture_bench's
+workers peaked at **4.74 GB each**, so 48 of them asked for 226 GB. The rule was wrong,
+not the instance. The constraint is memory per *worker*, and `workers: -1` now resolves
+through [`worker_budget`](../../generic_converter/pipeline.py), which divides the machine's
+memory by a measured 6 GB and takes the smaller of that and the core count: 30 on this
+instance rather than 48. `ANY4LEROBOT_WORKER_MEMORY_GB` raises it for a dataset whose
+episodes are larger still -- toto's are ~301 MB against bc_z's ~20 MB, and no single
+number serves both.
+
+What made that expensive was not the kill. It was that the parent then waited in
+`do_wait` for children the kernel had removed, at load average 0.00, with nothing in any
+log to say why -- 66 to 107 minutes per node before anyone looked, and the cause visible
+only in `dmesg` and `/proc/<pid>/wchan`. A stall watchdog now bounds it: if nothing is
+written under the output or logging directory for 20 minutes the converter prints what to
+check and exits 75, so an OOM costs a re-run rather than a node.
+
+### Transfer settings, and the trap of setting them in the wrong place
+
+The CRT client and the 64 MB chunk size are **in the image**, not in this script. They
+were here once, and that failed quietly: a driver that starts a stage with
+`--entrypoint python` never runs this script, and one that runs `aws configure` on the
+host does not reach the container, which has its own `$HOME`. Either way the aws CLI
+that does the work gets stock defaults, and a 3.9 TB pass moved at 324 MB/s instead of
+677 without anything reporting a problem.
+
+Measured on 22.3 GB with a cold page cache:
+
+| | MB/s |
+| --- | --: |
+| stock defaults | 323.6 |
+| classic client, 100 concurrent requests | 348.8 |
+| **CRT client, 64 MB chunks** | **676.6** |
+| CRT + `target_bandwidth 18Gb/s` | 697.7 |
+| CRT, written to tmpfs instead of gp3 | 1594.7 |
+
+So `NIC_RATE` is worth about 3% and stays here because it is the one genuinely
+machine-specific value. And past ~700 MB/s the volume is the limit rather than the
+link: gp3 at 16000 IOPS against ~40 KB shard writes works out to 625 MB/s, which is
+where it lands, so provisioning more MB/s alone would not move it. A node that needs
+to go faster than that wants more IOPS, striped volumes, or local NVMe.
+
 ## Order of operations
 
 ```

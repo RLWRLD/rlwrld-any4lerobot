@@ -1,0 +1,16 @@
+{
+  "bytes": 48732782980,
+  "created": [
+    "/scratch/raw/roboturk"
+  ],
+  "dataset": "roboturk",
+  "dest_uri": null,
+  "error": null,
+  "finished": "2026-08-20T08:22:06+00:00",
+  "profile": null,
+  "source_uri": "s3://rlwrld-foundry-data/external/roboturk/",
+  "spec_sha": null,
+  "started": "2026-08-20T08:20:00+00:00",
+  "status": "ok",
+  "step": "fetch"
+}

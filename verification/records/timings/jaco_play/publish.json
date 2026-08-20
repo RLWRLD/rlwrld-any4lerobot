@@ -1,0 +1,14 @@
+{
+  "bytes": 415024385,
+  "created": [],
+  "dataset": "jaco_play",
+  "dest_uri": "s3://rlwrld-foundry-data/lerobot/rldx1/jaco_play/",
+  "error": null,
+  "finished": "2026-08-20T08:17:28+00:00",
+  "profile": null,
+  "source_uri": null,
+  "spec_sha": null,
+  "started": "2026-08-20T08:17:09+00:00",
+  "status": "ok",
+  "step": "publish"
+}

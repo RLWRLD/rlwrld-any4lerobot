@@ -96,7 +96,7 @@ def fetch(env, spec, steps: Steps, *, dry_run: bool = False, sync=None) -> Outco
 
     started = now()
     try:
-        sync(uri, destination)
+        sync(uri, destination, nic_rate=env.nic_rate)
     except transfer.TransferError as exc:
         steps.write(
             Record(

@@ -1,0 +1,16 @@
+{
+  "bytes": 324478798,
+  "created": [
+    "/scratch/out/berkeley_cable_routing"
+  ],
+  "dataset": "berkeley_cable_routing",
+  "dest_uri": null,
+  "error": null,
+  "finished": "2026-08-20T08:08:50+00:00",
+  "profile": "rldx1",
+  "source_uri": null,
+  "spec_sha": "9a42f5e0efdb4132",
+  "started": "2026-08-20T08:06:35+00:00",
+  "status": "ok",
+  "step": "build"
+}

@@ -1,0 +1,16 @@
+{
+  "bytes": 707918554,
+  "created": [
+    "/scratch/out/roboturk"
+  ],
+  "dataset": "roboturk",
+  "dest_uri": null,
+  "error": null,
+  "finished": "2026-08-20T08:26:04+00:00",
+  "profile": "rldx1",
+  "source_uri": null,
+  "spec_sha": "70c8d26e2c1c2c71",
+  "started": "2026-08-20T08:22:17+00:00",
+  "status": "ok",
+  "step": "build"
+}

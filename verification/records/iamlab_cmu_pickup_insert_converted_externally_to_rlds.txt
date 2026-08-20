@@ -1,0 +1,457 @@
+iamlab_cmu_pickup_insert_converted_externally_to_rlds
+
+1  declaration    [FAIL]  everything under meta/ that needs no pairing
+     [FAIL] meta/info.json
+     ! features.observation.state.names.motors    ['motor_0', 'motor_1', 'motor_2', 'motor_3', 'motor_4', 'motor_5', 'motor_6', 'gripper'] vs ['x', 'y', 'z', 'roll', 'pitch', 'yaw', 'pad', 'gripper']
+     ! robot_type                                 'franka' vs 'Franka'
+     one-sided    55 field(s); only one copy declares them, so there is nothing to compare, and they are not judged here
+                  features.absolute_action.dtype             '(absent)' vs 'float32'
+                  features.absolute_action.names.motors      '(absent)' vs ['x', 'y', 'z', 'roll', 'pitch', 'yaw', 'gripper']
+                  features.absolute_action.shape             '(absent)' vs [7]
+                  features.observation.images.image.dtype    'video' vs '(absent)'
+                  features.observation.images.image.info.has_audio False vs '(absent)'
+                  features.observation.images.image.info.is_depth_map False vs '(absent)'
+                  features.observation.images.image.info.video.channels 3 vs '(absent)'
+                  features.observation.images.image.info.video.codec 'av1' vs '(absent)'
+                  features.observation.images.image.info.video.crf 30 vs '(absent)'
+                  features.observation.images.image.info.video.extra_options {} vs '(absent)'
+                  features.observation.images.image.info.video.fast_decode 0 vs '(absent)'
+                  features.observation.images.image.info.video.fps 20 vs '(absent)'
+                  features.observation.images.image.info.video.g 2 vs '(absent)'
+                  features.observation.images.image.info.video.height 192 vs '(absent)'
+                  features.observation.images.image.info.video.pix_fmt 'yuv420p' vs '(absent)'
+                  features.observation.images.image.info.video.preset 12 vs '(absent)'
+                  features.observation.images.image.info.video.video_backend 'pyav' vs '(absent)'
+                  features.observation.images.image.info.video.width 320 vs '(absent)'
+                  features.observation.images.image.names    ['height', 'width', 'rgb'] vs '(absent)'
+                  features.observation.images.image.shape    [192, 320, 3] vs '(absent)'
+                  features.observation.images.primary.dtype  '(absent)' vs 'video'
+                  features.observation.images.primary.info.video.channels '(absent)' vs 3
+                  features.observation.images.primary.info.video.codec '(absent)' vs 'h264'
+                  features.observation.images.primary.info.video.fps '(absent)' vs 20
+                  features.observation.images.primary.info.video.height '(absent)' vs 192
+                  features.observation.images.primary.info.video.pix_fmt '(absent)' vs 'yuv420p'
+                  features.observation.images.primary.info.video.width '(absent)' vs 320
+                  features.observation.images.primary.names  '(absent)' vs ['height', 'width', 'rgb']
+                  features.observation.images.primary.shape  '(absent)' vs [192, 320, 3]
+                  features.observation.images.wrist.dtype    '(absent)' vs 'video'
+                  features.observation.images.wrist.info.video.channels '(absent)' vs 3
+                  features.observation.images.wrist.info.video.codec '(absent)' vs 'h264'
+                  features.observation.images.wrist.info.video.fps '(absent)' vs 20
+                  features.observation.images.wrist.info.video.height '(absent)' vs 192
+                  features.observation.images.wrist.info.video.pix_fmt '(absent)' vs 'yuv420p'
+                  features.observation.images.wrist.info.video.width '(absent)' vs 256
+                  features.observation.images.wrist.names    '(absent)' vs ['height', 'width', 'rgb']
+                  features.observation.images.wrist.shape    '(absent)' vs [192, 256, 3]
+                  features.observation.images.wrist_image.dtype 'video' vs '(absent)'
+                  features.observation.images.wrist_image.info.has_audio False vs '(absent)'
+                  features.observation.images.wrist_image.info.is_depth_map False vs '(absent)'
+                  features.observation.images.wrist_image.info.video.channels 3 vs '(absent)'
+                  features.observation.images.wrist_image.info.video.codec 'av1' vs '(absent)'
+                  features.observation.images.wrist_image.info.video.crf 30 vs '(absent)'
+                  features.observation.images.wrist_image.info.video.extra_options {} vs '(absent)'
+                  features.observation.images.wrist_image.info.video.fast_decode 0 vs '(absent)'
+                  features.observation.images.wrist_image.info.video.fps 20 vs '(absent)'
+                  features.observation.images.wrist_image.info.video.g 2 vs '(absent)'
+                  features.observation.images.wrist_image.info.video.height 192 vs '(absent)'
+                  features.observation.images.wrist_image.info.video.pix_fmt 'yuv420p' vs '(absent)'
+                  features.observation.images.wrist_image.info.video.preset 12 vs '(absent)'
+                  features.observation.images.wrist_image.info.video.video_backend 'pyav' vs '(absent)'
+                  features.observation.images.wrist_image.info.video.width 256 vs '(absent)'
+                  features.observation.images.wrist_image.names ['height', 'width', 'rgb'] vs '(absent)'
+                  features.observation.images.wrist_image.shape [192, 256, 3] vs '(absent)'
+     [ ok ] meta/
+         1 set aside -- excluded from the comparison by decision
+           relative_stats.json                          'not compared' vs 'not compared'
+     [ ok ] meta/tasks.jsonl
+         6 set aside -- the index a task is given follows the order it was first seen, not the data
+           task_index 0                                 'Pick up green block.' vs 'Insert greeen block.'
+           task_index 1                                 'Pick up pink flower.' vs 'Pick up blue block.'
+           task_index 2                                 'Insert greeen block.' vs 'Pick up green block.'
+           task_index 3                                 'Pick up blue block.' vs 'Pick up narrow blue stick.'
+           task_index 5                                 'Pick up yellow block.' vs 'Pick up pink flower.'
+           task_index 6                                 'Pick up narrow blue stick.' vs 'Pick up yellow block.'
+     [ ok ] meta/modality.json
+     [FAIL] meta/stats.json
+       ! absolute_action                                '(absent)' vs 'present'
+       ! action.mean                                    'differs by 3.15e-05' vs 'allowed 1e-06'
+       ! action.q01                                     'differs by 2.014' vs 'allowed 1e-06'
+       ! action.q99                                     'differs by 1.497' vs 'allowed 1e-06'
+       ! action.std                                     'differs by 0.0002246' vs 'allowed 1e-06'
+       ! episode_index                                  'present' vs '(absent)'
+       ! frame_index                                    'present' vs '(absent)'
+       ! index                                          'present' vs '(absent)'
+       ! observation.images.image                       'present' vs '(absent)'
+       ! observation.images.wrist_image                 'present' vs '(absent)'
+       ! observation.state.mean                         'differs by 8.745e-05' vs 'allowed 1e-06'
+       ! observation.state.q01                          'differs by 0.3275' vs 'allowed 1e-06'
+       ! ... and 5 more
+         12 set aside -- ordering features follow the episode and task order; missing quantiles are the keys the v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream
+           action.count                                 'present' vs '(absent)'
+           action.q10                                   'present' vs '(absent)'
+           action.q50                                   'present' vs '(absent)'
+           action.q90                                   'present' vs '(absent)'
+           observation.state.count                      'present' vs '(absent)'
+           observation.state.q10                        'present' vs '(absent)'
+           observation.state.q50                        'present' vs '(absent)'
+           observation.state.q90                        'present' vs '(absent)'
+           timestamp.count                              'present' vs '(absent)'
+           timestamp.q10                                'present' vs '(absent)'
+           timestamp.q50                                'present' vs '(absent)'
+           timestamp.q90                                'present' vs '(absent)'
+
+2  episodes       [ -- ]  counted, never failed -- which episodes a rebuild has is decided elsewhere
+     rebuilt         631 episodes    146,241 rows
+     delivered       631 episodes    146,241 rows
+     reproduced      631  (631 identical, 0 agreeing on their first 8 rows only)
+     unmatched         0 of the delivered episodes have no counterpart; 0 of the rebuild's do not either
+     reordered       630 of 631 paired episodes carry a different index
+
+3  sample         [FAIL]  the episodes that are there, compared in full
+     compared         64 of 631 paired episodes, half from each end of the index range
+     identical         0  (64 differ)
+     [FAIL] episode     0->357  302 rows
+              observation.state    identical (302, 8)
+              action               identical (302, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode     1->463  287 rows
+              observation.state    identical (287, 8)
+              action               identical (287, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode     2->592  236 rows
+              observation.state    identical (236, 8)
+              action               identical (236, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode     3->437  215 rows
+              observation.state    identical (215, 8)
+              action               identical (215, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode     4->271  617 rows
+              observation.state    identical (617, 8)
+              action               identical (617, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode     5->140  409 rows
+              observation.state    identical (409, 8)
+              action               identical (409, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode     6->43  158 rows
+              observation.state    identical (158, 8)
+              action               identical (158, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode     7->518  241 rows
+              observation.state    identical (241, 8)
+              action               identical (241, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode     8->393  321 rows
+              observation.state    identical (321, 8)
+              action               identical (321, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode     9->516  129 rows
+              observation.state    identical (129, 8)
+              action               identical (129, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode    10->303  97 rows
+              observation.state    identical (97, 8)
+              action               identical (97, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode    11->561  245 rows
+              observation.state    identical (245, 8)
+              action               identical (245, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode    12->70  188 rows
+              observation.state    identical (188, 8)
+              action               identical (188, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode    13->188  332 rows
+              observation.state    identical (332, 8)
+              action               identical (332, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode    14->106  231 rows
+              observation.state    identical (231, 8)
+              action               identical (231, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode    15->197  394 rows
+              observation.state    identical (394, 8)
+              action               identical (394, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode    16->56  178 rows
+              observation.state    identical (178, 8)
+              action               identical (178, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode    17->321  257 rows
+              observation.state    identical (257, 8)
+              action               identical (257, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode    18->138  212 rows
+              observation.state    identical (212, 8)
+              action               identical (212, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode    19->60  208 rows
+              observation.state    identical (208, 8)
+              action               identical (208, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode    20->497  310 rows
+              observation.state    identical (310, 8)
+              action               identical (310, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode    21->253  268 rows
+              observation.state    identical (268, 8)
+              action               identical (268, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode    22->320  96 rows
+              observation.state    identical (96, 8)
+              action               identical (96, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode    23->416  267 rows
+              observation.state    identical (267, 8)
+              action               identical (267, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode    24->484  244 rows
+              observation.state    identical (244, 8)
+              action               identical (244, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode    25->110  166 rows
+              observation.state    identical (166, 8)
+              action               identical (166, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode    26->156  286 rows
+              observation.state    identical (286, 8)
+              action               identical (286, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode    27->151  239 rows
+              observation.state    identical (239, 8)
+              action               identical (239, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode    28->24  191 rows
+              observation.state    identical (191, 8)
+              action               identical (191, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode    29->278  144 rows
+              observation.state    identical (144, 8)
+              action               identical (144, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode    30->468  243 rows
+              observation.state    identical (243, 8)
+              action               identical (243, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode    31->234  102 rows
+              observation.state    identical (102, 8)
+              action               identical (102, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   599->222  243 rows
+              observation.state    identical (243, 8)
+              action               identical (243, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   600->242  136 rows
+              observation.state    identical (136, 8)
+              action               identical (136, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   601->433  613 rows
+              observation.state    identical (613, 8)
+              action               identical (613, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   602->521  414 rows
+              observation.state    identical (414, 8)
+              action               identical (414, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   603->247  251 rows
+              observation.state    identical (251, 8)
+              action               identical (251, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   604->501  399 rows
+              observation.state    identical (399, 8)
+              action               identical (399, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   605->619  194 rows
+              observation.state    identical (194, 8)
+              action               identical (194, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   606->620  139 rows
+              observation.state    identical (139, 8)
+              action               identical (139, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   607->616  101 rows
+              observation.state    identical (101, 8)
+              action               identical (101, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   608->488  328 rows
+              observation.state    identical (328, 8)
+              action               identical (328, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   609->286  219 rows
+              observation.state    identical (219, 8)
+              action               identical (219, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   610->586  137 rows
+              observation.state    identical (137, 8)
+              action               identical (137, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   611->418  258 rows
+              observation.state    identical (258, 8)
+              action               identical (258, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   612->236  282 rows
+              observation.state    identical (282, 8)
+              action               identical (282, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   613->21  229 rows
+              observation.state    identical (229, 8)
+              action               identical (229, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   614->235  142 rows
+              observation.state    identical (142, 8)
+              action               identical (142, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   615->166  192 rows
+              observation.state    identical (192, 8)
+              action               identical (192, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   616->165  179 rows
+              observation.state    identical (179, 8)
+              action               identical (179, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   617->113  293 rows
+              observation.state    identical (293, 8)
+              action               identical (293, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   618->182  140 rows
+              observation.state    identical (140, 8)
+              action               identical (140, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   619->407  281 rows
+              observation.state    identical (281, 8)
+              action               identical (281, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   620->131  196 rows
+              observation.state    identical (196, 8)
+              action               identical (196, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   621->579  148 rows
+              observation.state    identical (148, 8)
+              action               identical (148, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   622->500  242 rows
+              observation.state    identical (242, 8)
+              action               identical (242, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   623->95  198 rows
+              observation.state    identical (198, 8)
+              action               identical (198, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   624->289  217 rows
+              observation.state    identical (217, 8)
+              action               identical (217, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   625->32  272 rows
+              observation.state    identical (272, 8)
+              action               identical (272, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   626->279  101 rows
+              observation.state    identical (101, 8)
+              action               identical (101, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   627->595  142 rows
+              observation.state    identical (142, 8)
+              action               identical (142, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   628->16  265 rows
+              observation.state    identical (265, 8)
+              action               identical (265, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   629->264  532 rows
+              observation.state    identical (532, 8)
+              action               identical (532, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     [FAIL] episode   630->90  137 rows
+              observation.state    identical (137, 8)
+              action               identical (137, 7)
+              ! video observation.images.primary only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+              ! video observation.images.wrist only in the delivered dataset; the rebuild has observation.images.image, observation.images.wrist_image instead
+     video observation.images.primary none in the rebuild against 631 delivered
+     video observation.images.wrist none in the rebuild against 631 delivered
+     ! video observation.images.primary: the rebuild has none at all
+     ! video observation.images.wrist: the rebuild has none at all
+     prompts         631 paired episodes checked; all agree
+     [FAIL] meta/episodes.jsonl + meta/episodes_stats.jsonl
+       ! episodes_stats.jsonl.absolute_action           '(absent)' vs 'present'
+       ! episodes_stats.jsonl.action.q01                '631 of 631 pairs differ, worst 5.075' vs 'allowed 1e-06'
+       ! episodes_stats.jsonl.action.q10                '631 of 631 pairs differ, worst 5.623' vs 'allowed 1e-06'
+       ! episodes_stats.jsonl.action.q50                '631 of 631 pairs differ, worst 3.123' vs 'allowed 1e-06'
+       ! episodes_stats.jsonl.action.q90                '631 of 631 pairs differ, worst 4.992' vs 'allowed 1e-06'
+       ! episodes_stats.jsonl.action.q99                '631 of 631 pairs differ, worst 6.134' vs 'allowed 1e-06'
+       ! episodes_stats.jsonl.action.std                '496 of 631 pairs differ, worst 0.004111' vs 'allowed 1e-06'
+       ! episodes_stats.jsonl.episode_index             'present' vs '(absent)'
+       ! episodes_stats.jsonl.frame_index               'present' vs '(absent)'
+       ! episodes_stats.jsonl.index                     'present' vs '(absent)'
+       ! episodes_stats.jsonl.observation.images.image  'present' vs '(absent)'
+       ! episodes_stats.jsonl.observation.images.primary '(absent)' vs 'present'
+       ! ... and 10 more
+
+4  distributions  [ ok ]  max difference per column, as a fraction of its range
+     every episode        action 3.8e-15   observation.state 3.0e-14
+     the shared ones      action 3.8e-15   observation.state 3.0e-14
+
+verdict          [FAIL]  the two copies declare different datasets; meta/stats.json differs; per-episode metadata differs; sampled episodes differ; the videos do not add up over all episodes

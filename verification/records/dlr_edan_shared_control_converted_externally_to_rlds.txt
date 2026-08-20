@@ -1,0 +1,80 @@
+dlr_edan_shared_control_converted_externally_to_rlds
+
+1  declaration    [FAIL]  everything under meta/ that needs no pairing
+     [ ok ] meta/info.json
+     every field both copies declare is the same on both sides
+     one-sided    8 field(s); only one copy declares them, so there is nothing to compare, and they are not judged here
+                  features.observation.images.image.info.is_depth_map False vs '(absent)'
+                  features.observation.images.image.info.video.crf 30 vs '(absent)'
+                  features.observation.images.image.info.video.extra_options {} vs '(absent)'
+                  features.observation.images.image.info.video.fast_decode 0 vs '(absent)'
+                  features.observation.images.image.info.video.g 2 vs '(absent)'
+                  features.observation.images.image.info.video.is_depth_map '(absent)' vs False
+                  features.observation.images.image.info.video.preset 12 vs '(absent)'
+                  features.observation.images.image.info.video.video_backend 'pyav' vs '(absent)'
+     [ ok ] meta/
+         1 set aside -- excluded from the comparison by decision
+           relative_stats.json                          'not compared' vs 'not compared'
+     [ ok ] meta/tasks.jsonl
+         9 set aside -- the index a task is given follows the order it was first seen, not the data
+           task_index 1                                 'pick the tennis ball' vs 'pick the banana'
+           task_index 2                                 'pick the green apple' vs 'pick the glass'
+           task_index 3                                 'pick the mug' vs 'pick the green apple'
+           task_index 4                                 'pick the glass' vs 'pick the mug'
+           task_index 5                                 'pick the pear' vs 'pick the orange'
+           task_index 6                                 'pick the yellow ball' vs 'pick the pear'
+           task_index 7                                 'pick the orange' vs 'pick the red apple'
+           task_index 8                                 'pick the red apple' vs 'pick the tennis ball'
+           task_index 9                                 'pick the banana' vs 'pick the yellow ball'
+     [ ok ] meta/modality.json
+     [FAIL] meta/stats.json
+       ! observation.images.image.std                   'differs by 0.2706' vs 'allowed 0.05'
+         24 set aside -- ordering features follow the episode and task order; missing quantiles are the keys the v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream
+           episode_index.max                            'differs by 79' vs 'allowed 1e-06'
+           episode_index.mean                           'differs by 37.97' vs 'allowed 1e-06'
+           episode_index.q01                            'differs by 37.97' vs 'allowed 1e-06'
+           episode_index.q10                            'differs by 37.97' vs 'allowed 1e-06'
+           episode_index.q50                            'differs by 37.97' vs 'allowed 1e-06'
+           episode_index.q90                            'differs by 37.97' vs 'allowed 1e-06'
+           episode_index.q99                            'differs by 37.97' vs 'allowed 1e-06'
+           episode_index.std                            'differs by 22.51' vs 'allowed 1e-06'
+           index.max                                    'differs by 6633' vs 'allowed 1e-06'
+           index.mean                                   'differs by 3412' vs 'allowed 1e-06'
+           index.q01                                    'differs by 3412' vs 'allowed 1e-06'
+           index.q10                                    'differs by 3412' vs 'allowed 1e-06'
+           ... and 12 more
+
+2  episodes       [ -- ]  counted, never failed -- which episodes a rebuild has is decided elsewhere
+     rebuilt         104 episodes      8,928 rows
+     delivered       104 episodes      8,928 rows
+     reproduced      104  (104 identical, 0 agreeing on their first 8 rows only)
+     unmatched         0 of the delivered episodes have no counterpart; 0 of the rebuild's do not either
+     reordered       100 of 104 paired episodes carry a different index
+
+3  sample         [FAIL]  the episodes that are there, compared in full
+     compared         64 of 104 paired episodes, half from each end of the index range
+     identical        64
+     video observation.images.image    104 files,     483,950B each against 104 / 504,882B (0.96x)
+     prompts         104 paired episodes checked; all agree
+     [FAIL] meta/episodes.jsonl + meta/episodes_stats.jsonl
+       ! episodes_stats.jsonl.observation.images.image.std '104 of 104 pairs differ, worst 0.3051' vs 'the delivered copy records zero in every episode'
+         24 set aside -- ordering features follow the episode and task order, which the episode question already reports; absent quantiles are the five keys the v3.0 to v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream
+           episodes_stats.jsonl.episode_index.max       '102 of 104 pairs differ, worst 97' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.mean      '102 of 104 pairs differ, worst 97' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.min       '102 of 104 pairs differ, worst 97' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q01       '102 of 104 pairs differ, worst 97' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q10       '102 of 104 pairs differ, worst 97' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q50       '102 of 104 pairs differ, worst 97' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q90       '102 of 104 pairs differ, worst 97' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q99       '102 of 104 pairs differ, worst 97' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.max               '104 of 104 pairs differ, worst 8342' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.mean              '104 of 104 pairs differ, worst 8342' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.min               '104 of 104 pairs differ, worst 8342' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.q01               '104 of 104 pairs differ, worst 8342' vs 'allowed 1e-06'
+           ... and 12 more
+
+4  distributions  [ ok ]  max difference per column, as a fraction of its range
+     every episode        action 3.3e-15   observation.state 3.3e-15
+     the shared ones      action 3.3e-15   observation.state 3.3e-15
+
+verdict          [FAIL]  meta/stats.json differs; per-episode metadata differs

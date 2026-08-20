@@ -103,3 +103,58 @@ def test_a_tree_is_measured_by_the_files_in_it(tmp_path):
 
 def test_a_missing_tree_measures_zero(tmp_path):
     assert tree_bytes(tmp_path / "nope") == 0
+
+
+class TestBandwidthIsDeclaredBeforeTransfer:
+    """target_bandwidth has no CLI flag, so it must be written before the sync.
+
+    It lived in node.sh and kept not applying: a stage started with
+    `--entrypoint python` skips that script, and setting it on the host does not reach
+    the container that runs the transfer. A 3.9 TB pass moved at stock speed as a
+    result. Now the process that transfers is the process that sets it.
+    """
+
+    def test_it_sets_target_bandwidth(self):
+        from orchestrator.transfer import declare_bandwidth
+
+        seen = []
+
+        def run(command, **kwargs):
+            seen.append(command)
+
+            class Ok:
+                returncode = 0
+                stderr = ""
+
+            return Ok()
+
+        assert declare_bandwidth("30Gb/s", run=run) is True
+        assert seen == [["aws", "configure", "set",
+                         "default.s3.target_bandwidth", "30Gb/s"]]
+
+    def test_no_rate_declares_nothing(self):
+        """A machine that has not said what its link is must not get a guess."""
+        from orchestrator.transfer import declare_bandwidth
+
+        seen = []
+        assert declare_bandwidth(None, run=lambda c, **k: seen.append(c)) is False
+        assert seen == []
+
+    def test_sync_declares_before_it_copies(self):
+        """Order matters: the CLI reads the config when it starts, not while running."""
+        from orchestrator.transfer import sync
+
+        seen = []
+
+        def run(command, **kwargs):
+            seen.append(command)
+
+            class Ok:
+                returncode = 0
+                stderr = ""
+
+            return Ok()
+
+        sync("s3://bucket/prefix/", "/scratch/raw/x", nic_rate="30Gb/s", run=run)
+        assert seen[0][:3] == ["aws", "configure", "set"]
+        assert seen[1][:3] == ["aws", "s3", "sync"]

@@ -1,0 +1,16 @@
+{
+  "bytes": 696408368,
+  "created": [
+    "/scratch/out/taco_play"
+  ],
+  "dataset": "taco_play",
+  "dest_uri": null,
+  "error": null,
+  "finished": "2026-08-20T11:34:13+00:00",
+  "profile": "rldx1",
+  "source_uri": null,
+  "spec_sha": "555290d95936e406",
+  "started": "2026-08-20T11:30:26+00:00",
+  "status": "ok",
+  "step": "build"
+}

@@ -1,0 +1,16 @@
+{
+  "bytes": 349292909,
+  "created": [
+    "/scratch/out/berkeley_fanuc_manipulation"
+  ],
+  "dataset": "berkeley_fanuc_manipulation",
+  "dest_uri": null,
+  "error": null,
+  "finished": "2026-08-20T08:15:33+00:00",
+  "profile": "rldx1",
+  "source_uri": null,
+  "spec_sha": "1fae328b4e1396c5",
+  "started": "2026-08-20T08:13:48+00:00",
+  "status": "ok",
+  "step": "build"
+}

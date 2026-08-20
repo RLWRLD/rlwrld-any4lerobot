@@ -58,5 +58,15 @@ class BaseAdapter(ABC):
         dataset.save_episode()
         return True
 
+    def episode_bytes(self) -> int | None:
+        """Decoded bytes of a typical episode, or ``None`` if unknown.
+
+        This is the only part of a worker's memory that varies between datasets, and
+        it varies thirtyfold: jaco_play's episode decodes to 10.8 MB and toto's to
+        300.4 MB. ``worker_budget`` uses it to decide how many workers fit, having
+        already wedged one node by assuming they were all the same size.
+        """
+        return None
+
     def get_episode_length(self, episode_data: Any) -> int:
         return len(episode_data)

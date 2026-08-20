@@ -1,0 +1,16 @@
+{
+  "bytes": 11167086197,
+  "created": [
+    "/scratch/raw/viola"
+  ],
+  "dataset": "viola",
+  "dest_uri": null,
+  "error": null,
+  "finished": "2026-08-20T08:18:12+00:00",
+  "profile": null,
+  "source_uri": "s3://rlwrld-foundry-data/external/viola/",
+  "spec_sha": null,
+  "started": "2026-08-20T08:17:40+00:00",
+  "status": "ok",
+  "step": "fetch"
+}

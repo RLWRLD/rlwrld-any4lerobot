@@ -1,0 +1,16 @@
+{
+  "bytes": 338453254,
+  "created": [
+    "/scratch/out/austin_sirius_dataset_converted_externally_to_rlds"
+  ],
+  "dataset": "austin_sirius_dataset_converted_externally_to_rlds",
+  "dest_uri": null,
+  "error": null,
+  "finished": "2026-08-20T12:03:21+00:00",
+  "profile": "rldx1",
+  "source_uri": null,
+  "spec_sha": "390b985ad92a3500",
+  "started": "2026-08-20T12:01:45+00:00",
+  "status": "ok",
+  "step": "build"
+}

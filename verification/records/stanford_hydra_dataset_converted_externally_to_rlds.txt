@@ -1,0 +1,132 @@
+stanford_hydra_dataset_converted_externally_to_rlds
+
+1  declaration    [FAIL]  everything under meta/ that needs no pairing
+     [ ok ] meta/info.json
+     every field both copies declare is the same on both sides
+     one-sided    16 field(s); only one copy declares them, so there is nothing to compare, and they are not judged here
+                  features.observation.images.image.info.is_depth_map False vs '(absent)'
+                  features.observation.images.image.info.video.crf 30 vs '(absent)'
+                  features.observation.images.image.info.video.extra_options {} vs '(absent)'
+                  features.observation.images.image.info.video.fast_decode 0 vs '(absent)'
+                  features.observation.images.image.info.video.g 2 vs '(absent)'
+                  features.observation.images.image.info.video.is_depth_map '(absent)' vs False
+                  features.observation.images.image.info.video.preset 12 vs '(absent)'
+                  features.observation.images.image.info.video.video_backend 'pyav' vs '(absent)'
+                  features.observation.images.wrist_image.info.is_depth_map False vs '(absent)'
+                  features.observation.images.wrist_image.info.video.crf 30 vs '(absent)'
+                  features.observation.images.wrist_image.info.video.extra_options {} vs '(absent)'
+                  features.observation.images.wrist_image.info.video.fast_decode 0 vs '(absent)'
+                  features.observation.images.wrist_image.info.video.g 2 vs '(absent)'
+                  features.observation.images.wrist_image.info.video.is_depth_map '(absent)' vs False
+                  features.observation.images.wrist_image.info.video.preset 12 vs '(absent)'
+                  features.observation.images.wrist_image.info.video.video_backend 'pyav' vs '(absent)'
+     [ ok ] meta/
+         1 set aside -- excluded from the comparison by decision
+           relative_stats.json                          'not compared' vs 'not compared'
+     [ ok ] meta/tasks.jsonl
+         2 set aside -- the index a task is given follows the order it was first seen, not the data
+           task_index 1                                 'palce dishes in the dish rack' vs 'make a piece of toast with the oven'
+           task_index 2                                 'make a piece of toast with the oven' vs 'palce dishes in the dish rack'
+     [ ok ] meta/modality.json
+     [FAIL] meta/stats.json
+       ! observation.images.image.std                   'differs by 0.2786' vs 'allowed 0.05'
+       ! observation.images.wrist_image.std             'differs by 0.2062' vs 'allowed 0.05'
+         23 set aside -- ordering features follow the episode and task order; missing quantiles are the keys the v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream
+           episode_index.max                            'differs by 545' vs 'allowed 1e-06'
+           episode_index.mean                           'differs by 273.6' vs 'allowed 1e-06'
+           episode_index.q01                            'differs by 273.6' vs 'allowed 1e-06'
+           episode_index.q10                            'differs by 273.6' vs 'allowed 1e-06'
+           episode_index.q50                            'differs by 273.6' vs 'allowed 1e-06'
+           episode_index.q90                            'differs by 273.6' vs 'allowed 1e-06'
+           episode_index.q99                            'differs by 273.6' vs 'allowed 1e-06'
+           episode_index.std                            'differs by 156.7' vs 'allowed 1e-06'
+           index.max                                    'differs by 3.41e+05' vs 'allowed 1e-06'
+           index.mean                                   'differs by 1.713e+05' vs 'allowed 1e-06'
+           index.q01                                    'differs by 1.713e+05' vs 'allowed 1e-06'
+           index.q10                                    'differs by 1.713e+05' vs 'allowed 1e-06'
+           ... and 11 more
+
+2  episodes       [ -- ]  counted, never failed -- which episodes a rebuild has is decided elsewhere
+     rebuilt         570 episodes    358,234 rows
+     delivered       570 episodes    358,234 rows
+     reproduced      570  (570 identical, 0 agreeing on their first 8 rows only)
+     unmatched         0 of the delivered episodes have no counterpart; 0 of the rebuild's do not either
+     reordered       569 of 570 paired episodes carry a different index
+
+3  sample         [FAIL]  the episodes that are there, compared in full
+     compared         64 of 570 paired episodes, half from each end of the index range
+     identical        56  (8 differ)
+     [FAIL] episode     2->537  514 rows
+              observation.state    identical (514, 8)
+              action               identical (514, 7)
+              video observation.images.image 256x192 514f av1/GOP2 2632491B vs 2536132B (1.04x) px 0.997 ok
+              video observation.images.wrist_image 256x192 514f av1/GOP2 1415544B vs 1377717B (1.03x) px 0.976 PIXELS
+              ! video observation.images.wrist_image: frames agree 0.976 against delivered, below 0.98 -- the same size encoded from a different picture
+     [FAIL] episode    15->178  488 rows
+              observation.state    identical (488, 8)
+              action               identical (488, 7)
+              video observation.images.image 256x192 488f av1/GOP2 2459792B vs 2376942B (1.03x) px 0.997 ok
+              video observation.images.wrist_image 256x192 488f av1/GOP2 1319117B vs 1280343B (1.03x) px 0.976 PIXELS
+              ! video observation.images.wrist_image: frames agree 0.976 against delivered, below 0.98 -- the same size encoded from a different picture
+     [FAIL] episode    16->50  486 rows
+              observation.state    identical (486, 8)
+              action               identical (486, 7)
+              video observation.images.image 256x192 486f av1/GOP2 2449070B vs 2376447B (1.03x) px 0.997 ok
+              video observation.images.wrist_image 256x192 486f av1/GOP2 1272609B vs 1235043B (1.03x) px 0.978 PIXELS
+              ! video observation.images.wrist_image: frames agree 0.978 against delivered, below 0.98 -- the same size encoded from a different picture
+     [FAIL] episode    19->54  530 rows
+              observation.state    identical (530, 8)
+              action               identical (530, 7)
+              video observation.images.image 256x192 530f av1/GOP2 2676297B vs 2591830B (1.03x) px 0.997 ok
+              video observation.images.wrist_image 256x192 530f av1/GOP2 1535676B vs 1480985B (1.04x) px 0.973 PIXELS
+              ! video observation.images.wrist_image: frames agree 0.973 against delivered, below 0.98 -- the same size encoded from a different picture
+     [FAIL] episode    24->439  527 rows
+              observation.state    identical (527, 8)
+              action               identical (527, 7)
+              video observation.images.image 256x192 527f av1/GOP2 2691662B vs 2598374B (1.04x) px 0.998 ok
+              video observation.images.wrist_image 256x192 527f av1/GOP2 1390121B vs 1347595B (1.03x) px 0.979 PIXELS
+              ! video observation.images.wrist_image: frames agree 0.979 against delivered, below 0.98 -- the same size encoded from a different picture
+     [FAIL] episode   558->133  508 rows
+              observation.state    identical (508, 8)
+              action               identical (508, 7)
+              video observation.images.image 256x192 508f av1/GOP2 2566287B vs 2477903B (1.04x) px 0.997 ok
+              video observation.images.wrist_image 256x192 508f av1/GOP2 1325908B vs 1286506B (1.03x) px 0.967 PIXELS
+              ! video observation.images.wrist_image: frames agree 0.967 against delivered, below 0.98 -- the same size encoded from a different picture
+     [FAIL] episode   565->219  485 rows
+              observation.state    identical (485, 8)
+              action               identical (485, 7)
+              video observation.images.image 256x192 485f av1/GOP2 2484531B vs 2395261B (1.04x) px 0.997 ok
+              video observation.images.wrist_image 256x192 485f av1/GOP2 1274783B vs 1234149B (1.03x) px 0.969 PIXELS
+              ! video observation.images.wrist_image: frames agree 0.969 against delivered, below 0.98 -- the same size encoded from a different picture
+     [FAIL] episode   566->520  515 rows
+              observation.state    identical (515, 8)
+              action               identical (515, 7)
+              video observation.images.image 256x192 515f av1/GOP2 2617160B vs 2518828B (1.04x) px 0.997 ok
+              video observation.images.wrist_image 256x192 515f av1/GOP2 1421620B vs 1373384B (1.04x) px 0.975 PIXELS
+              ! video observation.images.wrist_image: frames agree 0.975 against delivered, below 0.98 -- the same size encoded from a different picture
+     video observation.images.image    570 files,   2,425,564B each against 570 / 2,381,294B (1.02x)
+     video observation.images.wrist_image    570 files,   1,473,038B each against 570 / 1,438,720B (1.02x)
+     prompts         570 paired episodes checked; all agree
+     [FAIL] meta/episodes.jsonl + meta/episodes_stats.jsonl
+       ! episodes_stats.jsonl.observation.images.image.std '570 of 570 pairs differ, worst 0.3288' vs 'the delivered copy records zero in every episode'
+       ! episodes_stats.jsonl.observation.images.wrist_image.std '570 of 570 pairs differ, worst 0.3047' vs 'the delivered copy records zero in every episode'
+         24 set aside -- ordering features follow the episode and task order, which the episode question already reports; absent quantiles are the five keys the v3.0 to v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream
+           episodes_stats.jsonl.episode_index.max       '569 of 570 pairs differ, worst 566' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.mean      '569 of 570 pairs differ, worst 566' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.min       '569 of 570 pairs differ, worst 566' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q01       '569 of 570 pairs differ, worst 566' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q10       '569 of 570 pairs differ, worst 566' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q50       '569 of 570 pairs differ, worst 566' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q90       '569 of 570 pairs differ, worst 566' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q99       '569 of 570 pairs differ, worst 566' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.max               '570 of 570 pairs differ, worst 3.557e+05' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.mean              '570 of 570 pairs differ, worst 3.557e+05' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.min               '570 of 570 pairs differ, worst 3.557e+05' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.q01               '570 of 570 pairs differ, worst 3.557e+05' vs 'allowed 1e-06'
+           ... and 12 more
+
+4  distributions  [ ok ]  max difference per column, as a fraction of its range
+     every episode        action 2.0e-14   observation.state 4.3e-14
+     the shared ones      action 2.0e-14   observation.state 4.3e-14
+
+verdict          [FAIL]  meta/stats.json differs; per-episode metadata differs; sampled episodes differ

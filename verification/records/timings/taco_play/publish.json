@@ -1,0 +1,14 @@
+{
+  "bytes": 696408368,
+  "created": [],
+  "dataset": "taco_play",
+  "dest_uri": "s3://rlwrld-foundry-data/lerobot/rldx1/taco_play/",
+  "error": null,
+  "finished": "2026-08-20T11:38:32+00:00",
+  "profile": null,
+  "source_uri": null,
+  "spec_sha": null,
+  "started": "2026-08-20T11:37:42+00:00",
+  "status": "ok",
+  "step": "publish"
+}

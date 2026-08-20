@@ -1,0 +1,14 @@
+{
+  "bytes": 324478798,
+  "created": [],
+  "dataset": "berkeley_cable_routing",
+  "dest_uri": "s3://rlwrld-foundry-data/lerobot/rldx1/berkeley_cable_routing/",
+  "error": null,
+  "finished": "2026-08-20T08:13:06+00:00",
+  "profile": null,
+  "source_uri": null,
+  "spec_sha": null,
+  "started": "2026-08-20T08:12:29+00:00",
+  "status": "ok",
+  "step": "publish"
+}

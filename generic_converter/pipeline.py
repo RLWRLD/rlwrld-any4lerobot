@@ -1,6 +1,8 @@
 import os
 import shutil
 import sys
+import threading
+import time
 from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -64,13 +66,256 @@ class SaveLeRobotDataset(PipelineStep):
             shutil.rmtree(task.output_path, ignore_errors=True)
 
 
+# What one conversion worker costs, measured rather than assumed. furniture_bench
+# workers were OOM-killed at 4.74 GB resident on 2026-08-20; 6 GB is that plus room,
+# and ANY4LEROBOT_WORKER_MEMORY_GB overrides it for a dataset that needs more.
+# What a worker costs: a fixed base, plus a term in the size of the episode it holds.
+# Two measurements, both taken from OOM investigations on 2026-08-20:
+#
+#   jaco_play    9.9 GB source /   976 episodes =  10.1 MB an episode -> 4.74 GB resident
+#   toto       137.1 GB source /   902 episodes = 152.0 MB an episode -> 9.28 GB resident
+#
+# A constant cannot fit those, and 6 GB -- the constant that used to be here -- sits
+# between them, which is the worst place: too many workers for toto, too few for
+# jaco_play. Fitting the two gives a 4.4 GB base, which is TensorFlow plus the
+# interpreter, and about 32x the episode, which is the decode and the prefetch depth.
+#
+# Two points is a thin fit, so it is biased high by WORKER_MEMORY_MARGIN. Guessing low
+# wedges a node for an hour; guessing high costs throughput on one dataset.
+WORKER_MEMORY_BASE = int(4.4 * 1024**3)
+WORKER_MEMORY_PER_SOURCE_BYTE = 32
+WORKER_MEMORY_MARGIN = 1.25
+# What to assume when the caller cannot say how big an episode is.
+WORKER_MEMORY_BYTES = 6 * 1024**3
+
+# How long the whole run may make no progress before it is called stalled. Generous:
+# a single large episode can take minutes, and a false abort costs a re-run.
+STALL_SECONDS = 20 * 60
+
+# Distinct from the stall code, so a scheduler can tell "the kernel took a worker,
+# retry smaller" from "this made no progress and nobody knows why".
+EXIT_WORKER_KILLED = 76
+
+
+def available_memory() -> int | None:
+    """This machine's usable memory, in bytes, or ``None`` if it cannot be read.
+
+    The cgroup limit comes first because a container is what actually runs, and its
+    limit can be far below the host's. ``/sys/fs/cgroup/memory.max`` reads ``max``
+    when unlimited, which is what sends this on to the host figure.
+    """
+    try:
+        text = Path("/sys/fs/cgroup/memory.max").read_text().strip()
+        if text.isdigit():
+            return int(text)
+    except OSError:
+        pass
+    try:
+        return os.sysconf("SC_PHYS_PAGES") * os.sysconf("SC_PAGE_SIZE")
+    except (ValueError, OSError):
+        return None
+
+
+def worker_memory(episode_bytes: int | None = None) -> int:
+    """What one worker will need, in bytes.
+
+    ``episode_bytes`` is the source size of one episode. A worker holds one, so it is
+    the only part of the cost that varies between datasets, and it varies fifteenfold
+    across this collection.
+    """
+    override = os.environ.get("ANY4LEROBOT_WORKER_MEMORY_GB")
+    if override:
+        return int(float(override) * 1024**3)
+    if not episode_bytes:
+        return WORKER_MEMORY_BYTES
+    return int((WORKER_MEMORY_BASE + WORKER_MEMORY_PER_SOURCE_BYTE * episode_bytes)
+               * WORKER_MEMORY_MARGIN)
+
+
+def worker_budget(cpus_per_task: int, episode_bytes: int | None = None) -> int:
+    """How many workers this machine can actually hold.
+
+    Cores were the wrong question. A worker holds one whole episode, so what limits it
+    is memory per *worker*, not memory per core -- and the two only agree when episodes
+    are small. On 2026-08-20 a 48-core, 185 GB node ran 48 workers at 4.74 GB each,
+    asked for 226 GB, and the kernel killed twelve of them.
+
+    A constant per worker was the second wrong answer. With 6 GB assumed, a 64-core,
+    247 GB node took 41 workers for toto, whose workers reach 9.3 GB, and the kernel
+    killed one -- while it held the pool's task queue lock, which left the other 42
+    blocked in ``Queue.get`` and the parent in ``pool.next`` with the machine idle. So
+    the estimate now takes the episode size, and ``oom_since`` below makes the kill
+    fail the run rather than hang it, because no estimate is going to be right always.
+    """
+    cores = max(1, (os.cpu_count() or 1) // cpus_per_task)
+    memory = available_memory()
+    if memory is None:
+        return cores
+    return max(1, min(cores, memory // worker_memory(episode_bytes)))
+
+
+class Stalled(RuntimeError):
+    """Raised when a run stops making progress instead of finishing or failing."""
+
+
+class WorkerKilled(RuntimeError):
+    """Raised when the kernel took a worker, instead of waiting for it to answer."""
+
+
+def oom_count() -> int | None:
+    """How many processes the kernel has OOM-killed since boot, or ``None``.
+
+    ``/proc/vmstat``'s ``oom_kill`` is the whole machine's counter and needs no root,
+    which the ``dmesg`` this replaces did. It counts kills anywhere on the host, so a
+    reading is evidence and not proof -- but on a node doing one conversion, a kill
+    during the run is the conversion's.
+    """
+    try:
+        for line in Path("/proc/vmstat").read_text().splitlines():
+            if line.startswith("oom_kill "):
+                return int(line.split()[1])
+    except (OSError, ValueError):
+        return None
+    return None
+
+
+class Watchdog:
+    """A running watchdog and its off switch.
+
+    Both watchdogs here end the process outright, so the window they are armed for
+    has to be exactly the window in which not ending it is worse: the executor and
+    the aggregation, where no progress means a hang. Afterwards the run has already
+    succeeded and the work left -- an upload, a delete -- can legitimately write
+    nothing for a long time, so a watchdog still armed there would kill a finished
+    run. Without an off switch there is no way to say that: a daemon thread looping
+    on ``os._exit`` cannot be called off by the code that started it.
+    """
+
+    def __init__(self, thread: threading.Thread, stop: threading.Event):
+        self.thread = thread
+        self._stop = stop
+
+    def stop(self, timeout: float = 5) -> None:
+        self._stop.set()
+        self.thread.join(timeout=timeout)
+
+
+def stop_watchdogs(watchdogs: Sequence["Watchdog | None"]) -> None:
+    """Disarm every watchdog that started. ``None`` is a watchdog that declined to."""
+    for watchdog in watchdogs:
+        if watchdog is not None:
+            watchdog.stop()
+
+
+def watch_for_oom(poll: int = 10):
+    """Abort the process as soon as the kernel kills anything.
+
+    An OOM-killed worker does not fail the run, it hangs it, and the mechanism is
+    worth stating because it is not obvious: ``multiprocess.Pool`` hands work out
+    through a queue guarded by a lock, and a worker killed while holding that lock
+    never releases it. Every surviving worker then blocks in ``Queue.get``, the parent
+    blocks in ``pool.next`` waiting for results that cannot come, and the machine goes
+    to load 0.00 with no error anywhere. Measured on toto: one kill, 42 workers left
+    waiting, 128 GB resident, output frozen at 1,472 MB.
+
+    ``watch_for_stall`` catches this too, but only after twenty minutes of nothing.
+    The kill is knowable in ten seconds, and the difference is a node-hour each time.
+    """
+    baseline = oom_count()
+    if baseline is None:
+        return None
+
+    stop = threading.Event()
+
+    def watch():
+        while not stop.wait(poll):
+            now = oom_count()
+            if now is None or now <= baseline:
+                continue
+            setup_logger().error(
+                f"the kernel OOM-killed {now - baseline} process(es) during this run. "
+                "A worker killed while holding the pool's task-queue lock leaves every "
+                "other worker blocked in Queue.get and the parent in pool.next, which "
+                "is a hang and not a failure -- so this fails it. Re-run with fewer "
+                "workers: lower `workers` in the environment, or set "
+                "ANY4LEROBOT_WORKER_MEMORY_GB above the peak a worker reached."
+            )
+            os._exit(EXIT_WORKER_KILLED)
+
+    thread = threading.Thread(target=watch, name="oom-watchdog", daemon=True)
+    thread.start()
+    return Watchdog(thread, stop)
+
+
+def watch_for_stall(watched: Sequence[Path], seconds: int = STALL_SECONDS):
+    """Abort the process if nothing under ``watched`` changes for ``seconds``.
+
+    This exists because the two hangs this converter has produced both looked like
+    success from the outside: the parent alive, no error, no output, load average
+    0.00. A forkserver deadlock held a 48-core node for fifteen hours; an OOM-killed
+    worker left three nodes in ``do_wait`` for over an hour each. Neither is
+    detectable from a return code, because there is no return.
+
+    Progress is measured on the output tree rather than on the executor's own
+    bookkeeping, so it does not depend on which executor ran or on datatrove's
+    internals. A run that is working writes files; one that is stuck does not.
+
+    ``os._exit`` after printing, deliberately. The parent is blocked in ``waitpid``
+    and cannot be interrupted by an exception raised on another thread, so a clean
+    unwind is not available -- and a stalled converter that stays alive is the whole
+    problem being fixed.
+    """
+
+    def footprint() -> tuple[int, int]:
+        files = size = 0
+        for root in watched:
+            for path in root.rglob("*"):
+                try:
+                    if path.is_file():
+                        files += 1
+                        size += path.stat().st_size
+                except OSError:
+                    continue
+        return files, size
+
+    stop = threading.Event()
+
+    def watch() -> None:
+        last, since = footprint(), time.monotonic()
+        while not stop.wait(min(60, max(5, seconds // 20))):
+            now = footprint()
+            if now != last:
+                last, since = now, time.monotonic()
+                continue
+            if time.monotonic() - since < seconds:
+                continue
+            print(
+                f"\nconverter stalled: nothing written under "
+                f"{', '.join(str(p) for p in watched)} for {seconds // 60} minutes.\n"
+                "A worker is most likely gone and the parent is waiting for it. The "
+                "usual cause is memory: check `dmesg -T | grep -i \"out of memory\"`, "
+                "and if a worker was killed, lower the worker count or raise "
+                "ANY4LEROBOT_WORKER_MEMORY_GB.",
+                file=sys.stderr, flush=True,
+            )
+            os._exit(75)   # EX_TEMPFAIL: the work is fine, the machine was not
+
+    thread = threading.Thread(target=watch, name="stall-watchdog", daemon=True)
+    thread.start()
+    return Watchdog(thread, stop)
+
+
 def local_config(
     task_count: int,
     workers: int,
     cpus_per_task: int,
     start_method: str | None = None,
+    episode_bytes: int | None = None,
 ) -> dict:
     """How a local run is sized, and how its workers are started.
+
+    ``workers: -1`` means "as many as this machine can hold", which is a memory
+    question and not a core count -- see ``worker_budget``.
 
     ``start_method`` is worth naming rather than leaving to the default when the
     parent process has already loaded a library that keeps threads. datatrove
@@ -79,14 +324,55 @@ def local_config(
     workers a lock held by a thread that does not exist in them. That deadlock does
     not fail: it waits. One was found holding a 48-core instance for fifteen hours
     with fifteen seconds of CPU used and no task started.
+
+    Overcommitting memory produces a second hang of the same shape, which is why the
+    budget above exists and why ``run_converter`` watches for a stall: the kernel
+    kills a worker, the parent waits in ``do_wait`` for a child that is gone, and
+    load average sits at 0.00 with nothing in any log to say why. Three nodes were
+    found like that, between 66 and 107 minutes each.
     """
-    resolved = (
-        max(1, (os.cpu_count() or 1) // cpus_per_task) if workers == -1 else workers
-    )
+    resolved = (worker_budget(cpus_per_task, episode_bytes) if workers == -1
+                else workers)
     config = {"tasks": task_count, "workers": resolved}
     if start_method:
         config["start_method"] = start_method
     return config
+
+
+def apply_start_method(start_method: str | None) -> str | None:
+    """Make ``start_method`` the process default, not just the worker pool's.
+
+    ``LocalPipelineExecutor(start_method=...)`` reaches exactly one of the two things
+    datatrove starts. Reading its ``run``::
+
+        mg = multiprocess.Manager()                        # default context: fork
+        ctx = multiprocess.get_context(self.start_method)  # honoured here only
+        with ctx.Pool(self.workers) as pool:
+
+    So the pool respects the request and the manager does not, and the manager is
+    forked from a parent that has TensorFlow loaded -- which is the case the argument
+    was added for. A fork copies one thread and every lock, so any mutex another
+    thread held at that moment is locked forever in the child. The manager then serves
+    the queue and the lock the pool workers need, so they block, so ``imap_unordered``
+    never yields, so the parent waits in ``pool.next()``.
+
+    That is a deadlock with no error and no CPU. Found by ``py-spy`` on a 64-core node
+    building toto: parent in ``pool.py:861 next``, child in
+    ``managers.py:176 serve_forever`` reached through ``popen_fork``, load average
+    0.00, 118 GB resident, output frozen at 1,430 MB.
+
+    Setting the default covers both. Returns what was set, so a caller can log it.
+    """
+    if not start_method:
+        return None
+
+    import multiprocess
+
+    if multiprocess.get_start_method(allow_none=True) != start_method:
+        # force: datatrove or an import may have fixed it already, and the default
+        # being wrong is exactly the bug.
+        multiprocess.set_start_method(start_method, force=True)
+    return multiprocess.get_start_method()
 
 
 def run_converter(
@@ -128,7 +414,8 @@ def run_converter(
 
             executor_cls, executor_config = (
                 LocalPipelineExecutor,
-                local_config(len(tasks), workers, cpus_per_task, start_method),
+                local_config(len(tasks), workers, cpus_per_task, start_method,
+                             adapter.episode_bytes()),
             )
         case "ray":
             import ray
@@ -154,16 +441,31 @@ def run_converter(
     else:
         logging_dir = str(Path.cwd() / "logs" / f"{get_timestamp()}_{get_random_str()}")
 
-    executor_cls(
-        pipeline=[SaveLeRobotDataset(tasks, adapter)],
-        **executor_config,
-        logging_dir=logging_dir,
-    ).run()
-    aggregate_tasks(
-        tasks,
-        output_path,
-        aggr_repo_id=local_repo_id,
-    )
+    if executor == "local":
+        applied = apply_start_method(start_method)
+        if applied:
+            setup_logger().info(
+                f"multiprocess default start method: {applied} "
+                "(the manager datatrove forks is not covered by start_method alone)"
+            )
+
+    # Armed for the executor and the aggregation only. Past here the run has
+    # succeeded, and the upload below can go twenty minutes without writing a local
+    # byte -- which a stall watchdog cannot tell from a hang.
+    watchdogs = (watch_for_oom(), watch_for_stall([output_path, Path(logging_dir)]))
+    try:
+        executor_cls(
+            pipeline=[SaveLeRobotDataset(tasks, adapter)],
+            **executor_config,
+            logging_dir=logging_dir,
+        ).run()
+        aggregate_tasks(
+            tasks,
+            output_path,
+            aggr_repo_id=local_repo_id,
+        )
+    finally:
+        stop_watchdogs(watchdogs)
 
     if cleanup_temp:
         logger = setup_logger()

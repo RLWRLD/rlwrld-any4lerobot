@@ -120,7 +120,33 @@ def target_shape(
     return shape if plan is None else plan.out_shape
 
 
-def resize_frame(frame, shape: tuple[int, int]):
+def resize_filter(
+    resize: Mapping[str, Any] | None,
+    key: str = "",
+    shape: tuple[int, int] | None = None,
+) -> str:
+    """Which resampler ``resize`` asks for, as a libswscale name.
+
+    Resolved on the same step object ``target_shape`` builds its geometry from, so
+    the filter cannot disagree with the one the transform stage puts in its ``scale``
+    filter chain -- the two paths differ in *when* they resize and in nothing else.
+
+    ``shape`` is the source geometry, and it is needed because the profile may name a
+    rule rather than a filter: ``by_scale`` picks per downscale factor, and this path
+    resizes frame by frame, so it has to ask the same question the ``scale`` filter
+    would have asked about the same camera.
+    """
+    from lerobot_pipeline.steps.resize import DEFAULT_FILTER
+
+    if not resize:
+        return DEFAULT_FILTER
+    step = build_step(dict(resize))
+    if shape is None:
+        return getattr(step, "filter", DEFAULT_FILTER)
+    return step.filter_for(shape, target_shape(resize, key, shape))
+
+
+def resize_frame(frame, shape: tuple[int, int], filter: str | None = None):
     """Downscale ``frame`` to ``shape``, centre-cropping whatever the scale leaves over.
 
     Through libswscale, which is the resizer ffmpeg's ``scale`` filter *is* -- not a
@@ -132,32 +158,48 @@ def resize_frame(frame, shape: tuple[int, int]):
     prefilter, so it keeps detail swscale would have low-passed away, and the encoder
     pays for it.
 
-    Bicubic within swscale is measured too, not assumed. The target is the 0.96-1.00x
-    that cameras which are *not* resized come out at, that being the encoder build
-    difference on its own:
+    Which resampler is the profile's to say -- ``video.resize.filter`` -- and this
+    reads it rather than naming one, so the value cannot disagree with the one the
+    transform stage puts in its ``scale`` filter chain.
 
-        filter            ucsd (2.5x down)   taco_play (1.2x down)
-        swscale BICUBIC         0.86           1.01 / 1.04    64/64 episodes
-        swscale SINC            0.97           1.10 / 1.15    14/64
-        cv2 INTER_CUBIC         1.03           1.13 / 1.14    46/64
+    The measurement behind the profile's default lives in
+    ``verification/records/resize-filter-sweep.md``. In short: no filter is flat across
+    scale factors -- every one comes out larger the gentler the downscale, and that
+    offset survives whichever is chosen -- so the question is which stays inside
+    ``SIZE_TOLERANCE`` everywhere. sinc does, at 10.0% against a 15% bound.
 
-    No filter hits the target on both, and the reason is not the filter: the gentler
-    the downscale the larger everything comes out, and that offset survives whichever
-    one is chosen. So the question is which stays inside tolerance everywhere, and
-    only bicubic does -- which is also the one ffmpeg would have used.
+    An earlier table here reached the opposite conclusion and named bicubic. Two things
+    were wrong with it. It measured per-episode ratios paired by filename, and the
+    rebuild does not write episodes in the delivered order, so most of what it compared
+    was two different episodes; and it never tried lanczos. Redone on total bytes per
+    camera, bicubic misses dlr_edan by 18.9% against a 15% bound.
     """
     import av
     from av.video.reformatter import Interpolation
+
+    from lerobot_pipeline.steps.resize import DEFAULT_FILTER, UnknownFilterError
 
     height, width = shape
     if frame.shape[:2] == (height, width):
         return frame
 
+    name = (filter or DEFAULT_FILTER).upper()
+    interpolation = getattr(Interpolation, name, None)
+    if interpolation is None:
+        # PyAV exposes a subset of libswscale's names, and which subset depends on the
+        # build -- SPLINE is missing from the one in the node image. Failing here beats
+        # falling back, which would resize a whole collection with a filter nobody asked
+        # for and leave no trace of it.
+        raise UnknownFilterError(
+            f"PyAV in this build has no Interpolation.{name}; "
+            f"available: {', '.join(sorted(m.name.lower() for m in Interpolation))}"
+        )
+
     scale = max(height / frame.shape[0], width / frame.shape[1])
     scaled_h = max(height, round(frame.shape[0] * scale))
     scaled_w = max(width, round(frame.shape[1] * scale))
     picture = av.VideoFrame.from_ndarray(frame, format="rgb24").reformat(
-        width=scaled_w, height=scaled_h, interpolation=Interpolation.BICUBIC
+        width=scaled_w, height=scaled_h, interpolation=interpolation
     )
     resized = picture.to_ndarray(format="rgb24")
 

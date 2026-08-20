@@ -21,11 +21,14 @@ NIC_RATE=${NIC_RATE:-}
 
 cd "$REPO_DIR" || exit 1
 
-# Transfer settings are a property of the machine, not of the code, which is why
-# they are set here and not committed in a config. The numbers are measured -- see
-# the tables in README.md.
-aws configure set default.s3.preferred_transfer_client crt
-aws configure set default.s3.multipart_chunksize 64MB
+# Only target_bandwidth is set here now. The CRT client and the chunk size moved into
+# the image, because they are properties of the code path rather than of the machine
+# and because setting them here only worked when this script ran: a stage started with
+# `--entrypoint python` skipped it and moved 3.9 TB at 324 MB/s instead of 677.
+#
+# target_bandwidth stays because it really is per-machine -- though it measured worth
+# only 3% at 18.75 Gbps, and 18 versus 30 Gb/s measured identical. The over-declaration
+# trap in README.md is a 100 Gbps effect.
 if [ -n "$NIC_RATE" ]; then
   aws configure set default.s3.target_bandwidth "$NIC_RATE"
 else

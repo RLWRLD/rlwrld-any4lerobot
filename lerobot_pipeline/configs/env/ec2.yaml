@@ -36,12 +36,17 @@ builders:
   # third and put 64 tasks of ~3 GB into 192 GB of RAM. One worker per core needs
   # 144 GB for the same work and fits.
   #
-  # Which does assume a machine with about 4 GB per core. A task holds one whole
-  # episode, and the largest in this collection is around 300 MB, so that ratio is
-  # what keeps memory from being the binding constraint instead of cores.
+  # Memory is the binding constraint, not cores, and it is per worker rather than per
+  # core -- see worker_budget, which sizes it from the episode a dataset actually has.
+  # Across this collection that is 4.7 GB a worker at one end and 9.3 at the other.
   openx:
     executor: local
-    episodes_per_task: 25
+    # 8 rather than 25, measured. Finer is better on both axes at once: 25 leaves a
+    # large node with fewer tasks than workers, so the tail is one straggler while
+    # everything else idles, and a task carries its own reader and buffers so a smaller
+    # one carries less. Below about 8 the per-task setup costs more than the parallelism
+    # buys. Numbers in verification/records/speed.md.
+    episodes_per_task: 8
     workers: -1
     image_writer_process: 0
     image_writer_threads: 4
@@ -54,3 +59,9 @@ runtime:
   # set them here to pin a run instead
   workers: null
   threads_per_ffmpeg: null
+  # What this machine's link carries, for the CRT client's target_bandwidth. Leaving it
+  # unset halves the download and says nothing about why -- measured at 1,330.8 MB/s
+  # undeclared against 2,687.7 MB/s declared, on the same node and data. Declare what
+  # the instance actually has: m7i.12xlarge is 18.75Gb/s, m8i.16xlarge is 30Gb/s.
+  # Numbers in verification/records/speed.md.
+  nic_rate: 30Gb/s

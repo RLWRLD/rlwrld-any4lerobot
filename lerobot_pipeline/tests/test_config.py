@@ -159,6 +159,7 @@ def test_the_resize_reaches_the_converter_with_the_profile_s_parameters():
         "type": "resize_preserve_aspect_area",
         "max_area": 65536,
         "multiple": 32,
+        "filter": "by_scale",
     }
 
 
@@ -249,3 +250,156 @@ def test_a_partial_instruction_still_reaches_the_converter():
     reached = json.loads(config.source.args["encoding"])
     assert (reached["gop"], reached["codec"]) == (50, "libsvtav1")
     assert [getattr(step, "kind", None) for step in config.steps] == []
+
+
+class TestResizeFilter:
+    """The resampler is a declared value, and one value for both resize paths.
+
+    A dataset that downscales is resized either before LeRobot's writer
+    (openx2lerobot) or after it through ffmpeg's `scale` filter (the transform
+    stage), decided by whether the converter can produce the delivered encoding.
+    Both end in libswscale, so both must be handed the same filter -- and before
+    this it was explicit on one path and ffmpeg's default on the other, agreeing
+    only because the default happened to be bicubic.
+    """
+
+    def test_the_scale_filter_names_the_resampler(self):
+        from lerobot_pipeline.steps.resize import ResizePreserveAspectArea
+
+        step = ResizePreserveAspectArea(max_area=65536, multiple=32, filter="lanczos")
+        plan = step.plan((360, 640))
+        assert any("flags=lanczos" in f for f in plan.filters), plan.filters
+
+    def test_the_step_default_is_libswscale_s_own(self):
+        """A step built with no profile behind it behaves like plain ffmpeg, whose
+        `scale` defaults to bicubic. What the collection is built with is a separate
+        question, answered by the profile below."""
+        from lerobot_pipeline.steps.resize import ResizePreserveAspectArea
+
+        plan = ResizePreserveAspectArea(max_area=65536, multiple=32).plan((360, 640))
+        assert any("flags=bicubic" in f for f in plan.filters), plan.filters
+
+    def test_an_unknown_filter_is_refused_at_config_time(self):
+        """Not hours into a run, and not by silently falling back."""
+        from lerobot_pipeline.steps.resize import (
+            ResizePreserveAspectArea,
+            UnknownFilterError,
+        )
+
+        with pytest.raises(UnknownFilterError, match="lanzcos"):
+            ResizePreserveAspectArea(filter="lanzcos")  # transposed, as typed
+
+    def test_a_resize_that_composes_to_nothing_emits_no_filter(self):
+        """cmu_stretch is 128x128 at the source and already at the target size. That
+        is why the filter went unnoticed: it never ran."""
+        from lerobot_pipeline.steps.resize import ResizePreserveAspectArea
+
+        assert ResizePreserveAspectArea(filter="lanczos").plan((128, 128)) is None
+
+    def test_the_profile_declares_a_value_the_step_accepts(self):
+        """Whatever the collection currently names, the step must take it -- a
+        profile naming a filter no resampler has is a run that fails hours in.
+        Which value it is, and why, is TestFilterByScale's question."""
+        import yaml
+
+        from lerobot_pipeline.steps.resize import (
+            RESIZE_FILTERS,
+            ResizePreserveAspectArea,
+        )
+
+        root = Path(__file__).resolve().parents[2]
+        resize = yaml.safe_load(
+            (root / "lerobot_pipeline/configs/profiles/rldx1.yaml").read_text()
+        )["video"]["resize"]
+        assert resize["filter"] in (*RESIZE_FILTERS, "by_scale")
+        ResizePreserveAspectArea(**{k: v for k, v in resize.items() if k != "type"})
+
+    def test_both_paths_read_one_declaration(self):
+        """openx2lerobot's resize_filter and the transform stage's scale filter must
+        come from the same mapping, so a profile edit moves both or neither."""
+        import sys
+
+        sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "openx2lerobot"))
+        from video_rules import resize_filter
+
+        from lerobot_pipeline.steps.resize import ResizePreserveAspectArea
+
+        resize = {"type": "resize_preserve_aspect_area", "max_area": 65536,
+                  "multiple": 32, "filter": "lanczos"}
+        assert resize_filter(resize) == "lanczos"
+        step = ResizePreserveAspectArea(**{k: v for k, v in resize.items()
+                                           if k != "type"})
+        assert any("flags=lanczos" in f for f in step.plan((360, 640)).filters)
+
+
+class TestFilterByScale:
+    """No single resampler fits the collection, so the profile names a rule.
+
+    sinc as one value fixed the strong downscales and left exactly two datasets
+    failing -- stanford_hydra at 1.25x and taco_play at 1.21x. Bicubic is nearly
+    exact there (0.985/1.019) and misses dlr_edan at 2x by 18.9%. The threshold is
+    the only assignment measured to put every resized camera inside SIZE_TOLERANCE.
+    """
+
+    def _step(self):
+        from lerobot_pipeline.steps.resize import ResizePreserveAspectArea
+
+        return ResizePreserveAspectArea(max_area=65536, multiple=32, filter="by_scale")
+
+    def test_a_gentle_downscale_takes_bicubic(self):
+        """taco_play's rgb_static, 1.21x, where sinc came out over the band."""
+        step = self._step()
+        assert "flags=bicubic" in step.plan((150, 200)).filters[0]
+
+    def test_stanford_hydra_is_on_the_bicubic_side(self):
+        """1.25x. It and taco_play were the two failures under plain sinc."""
+        step = self._step()
+        assert "flags=bicubic" in step.plan((240, 320)).filters[0]
+
+    def test_a_strong_downscale_takes_sinc(self):
+        """dlr_edan, 1.94x, which bicubic missed by 18.9%."""
+        step = self._step()
+        assert "flags=sinc" in step.plan((360, 640)).filters[0]
+
+    def test_ucsd_takes_sinc(self):
+        """2.5x, and four more cameras sit at this factor."""
+        step = self._step()
+        assert "flags=sinc" in step.plan((480, 640)).filters[0]
+
+    def test_austin_sirius_is_measured_and_passes_either_way(self):
+        """1.31x came out 1.09-1.10x on sinc, inside the band, so the threshold at
+        1.3 puts it on the sinc side without breaking it."""
+        step = self._step()
+        assert "flags=sinc" in step.plan((84, 84)).filters[0]
+
+    def test_a_named_filter_is_still_honoured_everywhere(self):
+        """The rule is opt-in: naming lanczos must not become a threshold."""
+        from lerobot_pipeline.steps.resize import ResizePreserveAspectArea
+
+        step = ResizePreserveAspectArea(max_area=65536, multiple=32, filter="lanczos")
+        for shape in ((150, 200), (360, 640), (480, 640)):
+            assert "flags=lanczos" in step.plan(shape).filters[0], shape
+
+    def test_the_profile_names_the_rule(self):
+        import yaml
+
+        root = Path(__file__).resolve().parents[2]
+        profile = yaml.safe_load(
+            (root / "lerobot_pipeline/configs/profiles/rldx1.yaml").read_text())
+        assert profile["video"]["resize"]["filter"] == "by_scale"
+
+    def test_both_paths_resolve_the_rule_the_same_way(self):
+        """openx2lerobot resizes frame by frame and the transform stage emits a
+        `scale` filter; a rule that answered differently on the two would build half
+        a collection one way."""
+        import sys
+
+        sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "openx2lerobot"))
+        from video_rules import resize_filter
+
+        rule = {"type": "resize_preserve_aspect_area", "max_area": 65536,
+                "multiple": 32, "filter": "by_scale"}
+        step = self._step()
+        for shape in ((150, 200), (240, 320), (360, 640), (480, 640), (84, 84)):
+            assert resize_filter(rule, "image", shape) == \
+                step.filter_for(shape, step.plan(shape).out_shape), shape

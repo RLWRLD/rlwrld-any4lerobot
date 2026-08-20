@@ -1,0 +1,16 @@
+{
+  "bytes": 119259986287,
+  "created": [
+    "/scratch/raw/fractal20220817_data"
+  ],
+  "dataset": "fractal20220817_data",
+  "dest_uri": null,
+  "error": null,
+  "finished": "2026-08-20T10:05:01+00:00",
+  "profile": null,
+  "source_uri": "s3://rlwrld-foundry-data/external/fractal20220817_data/",
+  "spec_sha": null,
+  "started": "2026-08-20T10:00:36+00:00",
+  "status": "ok",
+  "step": "fetch"
+}

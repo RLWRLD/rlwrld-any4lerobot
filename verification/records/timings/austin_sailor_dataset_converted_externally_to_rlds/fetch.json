@@ -1,0 +1,16 @@
+{
+  "bytes": 20235930391,
+  "created": [
+    "/scratch/raw/austin_sailor_dataset_converted_externally_to_rlds"
+  ],
+  "dataset": "austin_sailor_dataset_converted_externally_to_rlds",
+  "dest_uri": null,
+  "error": null,
+  "finished": "2026-08-20T08:13:16+00:00",
+  "profile": null,
+  "source_uri": "s3://rlwrld-foundry-data/external/austin_sailor_dataset_converted_externally_to_rlds/",
+  "spec_sha": null,
+  "started": "2026-08-20T08:12:21+00:00",
+  "status": "ok",
+  "step": "fetch"
+}

@@ -33,13 +33,39 @@ def sync_command(
     return command
 
 
+def declare_bandwidth(nic_rate: str | None, *, run=None) -> bool:
+    """Tell the CRT client how much link it has, before anything is transferred.
+
+    ``target_bandwidth`` has no command-line flag -- it is read from the aws config --
+    so it has to be written before the sync rather than passed to it. That is why this
+    used to live in ``node.sh``, and why it kept not applying: a stage started with
+    ``--entrypoint python`` skips that script, and a value set on the host does not
+    reach the container. Doing it here means the process that transfers is the process
+    that sets it.
+
+    Worth 2x, not the 3% an earlier measurement suggested. On m8i.16xlarge with a
+    four-way gp3 stripe, 130.7 GB of toto: 1,330.8 MB/s with nothing declared,
+    2,687.7 MB/s at ``30Gb/s``. The 3% came from a node pinned at 677 MB/s by a single
+    volume, where no client setting could have shown up.
+
+    Returns whether anything was set, so a caller can say so.
+    """
+    if not nic_rate:
+        return False
+    _execute(["aws", "configure", "set",
+              "default.s3.target_bandwidth", nic_rate], run)
+    return True
+
+
 def sync(
     source: str,
     dest: str | Path,
     *,
     dry_run: bool = False,
+    nic_rate: str | None = None,
     run=None,
 ) -> None:
+    declare_bandwidth(nic_rate, run=run)
     _execute(sync_command(source, dest, dry_run=dry_run), run)
 
 

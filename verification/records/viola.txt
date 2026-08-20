@@ -1,0 +1,102 @@
+viola
+
+1  declaration    [FAIL]  everything under meta/ that needs no pairing
+     [ ok ] meta/info.json
+     every field both copies declare is the same on both sides
+     one-sided    19 field(s); only one copy declares them, so there is nothing to compare, and they are not judged here
+                  features.absolute_action.dtype             '(absent)' vs 'float32'
+                  features.absolute_action.names.motors      '(absent)' vs ['x', 'y', 'z', 'roll', 'pitch', 'yaw', 'gripper']
+                  features.absolute_action.shape             '(absent)' vs [7]
+                  features.observation.images.agentview_rgb.info.is_depth_map False vs '(absent)'
+                  features.observation.images.agentview_rgb.info.video.crf 30 vs '(absent)'
+                  features.observation.images.agentview_rgb.info.video.extra_options {} vs '(absent)'
+                  features.observation.images.agentview_rgb.info.video.fast_decode 0 vs '(absent)'
+                  features.observation.images.agentview_rgb.info.video.g 2 vs '(absent)'
+                  features.observation.images.agentview_rgb.info.video.is_depth_map '(absent)' vs False
+                  features.observation.images.agentview_rgb.info.video.preset 12 vs '(absent)'
+                  features.observation.images.agentview_rgb.info.video.video_backend 'pyav' vs '(absent)'
+                  features.observation.images.eye_in_hand_rgb.info.is_depth_map False vs '(absent)'
+                  features.observation.images.eye_in_hand_rgb.info.video.crf 30 vs '(absent)'
+                  features.observation.images.eye_in_hand_rgb.info.video.extra_options {} vs '(absent)'
+                  features.observation.images.eye_in_hand_rgb.info.video.fast_decode 0 vs '(absent)'
+                  features.observation.images.eye_in_hand_rgb.info.video.g 2 vs '(absent)'
+                  features.observation.images.eye_in_hand_rgb.info.video.is_depth_map '(absent)' vs False
+                  features.observation.images.eye_in_hand_rgb.info.video.preset 12 vs '(absent)'
+                  features.observation.images.eye_in_hand_rgb.info.video.video_backend 'pyav' vs '(absent)'
+     [ ok ] meta/
+         1 set aside -- excluded from the comparison by decision
+           relative_stats.json                          'not compared' vs 'not compared'
+     [ ok ] meta/tasks.jsonl
+         3 set aside -- the index a task is given follows the order it was first seen, not the data
+           task_index 0                                 'pick up the bowl from the lazy Susan and put bowl on the plate' vs 'arrange plate and fork'
+           task_index 1                                 'arrange plate and fork' vs 'make coffee'
+           task_index 2                                 'make coffee' vs 'pick up the bowl from the lazy Susan and put bowl on the plate'
+     [ ok ] meta/modality.json
+     [FAIL] meta/stats.json
+       ! absolute_action                                '(absent)' vs 'present'
+       ! observation.images.agentview_rgb.std           'differs by 0.2348' vs 'allowed 0.05'
+       ! observation.images.eye_in_hand_rgb.std         'differs by 0.2369' vs 'allowed 0.05'
+         23 set aside -- ordering features follow the episode and task order; missing quantiles are the keys the v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream
+           episode_index.max                            'differs by 110' vs 'allowed 1e-06'
+           episode_index.mean                           'differs by 56.75' vs 'allowed 1e-06'
+           episode_index.q01                            'differs by 56.75' vs 'allowed 1e-06'
+           episode_index.q10                            'differs by 56.75' vs 'allowed 1e-06'
+           episode_index.q50                            'differs by 56.75' vs 'allowed 1e-06'
+           episode_index.q90                            'differs by 56.75' vs 'allowed 1e-06'
+           episode_index.q99                            'differs by 56.75' vs 'allowed 1e-06'
+           episode_index.std                            'differs by 31.72' vs 'allowed 1e-06'
+           index.max                                    'differs by 5.584e+04' vs 'allowed 1e-06'
+           index.mean                                   'differs by 2.838e+04' vs 'allowed 1e-06'
+           index.q01                                    'differs by 2.838e+04' vs 'allowed 1e-06'
+           index.q10                                    'differs by 2.838e+04' vs 'allowed 1e-06'
+           ... and 11 more
+
+2  episodes       [ -- ]  counted, never failed -- which episodes a rebuild has is decided elsewhere
+     rebuilt         135 episodes     68,913 rows
+     delivered       135 episodes     68,913 rows
+     reproduced      135  (135 identical, 0 agreeing on their first 8 rows only)
+     unmatched         0 of the delivered episodes have no counterpart; 0 of the rebuild's do not either
+     reordered       132 of 135 paired episodes carry a different index
+
+3  sample         [FAIL]  the episodes that are there, compared in full
+     compared         64 of 135 paired episodes, half from each end of the index range
+     identical        62  (2 differ)
+     [FAIL] episode    27->30  402 rows
+              observation.state    identical (402, 8)
+              action               identical (402, 7)
+              video observation.images.agentview_rgb 224x224 402f av1/GOP2 1863664B vs 1875768B (0.99x) px 0.999 ok
+              video observation.images.eye_in_hand_rgb 224x224 402f av1/GOP2 499202B vs 511361B (0.98x) px 0.975 PIXELS
+              ! video observation.images.eye_in_hand_rgb: frames agree 0.975 against delivered, below 0.98 -- the same size encoded from a different picture
+     [FAIL] episode   104->15  450 rows
+              observation.state    identical (450, 8)
+              action               identical (450, 7)
+              video observation.images.agentview_rgb 224x224 450f av1/GOP2 2095486B vs 2108291B (0.99x) px 0.998 ok
+              video observation.images.eye_in_hand_rgb 224x224 450f av1/GOP2 548906B vs 563290B (0.97x) px 0.963 PIXELS
+              ! video observation.images.eye_in_hand_rgb: frames agree 0.963 against delivered, below 0.98 -- the same size encoded from a different picture
+     video observation.images.agentview_rgb    135 files,   2,705,804B each against 135 / 2,756,888B (0.98x)
+     video observation.images.eye_in_hand_rgb    135 files,     873,782B each against 135 / 909,720B (0.96x)
+     prompts         135 paired episodes checked; all agree
+     [FAIL] meta/episodes.jsonl + meta/episodes_stats.jsonl
+       ! episodes_stats.jsonl.absolute_action           '(absent)' vs 'present'
+       ! episodes_stats.jsonl.observation.images.agentview_rgb.std '135 of 135 pairs differ, worst 0.3101' vs 'the delivered copy records zero in every episode'
+       ! episodes_stats.jsonl.observation.images.eye_in_hand_rgb.std '135 of 135 pairs differ, worst 0.2892' vs 'the delivered copy records zero in every episode'
+         24 set aside -- ordering features follow the episode and task order, which the episode question already reports; absent quantiles are the five keys the v3.0 to v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream
+           episodes_stats.jsonl.episode_index.max       '134 of 135 pairs differ, worst 128' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.mean      '134 of 135 pairs differ, worst 128' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.min       '134 of 135 pairs differ, worst 128' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q01       '134 of 135 pairs differ, worst 128' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q10       '134 of 135 pairs differ, worst 128' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q50       '134 of 135 pairs differ, worst 128' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q90       '134 of 135 pairs differ, worst 128' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q99       '134 of 135 pairs differ, worst 128' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.max               '135 of 135 pairs differ, worst 6.565e+04' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.mean              '135 of 135 pairs differ, worst 6.565e+04' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.min               '135 of 135 pairs differ, worst 6.565e+04' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.q01               '135 of 135 pairs differ, worst 6.565e+04' vs 'allowed 1e-06'
+           ... and 12 more
+
+4  distributions  [ ok ]  max difference per column, as a fraction of its range
+     every episode        action 4.1e-15   observation.state 3.0e-15
+     the shared ones      action 4.1e-15   observation.state 3.0e-15
+
+verdict          [FAIL]  meta/stats.json differs; per-episode metadata differs; sampled episodes differ

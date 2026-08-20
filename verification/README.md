@@ -302,14 +302,101 @@ So a node that is going to compare passes `--keep`, or compares between `build` 
 
 ## What the records say so far
 
-| dataset | episodes | verdict | why |
-|---|--:|---|---|
-| `cmu_stretch` | 135/135 | FAIL | delivered image `std` is zero in every episode |
-| `austin_buds_…_rlds` | 50/50 | FAIL | same, both cameras; plus an undeclared `absolute_action` column |
+Rebuilt on image `7bcf55b`, which resizes with **sinc**.
 
-Both reproduce their data exactly — every episode byte-identical on state and action,
-every sampled episode identical, distributions agreeing to 1e-15. Both fail on what the
-*delivered* copy contains.
+| dataset | episodes | downscale | video | verdict |
+|---|--:|---|--:|---|
+| `cmu_stretch` | 135/135 | none | 0.98x | FAIL — delivered image `std` is zero |
+| `austin_buds_…_rlds` | 50/50 | none | 0.99x / 0.97x | FAIL — same, both cameras |
+| `austin_sirius_…_rlds` | 559/559 | 1.31x | 1.10x / 1.09x | FAIL — same |
+| `dlr_edan_…_rlds` | 104/104 | 1.94x | 0.96x | FAIL — same |
+| `ucsd_kitchen_…_rlds` | 150/150 | 2.50x | 0.99x | FAIL — same |
+
+**Every video clears the 15% band now, at every downscale factor measured.** The two
+datasets that are not resized did not move, which is the check that the filter was the
+whole of it.
+
+All five reproduce their data exactly — every episode byte-identical on state and
+action, every sampled episode identical on state and action, prompts all agreeing,
+distributions to 1e-14 or better. dlr_edan was the one failure that was **ours**, and
+the `downscale` column is why: it was the first dataset in the funnel whose source has
+to be downscaled at all. It is fixed — the profile now names `sinc`, and dlr_edan's
+video went from 0.79x with 63 of 64 sampled episodes failing to **0.96x with none**,
+while ucsd went 0.885x to 0.99x. Every remaining difference in the collection so far is
+the delivered copy's zero `std`.
+
+### Then 15 more, four nodes at once
+
+A parallel run over 25 datasets, stopped part way. 15 finished the full cycle; timings
+and the stall that ended it are in [`records/speed.md`](records/speed.md). Every one of
+them reproduces its data and fails on the same zero `std`, with four exceptions worth
+naming:
+
+| dataset | also differs in |
+|---|---|
+| `iamlab_cmu_pickup_insert_…` | `robot_type` `'franka'` vs `'Franka'`; state slot names — ours `motor_0…motor_6, gripper`, delivered `x, y, z, roll, pitch, yaw, pad, gripper` |
+| `bc_z` | `robot_type` `'google_robot'` vs `'Google Robot'` |
+| `berkeley_autolab_ur5` | one prompt differs by a **trailing space** |
+| `stanford_hydra`, `taco_play` | video size — the gentle end of the resize |
+
+The first three are spec data this repository can correct. Two are the capitalisation of
+a string; the third is real layout information the delivered copy carries and our spec
+does not — `x, y, z, roll, pitch, yaw` says the block is a pose, where `motor_0…6` says
+only that it is seven of something.
+
+`absolute_action` turned up in **7 of the 15**, not the 1 of 3 first recorded. It is set
+aside every time, which is the undeclared-column rule working: no delivered `info.json`
+declares it.
+
+### One filter is not enough, and this is the evidence
+
+`sinc` fixed the strong downscales and broke the gentle ones. Of the 15, exactly two fail
+on video size — `stanford_hydra` at 1.25x down and `taco_play` at 1.21x — which is
+precisely where the sweep said sinc would overshoot: 1.09-1.10x measured at 1.31x against
+a 15% bound, and gentler than that is worse. Everything else lands in 0.96-1.15x.
+
+The change is still a net gain, five or more datasets fixed against two broken. But the
+conclusion the sweep hedged on is settled: **the resampler has to follow the scale
+factor, not the collection.**
+
+So the profile now names `by_scale` rather than a filter, and the threshold is 1.3x:
+
+| downscale | filter | measured |
+|---|---|--:|
+| 1.21x `taco_play`, 1.25x `stanford_hydra` | bicubic | 0.985-1.019x |
+| 1.31x `austin_sirius` | sinc | 1.088-1.100x |
+| 1.94x `dlr_edan` | sinc | 0.959x |
+| 2.50x `ucsd_kitchen` + 4 more cameras | sinc | 0.988x |
+
+The step decides per camera rather than per dataset, because a dataset can hold a
+480x640 view and an 84x84 one and those are different downscales. Both resize paths
+resolve the rule through the same step object, which a test asserts directly — a rule
+that answered differently on the two would build half a collection one way and half the
+other, which is the failure the declared value was introduced to prevent.
+
+### Verified: the threshold improves both sides, and it is not a trade
+
+Run end-to-end on image `node:by-scale` over four datasets chosen to straddle 1.3x —
+`taco_play` 1.21x and `stanford_hydra` 1.25x below it, `austin_sirius` 1.31x and
+`dlr_edan` 1.94x above:
+
+| dataset | filter | video | SIZE failures | sampled identical, sinc → by_scale |
+|---|---|--:|--:|--:|
+| `taco_play` | bicubic | 1.03-1.13x | **0** (was 11) | 5/64 → **29/64** |
+| `stanford_hydra` | bicubic | 1.02-1.04x | **0** (was 24) | 36/64 → **56/64** |
+| `austin_sirius` | sinc | 1.09-1.10x | 0 | 64/64, unchanged |
+| `dlr_edan` | sinc | 0.96x | 0 | 64/64, unchanged |
+
+The two that switched were failing on **both** size and picture under plain sinc, not
+size alone, and both got better: worst frame agreement went from 0.963 to 0.976. So this
+is not a size failure traded for a picture failure — it is fewer of each.
+
+What is left is narrow and worth naming. Those two still miss on picture, at 0.976 and
+0.977 against the 0.98 threshold, on 35 and 8 of 64 sampled episodes. Bicubic is much
+closer to whatever rldx1 resized with at these factors than sinc is, and it is still not
+it. That is the only video difference remaining anywhere in the collection, and it is
+0.3-0.4% wide — small enough that the next move is probably to find out what the
+threshold is actually measuring at that margin before hunting a third filter.
 
 ### The delivered image `std` is zero
 
@@ -319,6 +406,46 @@ like a property of how the collection was made rather than one bad run. It is re
 as a difference with its cause named, not tolerated: the rebuild computed the statistic
 and the delivered copy did not.
 
+### The resize loses detail, and dlr_edan is where it shows
+
+63 of dlr_edan's 64 sampled episodes fail on video size and nothing else: state and
+action identical, geometry, frame count, codec and keyframe interval all matching,
+pixels agreeing at 0.997 — and every file about 0.80x the delivered one. A ratio that
+steady across 63 episodes is a setting, not noise.
+
+It is the downscale. cmu_stretch and austin_buds are 128x128 at the source and are not
+resized; their video lands at 0.98x and 0.99x, which is the encoder build difference
+alone. dlr_edan is 360x640 down to 192x320, and `resize_frame` low-passes more than
+whatever rldx1 used: measured on episode 6, our frames carry **78% of the delivered
+high-frequency detail** — almost exactly the 0.79x size ratio, because a softer picture
+costs the encoder less.
+
+`resize_frame`'s docstring already measured this and chose swscale BICUBIC as the one
+that "stays inside tolerance everywhere". dlr_edan is the counterexample: ucsd at 2.5x
+down came out 0.86x and cleared the size tolerance; this does not.
+
+**Lanczos was never in that table.** Resizing the real source frames every available
+way and measuring the detail each keeps, with the delivered file as the target:
+
+| filter | detail kept, vs delivered |
+|---|--:|
+| swscale BILINEAR | 0.68x |
+| swscale AREA | 0.80x |
+| cv2 INTER_AREA | 0.84x |
+| swscale BICUBIC — *what ships* | 0.85x |
+| **swscale LANCZOS** | **0.93x** |
+| swscale SINC | 1.12x |
+| cv2 INTER_CUBIC | 1.19x |
+| cv2 INTER_LANCZOS4 | 1.22x |
+
+Two cautions before anyone changes the filter. This measures *detail*, not file size,
+and the two are related without being the same number. And it is one dataset at one
+scale factor — the original table's own point was that the offset moves with how gentle
+the downscale is, so Lanczos has to be re-measured on ucsd and taco_play, on the size
+metric, before it replaces bicubic. What is settled is narrower and still worth having:
+bicubic is not the best available on a 2x downscale, and the option that beats it was
+never tried.
+
 ### `absolute_action`, and why the rebuild has none
 
 austin_buds' delivered parquet carries an eighth column its own `meta/info.json` does
@@ -327,7 +454,8 @@ absolute pose, matching to the last digit on every column but the gripper — an
 `meta/stats.json` too. The RLDS source has no such field, so nothing in the source says
 to build it.
 
-Undeclared is the load-bearing word. A LeRobot loader builds its feature set from
+It is set aside with its reason printed rather than failed. Undeclared is the
+load-bearing word. A LeRobot loader builds its feature set from
 `info.json`, so a column absent from there is not read by anything downstream, which is
 also why this is a difference to decide about rather than a hole to fill. Of the three
 delivered copies examined it appears in one, so it is not a collection-wide convention

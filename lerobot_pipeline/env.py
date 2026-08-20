@@ -42,7 +42,7 @@ _TOP_LEVEL = {
 # How hard this machine may work, and nothing about what comes out of it. The
 # encoder settings used to be settable here too; they belong to the profile, whose
 # name a build records -- see _PROFILE_KEYS.
-_RUNTIME = {"workers", "threads_per_ffmpeg"}
+_RUNTIME = {"workers", "threads_per_ffmpeg", "nic_rate"}
 # Rules that decide what is built rather than how fast. Named so that finding one in
 # an environment file can say where it belongs instead of just "unknown key".
 _PROFILE_KEYS = {"preset", "crf", "encoding"}
@@ -74,6 +74,22 @@ class Environment:
     builders: Mapping[str, Mapping[str, Any]] = field(default_factory=dict)
     batch: Mapping[str, Any] = field(default_factory=dict)
     runtime: Mapping[str, Any] = field(default_factory=dict)
+
+    @property
+    def nic_rate(self) -> str | None:
+        """What this machine's link can carry, e.g. ``30Gb/s``.
+
+        The aws CLI's ``target_bandwidth``, which decides how hard the CRT client
+        parallelises. It is worth naming because leaving it unset costs half the
+        download: measured on m8i.16xlarge, 130.7 GB of toto onto a four-way stripe,
+        1,330.8 MB/s unset against 2,687.7 MB/s at ``30Gb/s``.
+
+        An earlier note in this repo had it at 3%, from a node whose single gp3 volume
+        was the limit at 677 MB/s -- where nothing about the client could have mattered.
+        It matters as soon as the disk is not the constraint.
+        """
+        rate = self.runtime.get("nic_rate")
+        return str(rate) if rate else None
 
     @property
     def max_datasets(self) -> int:

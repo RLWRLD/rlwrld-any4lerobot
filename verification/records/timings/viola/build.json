@@ -1,0 +1,16 @@
+{
+  "bytes": 489895909,
+  "created": [
+    "/scratch/out/viola"
+  ],
+  "dataset": "viola",
+  "dest_uri": null,
+  "error": null,
+  "finished": "2026-08-20T08:20:34+00:00",
+  "profile": "rldx1",
+  "source_uri": null,
+  "spec_sha": "a80469fcb046d7c0",
+  "started": "2026-08-20T08:18:21+00:00",
+  "status": "ok",
+  "step": "build"
+}

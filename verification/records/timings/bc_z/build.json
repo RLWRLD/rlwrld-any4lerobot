@@ -1,0 +1,16 @@
+{
+  "bytes": 6375334972,
+  "created": [
+    "/scratch/out/bc_z"
+  ],
+  "dataset": "bc_z",
+  "dest_uri": null,
+  "error": null,
+  "finished": "2026-08-20T09:34:35+00:00",
+  "profile": "rldx1",
+  "source_uri": null,
+  "spec_sha": "a9f7722711357d10",
+  "started": "2026-08-20T08:41:29+00:00",
+  "status": "ok",
+  "step": "build"
+}
