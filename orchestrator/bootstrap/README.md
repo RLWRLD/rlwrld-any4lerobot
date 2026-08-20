@@ -145,6 +145,16 @@ machine for its core count rather than writing one down. That is safe at roughly
 the worker count has to be capped below the core count or the largest datasets will
 be killed.
 
+**This has now been hit, and on a node picked for verification rather than a full run.**
+c7i.2xlarge is 8 vCPU and 16 GB, so 2 GB per core, and stanford_hydra's build died
+immediately: 570 episodes at 240x320, two cameras, eight workers. Capping to 4 fixed it.
+The three datasets verified before it — 50, 104 and 150 episodes — were small enough not
+to reach it, which is exactly how this stays hidden until a real dataset arrives.
+
+So a verification node is an `m7i` too, even though it handles one dataset at a time.
+Picking a c-family instance because the work looks small trades 2 GB per core for a
+failure that reads like a dataset problem.
+
 ## Order of operations
 
 ```
