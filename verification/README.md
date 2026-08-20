@@ -302,21 +302,28 @@ So a node that is going to compare passes `--keep`, or compares between `build` 
 
 ## What the records say so far
 
-| dataset | episodes | resized | verdict | why |
-|---|--:|---|---|---|
-| `cmu_stretch` | 135/135 | no | FAIL | delivered image `std` is zero in every episode |
-| `austin_buds_…_rlds` | 50/50 | no | FAIL | same, both cameras |
-| `dlr_edan_…_rlds` | 104/104 | 2.0x down | FAIL | same — the video is fixed, see below |
-| `ucsd_kitchen_…_rlds` | 150/150 | 2.5x down | FAIL | same |
+Rebuilt on image `7bcf55b`, which resizes with **sinc**.
 
-All three reproduce their data exactly — every episode byte-identical on state and
+| dataset | episodes | downscale | video | verdict |
+|---|--:|---|--:|---|
+| `cmu_stretch` | 135/135 | none | 0.98x | FAIL — delivered image `std` is zero |
+| `austin_buds_…_rlds` | 50/50 | none | 0.99x / 0.97x | FAIL — same, both cameras |
+| `austin_sirius_…_rlds` | 559/559 | 1.31x | 1.10x / 1.09x | FAIL — same |
+| `dlr_edan_…_rlds` | 104/104 | 1.94x | 0.96x | FAIL — same |
+| `ucsd_kitchen_…_rlds` | 150/150 | 2.50x | 0.99x | FAIL — same |
+
+**Every video clears the 15% band now, at every downscale factor measured.** The two
+datasets that are not resized did not move, which is the check that the filter was the
+whole of it.
+
+All five reproduce their data exactly — every episode byte-identical on state and
 action, every sampled episode identical on state and action, prompts all agreeing,
-distributions to 1e-15. The first two fail only on what the *delivered* copy contains.
-dlr_edan was the first failure that was **ours**, and the `resized` column is why: it
-was the first dataset in the funnel whose source has to be downscaled at all. It is
-fixed — the profile now names `sinc`, and dlr_edan's video went from 0.79x with 63
-of 64 sampled episodes failing to **0.96x with none**. Every remaining failure in
-the collection so far is the delivered copy's zero `std`.
+distributions to 1e-14 or better. dlr_edan was the one failure that was **ours**, and
+the `downscale` column is why: it was the first dataset in the funnel whose source has
+to be downscaled at all. It is fixed — the profile now names `sinc`, and dlr_edan's
+video went from 0.79x with 63 of 64 sampled episodes failing to **0.96x with none**,
+while ucsd went 0.885x to 0.99x. Every remaining difference in the collection so far is
+the delivered copy's zero `std`.
 
 ### The delivered image `std` is zero
 

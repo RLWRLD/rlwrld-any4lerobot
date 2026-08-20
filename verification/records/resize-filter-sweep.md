@@ -136,3 +136,63 @@ are simply gone from it.
 **All three now fail on one thing and it is not ours**: the delivered copy records image
 `std` as exactly zero in every episode. Nothing about video, geometry, encoding, state,
 action, prompts or distributions differs any more.
+
+
+## Re-verified on the shipped image
+
+`node:resize-sinc`, no mounted patches -- whatever the image carries is what was
+measured. Four datasets rebuilt and compared end to end on the node.
+
+| dataset | camera | scale | bicubic | **sinc** |
+| --- | --- | --- | --: | --: |
+| `dlr_edan` | image | 1.94x | 0.79x **FAIL** | **0.96x** |
+| `ucsd_kitchen` | image | 2.50x | 0.885x | **0.99x** |
+| `austin_sirius` | image | 1.31x | 0.985x | 1.10x |
+| `austin_sirius` | wrist_image | 1.31x | 1.019x | 1.09x |
+| `austin_buds` | image | none | 0.99x | 0.99x |
+| `austin_buds` | wrist_image | none | 0.97x | 0.97x |
+
+**Episodes flagged SIZE: 0, on all four.** dlr_edan alone was 63 of 64 before.
+austin_buds is unchanged because it is 128x128 at the source and never resized, which
+is the control: the change touches only what it should.
+
+Every remaining failure is the delivered copy's image `std` of exactly zero, now seen
+on four datasets and six cameras. One new marginal difference appeared on
+austin_sirius -- `image.max`, 1 pair of 559, 0.1059 against an allowance of 0.1 -- which
+is the expected direction: sinc keeps more detail, so a single-pixel extreme lands
+slightly further out.
+
+## Still open: cv2, which Slack points at and no measurement has covered
+
+Searching Slack turned up the house convention for downscaling, from the RLDX data
+recipe channel on 2026-08-02:
+
+> Sejune Joo: when I resize datasets it is with Inter-area, while rrc resizes with
+> Inter-linear at inference.
+
+and, on the rrc side, "resize interpolation changed to `INTER_AREA`; training was
+already AREA and only rrc was LINEAR". So the house answer for a downscale is
+`cv2.INTER_AREA`.
+
+Two reasons that is not the conclusion here. That thread is about the tactile/teleop
+datasets, not the OXE pre-training collection -- whose conversion code ALIN Lab
+confirmed was never kept. And nothing in Notion records the resampler; the top hit for
+the question is this repo's own table.
+
+But it does name the one candidate the deciding metric has never covered. `cv2
+INTER_AREA` has been measured for detail (0.84x) and pixel error (4.077) and never for
+file size; what *was* measured for size is **swscale** area, a different
+implementation. That the two families diverge sharply is already on record -- on ucsd,
+swscale bicubic is 0.885 and cv2 INTER_CUBIC is 1.03, same name, and cv2's kernel width
+scales with the downscale ratio in a way swscale's does not. That property is exactly
+what would explain the residue no swscale filter removes: every one of them comes out
+larger the gentler the downscale, which is why sinc lands at 1.10 on austin_sirius while
+reaching 0.96 on dlr_edan.
+
+Adopting cv2 would cost something the current design deliberately bought. The
+transform stage expresses its resize as an ffmpeg `scale=W:H:flags=` chain, which can
+only name libswscale filters, so a cv2 choice splits the two paths that
+`video.resize.filter` was introduced to keep together. The split is at least
+lopsided rather than even: the datasets that resize before the writer take the Python
+path, where cv2 is available, and the transform stage covers only the nine
+h264/GOP250 datasets.

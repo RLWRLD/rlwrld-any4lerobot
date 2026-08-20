@@ -1,6 +1,6 @@
 {
   "dataset": "ucsd_kitchen_dataset_converted_externally_to_rlds",
-  "measured_at": "2026-08-20T05:29:46+00:00",
+  "measured_at": "2026-08-20T05:48:40+00:00",
   "rebuilt": "/scratch/out/ucsd_kitchen_dataset_converted_externally_to_rlds",
   "delivered": "/scratch/delivered_tree/ucsd_kitchen_dataset_converted_externally_to_rlds",
   "settings": {
