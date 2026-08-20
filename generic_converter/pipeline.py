@@ -64,6 +64,115 @@ class SaveLeRobotDataset(PipelineStep):
             shutil.rmtree(task.output_path, ignore_errors=True)
 
 
+# What one conversion worker costs, measured rather than assumed. furniture_bench
+# workers were OOM-killed at 4.74 GB resident on 2026-08-20; 6 GB is that plus room,
+# and ANY4LEROBOT_WORKER_MEMORY_GB overrides it for a dataset that needs more.
+WORKER_MEMORY_BYTES = 6 * 1024**3
+
+# How long the whole run may make no progress before it is called stalled. Generous:
+# a single large episode can take minutes, and a false abort costs a re-run.
+STALL_SECONDS = 20 * 60
+
+
+def available_memory() -> int | None:
+    """This machine's usable memory, in bytes, or ``None`` if it cannot be read.
+
+    The cgroup limit comes first because a container is what actually runs, and its
+    limit can be far below the host's. ``/sys/fs/cgroup/memory.max`` reads ``max``
+    when unlimited, which is what sends this on to the host figure.
+    """
+    try:
+        text = Path("/sys/fs/cgroup/memory.max").read_text().strip()
+        if text.isdigit():
+            return int(text)
+    except OSError:
+        pass
+    try:
+        return os.sysconf("SC_PHYS_PAGES") * os.sysconf("SC_PAGE_SIZE")
+    except (ValueError, OSError):
+        return None
+
+
+def worker_budget(cpus_per_task: int) -> int:
+    """How many workers this machine can actually hold.
+
+    Cores were the wrong question. A worker holds one whole episode, so what limits
+    it is memory per *worker*, not memory per core -- and the two only agree when
+    episodes are small. On 2026-08-20 a 48-core, 185 GB node ran 48 workers at 4.74
+    GB each, asked for 226 GB, and the kernel killed twelve of them.
+    """
+    cores = max(1, (os.cpu_count() or 1) // cpus_per_task)
+    memory = available_memory()
+    if memory is None:
+        return cores
+    override = os.environ.get("ANY4LEROBOT_WORKER_MEMORY_GB")
+    per_worker = int(float(override) * 1024**3) if override else WORKER_MEMORY_BYTES
+    return max(1, min(cores, memory // per_worker))
+
+
+class Stalled(RuntimeError):
+    """Raised when a run stops making progress instead of finishing or failing."""
+
+
+def watch_for_stall(watched: Sequence[Path], seconds: int = STALL_SECONDS):
+    """Abort the process if nothing under ``watched`` changes for ``seconds``.
+
+    This exists because the two hangs this converter has produced both looked like
+    success from the outside: the parent alive, no error, no output, load average
+    0.00. A forkserver deadlock held a 48-core node for fifteen hours; an OOM-killed
+    worker left three nodes in ``do_wait`` for over an hour each. Neither is
+    detectable from a return code, because there is no return.
+
+    Progress is measured on the output tree rather than on the executor's own
+    bookkeeping, so it does not depend on which executor ran or on datatrove's
+    internals. A run that is working writes files; one that is stuck does not.
+
+    ``os._exit`` after printing, deliberately. The parent is blocked in ``waitpid``
+    and cannot be interrupted by an exception raised on another thread, so a clean
+    unwind is not available -- and a stalled converter that stays alive is the whole
+    problem being fixed.
+    """
+    import threading
+    import time
+
+    def footprint() -> tuple[int, int]:
+        files = size = 0
+        for root in watched:
+            for path in root.rglob("*"):
+                try:
+                    if path.is_file():
+                        files += 1
+                        size += path.stat().st_size
+                except OSError:
+                    continue
+        return files, size
+
+    def watch() -> None:
+        last, since = footprint(), time.monotonic()
+        while True:
+            time.sleep(min(60, max(5, seconds // 20)))
+            now = footprint()
+            if now != last:
+                last, since = now, time.monotonic()
+                continue
+            if time.monotonic() - since < seconds:
+                continue
+            print(
+                f"\nconverter stalled: nothing written under "
+                f"{', '.join(str(p) for p in watched)} for {seconds // 60} minutes.\n"
+                "A worker is most likely gone and the parent is waiting for it. The "
+                "usual cause is memory: check `dmesg -T | grep -i \"out of memory\"`, "
+                "and if a worker was killed, lower the worker count or raise "
+                "ANY4LEROBOT_WORKER_MEMORY_GB.",
+                file=sys.stderr, flush=True,
+            )
+            os._exit(75)   # EX_TEMPFAIL: the work is fine, the machine was not
+
+    thread = threading.Thread(target=watch, name="stall-watchdog", daemon=True)
+    thread.start()
+    return thread
+
+
 def local_config(
     task_count: int,
     workers: int,
@@ -72,6 +181,9 @@ def local_config(
 ) -> dict:
     """How a local run is sized, and how its workers are started.
 
+    ``workers: -1`` means "as many as this machine can hold", which is a memory
+    question and not a core count -- see ``worker_budget``.
+
     ``start_method`` is worth naming rather than leaving to the default when the
     parent process has already loaded a library that keeps threads. datatrove
     forkservers by default, which inherits whatever state the parent had when the
@@ -79,10 +191,14 @@ def local_config(
     workers a lock held by a thread that does not exist in them. That deadlock does
     not fail: it waits. One was found holding a 48-core instance for fifteen hours
     with fifteen seconds of CPU used and no task started.
+
+    Overcommitting memory produces a second hang of the same shape, which is why the
+    budget above exists and why ``run_converter`` watches for a stall: the kernel
+    kills a worker, the parent waits in ``do_wait`` for a child that is gone, and
+    load average sits at 0.00 with nothing in any log to say why. Three nodes were
+    found like that, between 66 and 107 minutes each.
     """
-    resolved = (
-        max(1, (os.cpu_count() or 1) // cpus_per_task) if workers == -1 else workers
-    )
+    resolved = worker_budget(cpus_per_task) if workers == -1 else workers
     config = {"tasks": task_count, "workers": resolved}
     if start_method:
         config["start_method"] = start_method
@@ -154,6 +270,7 @@ def run_converter(
     else:
         logging_dir = str(Path.cwd() / "logs" / f"{get_timestamp()}_{get_random_str()}")
 
+    watch_for_stall([output_path, Path(logging_dir)])
     executor_cls(
         pipeline=[SaveLeRobotDataset(tasks, adapter)],
         **executor_config,

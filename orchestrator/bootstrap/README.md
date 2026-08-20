@@ -155,6 +155,23 @@ So a verification node is an `m7i` too, even though it handles one dataset at a 
 Picking a c-family instance because the work looks small trades 2 GB per core for a
 failure that reads like a dataset problem.
 
+**And m7i was not enough either.** On 2026-08-20 three m7i.12xlarge nodes -- 48 cores,
+185 GB, 4 GB per core exactly as recommended -- were killed anyway: furniture_bench's
+workers peaked at **4.74 GB each**, so 48 of them asked for 226 GB. The rule was wrong,
+not the instance. The constraint is memory per *worker*, and `workers: -1` now resolves
+through [`worker_budget`](../../generic_converter/pipeline.py), which divides the machine's
+memory by a measured 6 GB and takes the smaller of that and the core count: 30 on this
+instance rather than 48. `ANY4LEROBOT_WORKER_MEMORY_GB` raises it for a dataset whose
+episodes are larger still -- toto's are ~301 MB against bc_z's ~20 MB, and no single
+number serves both.
+
+What made that expensive was not the kill. It was that the parent then waited in
+`do_wait` for children the kernel had removed, at load average 0.00, with nothing in any
+log to say why -- 66 to 107 minutes per node before anyone looked, and the cause visible
+only in `dmesg` and `/proc/<pid>/wchan`. A stall watchdog now bounds it: if nothing is
+written under the output or logging directory for 20 minutes the converter prints what to
+check and exits 75, so an OOM costs a re-run rather than a node.
+
 ## Order of operations
 
 ```
