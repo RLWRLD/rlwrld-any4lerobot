@@ -117,8 +117,8 @@ the sweep is safe.
 
 ## Verified on the built image
 
-Rebuilt and re-compared with `node:resize-sinc` -- the image carrying `filter: sinc`,
-nothing mounted over it, so what was measured is what a run would use.
+Rebuilt and re-compared on an image built from `7bcf55b` -- the image carrying
+`filter: sinc`, nothing mounted over it, so what was measured is what a run would use.
 
 | dataset | video ratio, before | after | sampled identical, before | after |
 | --- | --: | --: | --: | --: |
@@ -140,8 +140,8 @@ action, prompts or distributions differs any more.
 
 ## Re-verified on the shipped image
 
-`node:resize-sinc`, no mounted patches -- whatever the image carries is what was
-measured. Four datasets rebuilt and compared end to end on the node.
+The image built from `7bcf55b`, no mounted patches -- whatever the image carries is
+what was measured. Four datasets rebuilt and compared end to end on the node.
 
 | dataset | camera | scale | bicubic | **sinc** |
 | --- | --- | --- | --: | --: |
