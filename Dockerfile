@@ -39,6 +39,22 @@ RUN case "$TARGETARCH" in \
     && /tmp/aws/install \
     && rm -rf /tmp/awscli.zip /tmp/aws
 
+# The two transfer settings that are not properties of a machine.
+#
+# These lived only in node.sh, which sets them with `aws configure` at start-up. That
+# works when node.sh is the entrypoint and fails silently when it is not: a run that
+# starts a stage with `--entrypoint python` gets stock defaults, and a run that sets
+# them on the *host* gets stock defaults too, because the transfer happens in here with
+# its own $HOME. A 3.9 TB pass moved at 324 MB/s that way.
+#
+# Measured (22.3 GB, cold cache, m7i.12xlarge): the CRT client is worth 2.1x on its own,
+# 324 to 677 MB/s, and it is worth that on any machine -- so it belongs in the image,
+# where nothing can start a transfer without it. `target_bandwidth` measured 3% and is
+# the one value that really is machine-specific, so it stays in node.sh.
+RUN aws configure set default.s3.preferred_transfer_client crt \
+ && aws configure set default.s3.multipart_chunksize 64MB \
+ && aws configure list | tail -3
+
 WORKDIR /app
 
 # Dependencies before source, so editing a converter rebuilds one cheap layer rather

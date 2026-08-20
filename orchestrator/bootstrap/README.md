@@ -172,6 +172,31 @@ only in `dmesg` and `/proc/<pid>/wchan`. A stall watchdog now bounds it: if noth
 written under the output or logging directory for 20 minutes the converter prints what to
 check and exits 75, so an OOM costs a re-run rather than a node.
 
+### Transfer settings, and the trap of setting them in the wrong place
+
+The CRT client and the 64 MB chunk size are **in the image**, not in this script. They
+were here once, and that failed quietly: a driver that starts a stage with
+`--entrypoint python` never runs this script, and one that runs `aws configure` on the
+host does not reach the container, which has its own `$HOME`. Either way the aws CLI
+that does the work gets stock defaults, and a 3.9 TB pass moved at 324 MB/s instead of
+677 without anything reporting a problem.
+
+Measured on 22.3 GB with a cold page cache:
+
+| | MB/s |
+| --- | --: |
+| stock defaults | 323.6 |
+| classic client, 100 concurrent requests | 348.8 |
+| **CRT client, 64 MB chunks** | **676.6** |
+| CRT + `target_bandwidth 18Gb/s` | 697.7 |
+| CRT, written to tmpfs instead of gp3 | 1594.7 |
+
+So `NIC_RATE` is worth about 3% and stays here because it is the one genuinely
+machine-specific value. And past ~700 MB/s the volume is the limit rather than the
+link: gp3 at 16000 IOPS against ~40 KB shard writes works out to 625 MB/s, which is
+where it lands, so provisioning more MB/s alone would not move it. A node that needs
+to go faster than that wants more IOPS, striped volumes, or local NVMe.
+
 ## Order of operations
 
 ```
