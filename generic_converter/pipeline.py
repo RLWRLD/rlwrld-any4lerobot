@@ -179,6 +179,34 @@ def oom_count() -> int | None:
     return None
 
 
+class Watchdog:
+    """A running watchdog and its off switch.
+
+    Both watchdogs here end the process outright, so the window they are armed for
+    has to be exactly the window in which not ending it is worse: the executor and
+    the aggregation, where no progress means a hang. Afterwards the run has already
+    succeeded and the work left -- an upload, a delete -- can legitimately write
+    nothing for a long time, so a watchdog still armed there would kill a finished
+    run. Without an off switch there is no way to say that: a daemon thread looping
+    on ``os._exit`` cannot be called off by the code that started it.
+    """
+
+    def __init__(self, thread: threading.Thread, stop: threading.Event):
+        self.thread = thread
+        self._stop = stop
+
+    def stop(self, timeout: float = 5) -> None:
+        self._stop.set()
+        self.thread.join(timeout=timeout)
+
+
+def stop_watchdogs(watchdogs: Sequence["Watchdog | None"]) -> None:
+    """Disarm every watchdog that started. ``None`` is a watchdog that declined to."""
+    for watchdog in watchdogs:
+        if watchdog is not None:
+            watchdog.stop()
+
+
 def watch_for_oom(poll: int = 10):
     """Abort the process as soon as the kernel kills anything.
 
@@ -197,9 +225,10 @@ def watch_for_oom(poll: int = 10):
     if baseline is None:
         return None
 
+    stop = threading.Event()
+
     def watch():
-        while True:
-            time.sleep(poll)
+        while not stop.wait(poll):
             now = oom_count()
             if now is None or now <= baseline:
                 continue
@@ -215,7 +244,7 @@ def watch_for_oom(poll: int = 10):
 
     thread = threading.Thread(target=watch, name="oom-watchdog", daemon=True)
     thread.start()
-    return thread
+    return Watchdog(thread, stop)
 
 
 def watch_for_stall(watched: Sequence[Path], seconds: int = STALL_SECONDS):
@@ -249,10 +278,11 @@ def watch_for_stall(watched: Sequence[Path], seconds: int = STALL_SECONDS):
                     continue
         return files, size
 
+    stop = threading.Event()
+
     def watch() -> None:
         last, since = footprint(), time.monotonic()
-        while True:
-            time.sleep(min(60, max(5, seconds // 20)))
+        while not stop.wait(min(60, max(5, seconds // 20))):
             now = footprint()
             if now != last:
                 last, since = now, time.monotonic()
@@ -272,7 +302,7 @@ def watch_for_stall(watched: Sequence[Path], seconds: int = STALL_SECONDS):
 
     thread = threading.Thread(target=watch, name="stall-watchdog", daemon=True)
     thread.start()
-    return thread
+    return Watchdog(thread, stop)
 
 
 def local_config(
@@ -419,18 +449,23 @@ def run_converter(
                 "(the manager datatrove forks is not covered by start_method alone)"
             )
 
-    watch_for_oom()
-    watch_for_stall([output_path, Path(logging_dir)])
-    executor_cls(
-        pipeline=[SaveLeRobotDataset(tasks, adapter)],
-        **executor_config,
-        logging_dir=logging_dir,
-    ).run()
-    aggregate_tasks(
-        tasks,
-        output_path,
-        aggr_repo_id=local_repo_id,
-    )
+    # Armed for the executor and the aggregation only. Past here the run has
+    # succeeded, and the upload below can go twenty minutes without writing a local
+    # byte -- which a stall watchdog cannot tell from a hang.
+    watchdogs = (watch_for_oom(), watch_for_stall([output_path, Path(logging_dir)]))
+    try:
+        executor_cls(
+            pipeline=[SaveLeRobotDataset(tasks, adapter)],
+            **executor_config,
+            logging_dir=logging_dir,
+        ).run()
+        aggregate_tasks(
+            tasks,
+            output_path,
+            aggr_repo_id=local_repo_id,
+        )
+    finally:
+        stop_watchdogs(watchdogs)
 
     if cleanup_temp:
         logger = setup_logger()

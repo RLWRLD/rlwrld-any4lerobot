@@ -99,11 +99,14 @@ class TestStallWatchdog:
 
         watched = tmp_path / "out"
         watched.mkdir()
-        pipeline.watch_for_stall([watched], seconds=2)
-        for i in range(6):
-            (watched / f"file{i}").write_text("x" * (i + 1))
-            time.sleep(0.5)
-        assert True     # still here: os._exit was not called
+        watchdog = pipeline.watch_for_stall([watched], seconds=2)
+        try:
+            for i in range(6):
+                (watched / f"file{i}").write_text("x" * (i + 1))
+                time.sleep(0.5)
+            assert True     # still here: os._exit was not called
+        finally:
+            watchdog.stop()
 
     def test_it_watches_every_path_it_is_given(self, tmp_path):
         """Output and the executor's own logging dir both count as progress -- a run
@@ -112,11 +115,55 @@ class TestStallWatchdog:
 
         out, logs = tmp_path / "out", tmp_path / "logs"
         out.mkdir(); logs.mkdir()
-        pipeline.watch_for_stall([out, logs], seconds=2)
-        for i in range(6):
-            (logs / f"log{i}").write_text("y")
-            time.sleep(0.5)
-        assert True
+        watchdog = pipeline.watch_for_stall([out, logs], seconds=2)
+        try:
+            for i in range(6):
+                (logs / f"log{i}").write_text("y")
+                time.sleep(0.5)
+            assert True
+        finally:
+            watchdog.stop()
+
+    def test_a_stalled_tree_is_aborted(self, tmp_path, monkeypatch):
+        """The other half of the contract, and it had no test: a watchdog that never
+        fires is the fifteen-hour hang it was written for."""
+        import time
+
+        killed = []
+        monkeypatch.setattr(pipeline.os, "_exit", killed.append)
+
+        watched = tmp_path / "out"
+        watched.mkdir()
+        (watched / "one").write_text("x")
+        watchdog = pipeline.watch_for_stall([watched], seconds=1)
+        try:
+            deadline = time.monotonic() + 20
+            while not killed and time.monotonic() < deadline:
+                time.sleep(0.2)
+            assert killed and killed[0] == 75
+        finally:
+            watchdog.stop()
+
+    def test_a_stopped_watchdog_does_not_fire(self, tmp_path, monkeypatch):
+        """A watchdog outlives the code that starts it: a daemon thread looping on
+        ``os._exit`` cannot be called off, so the one armed for the executor was still
+        armed during the upload afterwards, where writing nothing for twenty minutes
+        is normal. It also survived into the rest of this test suite and killed the
+        pytest process at exit 75, which is how it was found."""
+        import time
+
+        killed = []
+        monkeypatch.setattr(pipeline.os, "_exit", killed.append)
+
+        watched = tmp_path / "out"
+        watched.mkdir()
+        (watched / "one").write_text("x")
+        watchdog = pipeline.watch_for_stall([watched], seconds=1)
+        watchdog.stop()
+
+        assert not watchdog.thread.is_alive()
+        time.sleep(7)           # past the interval it would next have woken on
+        assert killed == []
 
 
 class TestStartMethodReachesTheManager:
