@@ -133,6 +133,15 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 COPY . .
 
+# What commit this image was built from, so the image can be asked rather than the
+# tag trusted. It recorded the foundry CLI's revision and nothing about itself, and
+# when five name-tagged images had to be traced back the only evidence left was their
+# push times against the git log. orchestrator/image.py refuses to build unless this
+# is a commit on origin/main, so a recorded value is one anybody can look up.
+ARG SOURCE_REVISION
+RUN mkdir -p /opt/any4lerobot \
+ && printf '%s\n' "${SOURCE_REVISION:-unrecorded}" > /opt/any4lerobot/REVISION
+
 # Where the orchestrator stages sources and writes output. Mount a volume over it --
 # a node handling taco_play alone needs 48 GB, which is not container-sized.
 # FOUNDRY_URL is the *internal* ALB. The name foundry.internal.rlwrld.ai resolves to

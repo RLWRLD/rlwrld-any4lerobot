@@ -53,11 +53,11 @@ aws ecr get-login-password --region us-east-1 \
 
 git -C "$FOUNDRY" fetch -q origin && git -C "$FOUNDRY" checkout -q "$(cat foundry-cli.pin)"
 
-docker buildx build --platform linux/amd64 --provenance=false \
-  --build-context foundry="$FOUNDRY" \
-  --build-arg FOUNDRY_REVISION="$(git -C "$FOUNDRY" rev-parse HEAD)" \
-  -t "$REPO:$(git rev-parse --short HEAD)" --push .
+python -m orchestrator.image --foundry "$FOUNDRY"
 ```
+
+It prints the reference it pushed. `--tag-only` prints the tag and stops, which is
+how to find out whether this tree can be built at all without waiting for a build.
 
 The **foundry build context** is what puts the `foundry` CLI and its SDK in the image,
 for the delivered copies a comparison is measured against and for publishing a
@@ -74,10 +74,29 @@ tree and the pinned foundry packages there, extract them on the node, and point
 `--build-context` at the second. Clear the prefix afterwards; it is a transit, not a
 store.
 
-Tag with the commit, not `latest`. A run should be able to say which image produced
-its output, and `latest` cannot answer that. Pull by digest in anything scheduled:
-`$REPO@sha256:…` is the only form that guarantees every node in a fan-out got the
-same bytes.
+The tag is derived, not chosen: the short revision of `HEAD`, and
+[`image.py`](../image.py) refuses to build otherwise. It refuses a dirty tree —
+`COPY . .` copies the tree and not the commit, so an uncommitted file is in the image
+and not in the commit the tag names — and it refuses a commit that is not on
+`origin/main`, because a hash that exists on one laptop cannot be looked up by whoever
+reads the record later.
+
+That rule was here before it was code, and it was broken five times in one day:
+`parallel`, `crt`, `by-scale`, `resize-sinc` and `foundry-cli` were all pushed under
+names, and two of them ended up cited in committed records as the provenance of
+measurements. Recovering which commit they came from meant bracketing their push times
+against the git log.
+
+The image also records its own revision at `/opt/any4lerobot/REVISION`, so it can be
+asked instead of its tag believed:
+
+```bash
+docker run --rm --entrypoint cat "$REPO:<tag>" /opt/any4lerobot/REVISION
+```
+
+Never `latest` — a run should be able to say which image produced its output, and
+`latest` cannot answer that. Pull by digest in anything scheduled: `$REPO@sha256:…`
+is the only form that guarantees every node in a fan-out got the same bytes.
 
 `--provenance=false` keeps the push to a plain image manifest. Without it buildx
 writes an OCI index with an attestation beside the image, which some runtimes will
