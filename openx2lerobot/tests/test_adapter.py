@@ -278,8 +278,47 @@ class _Builder:
         self.asked_for = split
         return self.episodes
 
-    def as_dataset(self, split=None):
+    def as_dataset(self, split=None, read_config=None):
         raise AssertionError("an array_record mirror cannot be read as a stream")
+
+
+class _Stream:
+    """The tf.data chain the stream reader builds, recorded rather than executed.
+
+    Eager where tf.data is lazy, which the assertions here do not depend on. What
+    they do depend on is that the chain stays bounded: a buffered element is a whole
+    decoded episode, and worker memory is what caps parallelism.
+    """
+
+    def __init__(self, episodes, calls):
+        self.episodes = episodes
+        self.calls = calls
+
+    def filter(self, predicate):
+        return _Stream([e for e in self.episodes if predicate(e)], self.calls)
+
+    def map(self, transform):
+        return _Stream([transform(e) for e in self.episodes], self.calls)
+
+    def prefetch(self, size):
+        self.calls["prefetch"] = size
+        return self
+
+    def as_numpy_iterator(self):
+        return iter(self.episodes)
+
+
+class _StreamBuilder:
+    """as_dataset's half, for a tfrecord mirror -- which is every source but bc_z."""
+
+    def __init__(self, episodes):
+        self.episodes = episodes
+        self.calls = {}
+
+    def as_dataset(self, split=None, read_config=None):
+        self.calls["split"] = split
+        self.calls["read_config"] = read_config
+        return _Stream(self.episodes, self.calls)
 
 
 def _task(split: str) -> ConversionTask:
@@ -317,6 +356,13 @@ def without_tensorflow(monkeypatch):
     module.standardize_trajectory = _standardize
     module.transform_raw_dataset = lambda episode, dataset_name: episode
     monkeypatch.setitem(sys.modules, "openx_rlds", module)
+
+    # The stream reader also asks tfds for a ReadConfig, to carry the read bounds.
+    # Same argument as above: which bound to ask for is this module's to decide, and
+    # honouring it is tfds's, so the stand-in keeps the request and honours nothing.
+    tfds = types.ModuleType("tensorflow_datasets")
+    tfds.ReadConfig = lambda **options: options
+    monkeypatch.setitem(sys.modules, "tensorflow_datasets", tfds)
     return module
 
 
@@ -374,6 +420,41 @@ class TestWhichReaderRuns:
         subject._builder = lambda: builder
         with pytest.raises(AssertionError, match="cannot be read as a stream"):
             list(subject.load_subset(_task("train[0:1]")))
+
+
+class TestReadingByStream:
+    def _subject(self, tmp_path, episodes):
+        raw = tmp_path / "cmu_stretch" / "1.0.0"
+        raw.mkdir(parents=True)
+        (raw / "dataset_info.json").write_text(json.dumps({"fileFormat": "tfrecord"}))
+        subject = OpenXAdapter(raw_dir=raw, output_path=tmp_path / "out")
+        builder = _StreamBuilder(episodes)
+        subject._builder = lambda: builder
+        return subject, builder
+
+    def test_the_prefetch_is_bounded(self, tmp_path, without_tensorflow):
+        """A buffered element here is not a frame, it is an episode decoded whole --
+        300 MB for toto. AUTOTUNE sizes its buffer for throughput and cannot know that
+        twenty-two workers are doing the same on one machine, which is how a worker
+        came to cost 7.75 GB. Worker memory is the cap on parallelism, so an unbounded
+        buffer here costs cores."""
+        subject, builder = self._subject(tmp_path, [_episode(_steps())])
+        list(subject.load_subset(_task("train[0:1]")))
+        assert builder.calls["prefetch"] == 1
+
+    def test_one_shard_is_read_at_a_time(self, tmp_path, without_tensorflow):
+        """The same argument one layer down: interleaving four shards buffers four
+        shards' worth to hand back the one episode the consumer asked for."""
+        subject, builder = self._subject(tmp_path, [_episode(_steps())])
+        list(subject.load_subset(_task("train[0:1]")))
+        assert builder.calls["read_config"] == {"interleave_cycle_length": 1}
+
+    def test_the_slice_reaches_the_stream_unchanged(self, tmp_path, without_tensorflow):
+        """A chunk is only a chunk if the reader honours it -- the same guarantee the
+        by-index reader has a test for, and this reader had none."""
+        subject, builder = self._subject(tmp_path, [_episode(_steps())])
+        list(subject.load_subset(_task("train[300:400]")))
+        assert builder.calls["split"] == "train[300:400]"
 
 
 class TestReadingByIndex:
