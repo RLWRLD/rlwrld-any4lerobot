@@ -123,6 +123,11 @@ def episode_chunks(total: int, per_task: int) -> list[tuple[int, int]]:
     return [(start, min(start + per_task, total)) for start in range(0, total, per_task)]
 
 
+# How many whole decoded episodes a worker may hold beyond the one it is converting.
+# One, because the consumer is sequential and each is hundreds of megabytes.
+PREFETCH_EPISODES = 1
+
+
 class OpenXAdapter(BaseAdapter):
     dataset_type = "openx"
 
@@ -238,11 +243,29 @@ class OpenXAdapter(BaseAdapter):
 
         from openx_rlds import transform_raw_dataset
 
+        import tensorflow_datasets as tfds
+
+        # A bounded prefetch, and the bound is the point.
+        #
+        # `transform_raw_dataset` batches a whole episode into one tensor, so a buffered
+        # element here is not a frame, it is every frame of an episode decoded: 300 MB
+        # for toto. tf.data's AUTOTUNE sizes its buffer for throughput and has no idea
+        # that twenty-two of these are running side by side, so it buffers until the
+        # machine is full. That is most of what made a worker cost 7.75 GB, and worker
+        # memory is what caps parallelism -- 22 workers on a 64-core node.
+        #
+        # One episode ahead is all a sequential consumer can use. interleave_cycle_length
+        # 1 is the same argument one layer down: reading four shards at once buffers four
+        # shards' worth to hand back one episode.
         dataset = (
             self._builder()
-            .as_dataset(split=split)
+            .as_dataset(
+                split=split,
+                read_config=tfds.ReadConfig(interleave_cycle_length=1),
+            )
             .filter(self._keep())
             .map(partial(transform_raw_dataset, dataset_name=self.dataset_name))
+            .prefetch(PREFETCH_EPISODES)
         )
         yield from dataset.as_numpy_iterator()
 
@@ -318,6 +341,24 @@ class OpenXAdapter(BaseAdapter):
             )
         dataset.save_episode()
         return True
+
+    def episode_bytes(self) -> int | None:
+        """Source bytes of a mean episode, off the builder's own info.
+
+        The RLDS split records both its size and its episode count, so this needs no
+        second source and cannot drift from the data. Source bytes rather than decoded
+        pixels because that is what is actually available here, and because the two
+        measurements the estimate is fitted to were taken the same way.
+        """
+        try:
+            split = self._builder().info.splits["train"]
+            episodes = int(split.num_examples)
+            size = int(split.num_bytes or 0)
+        except Exception:
+            return None
+        if not episodes or not size:
+            return None
+        return size // episodes
 
     def get_episode_length(self, episode_data: Any) -> int:
         return int(episode_data["steps"]["action"].shape[0])

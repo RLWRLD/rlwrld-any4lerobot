@@ -117,3 +117,140 @@ class TestStallWatchdog:
             (logs / f"log{i}").write_text("y")
             time.sleep(0.5)
         assert True
+
+
+class TestStartMethodReachesTheManager:
+    """`start_method` alone reaches the pool and not the manager.
+
+    datatrove's LocalPipelineExecutor.run does:
+
+        mg = multiprocess.Manager()                        # default context: fork
+        ctx = multiprocess.get_context(self.start_method)  # honoured here only
+
+    A manager forked from a parent holding TensorFlow inherits locks no thread in it
+    owns, then serves the queue the pool workers wait on. py-spy on a 64-core node
+    building toto: parent in pool.py:861 next, child in managers.py:176 serve_forever
+    via popen_fork, load 0.00, output frozen. No error, no CPU, no end.
+    """
+
+    def test_it_sets_the_process_default(self):
+        import multiprocess
+
+        from generic_converter.pipeline import apply_start_method
+
+        before = multiprocess.get_start_method(allow_none=True)
+        try:
+            assert apply_start_method("spawn") == "spawn"
+            assert multiprocess.get_start_method() == "spawn"
+        finally:
+            if before:
+                multiprocess.set_start_method(before, force=True)
+
+    def test_it_forces_past_an_already_fixed_default(self):
+        """The default being wrong is the bug, so an existing choice is not deferred to."""
+        import multiprocess
+
+        from generic_converter.pipeline import apply_start_method
+
+        before = multiprocess.get_start_method(allow_none=True)
+        try:
+            multiprocess.set_start_method("fork", force=True)
+            assert apply_start_method("spawn") == "spawn"
+        finally:
+            if before:
+                multiprocess.set_start_method(before, force=True)
+
+    def test_no_request_leaves_the_default_alone(self):
+        """ray and single-worker runs do not go through this and must not be changed."""
+        import multiprocess
+
+        from generic_converter.pipeline import apply_start_method
+
+        before = multiprocess.get_start_method(allow_none=True)
+        assert apply_start_method(None) is None
+        assert multiprocess.get_start_method(allow_none=True) == before
+
+
+class TestOomFailsRatherThanHangs:
+    """An OOM-killed worker hangs the run; it has to fail it instead.
+
+    multiprocess.Pool hands work out through a queue guarded by a lock. A worker the
+    kernel kills while it holds that lock never releases it, so every surviving worker
+    blocks in Queue.get and the parent blocks in pool.next waiting for results that
+    cannot arrive. Measured on toto, 2026-08-20: one kill, 42 workers left waiting,
+    128 GB resident, output frozen at 1,472 MB, load average 0.00, nothing in any log.
+    """
+
+    def test_the_counter_is_read_from_vmstat(self, tmp_path, monkeypatch):
+        from generic_converter import pipeline
+
+        stat = tmp_path / "vmstat"
+        stat.write_text("pgfault 12345\noom_kill 7\npgmajfault 8\n")
+        monkeypatch.setattr(pipeline, "Path", lambda *a, **k: stat)
+        assert pipeline.oom_count() == 7
+
+    def test_a_machine_without_the_counter_is_not_an_error(self, tmp_path, monkeypatch):
+        """Older kernels and some containers do not expose it. The watchdog then
+        declines to run rather than failing every build."""
+        from generic_converter import pipeline
+
+        stat = tmp_path / "vmstat"
+        stat.write_text("pgfault 12345\n")
+        monkeypatch.setattr(pipeline, "Path", lambda *a, **k: stat)
+        assert pipeline.oom_count() is None
+
+    def test_the_watchdog_declines_when_the_counter_is_absent(self, monkeypatch):
+        from generic_converter import pipeline
+
+        monkeypatch.setattr(pipeline, "oom_count", lambda: None)
+        assert pipeline.watch_for_oom(poll=1) is None
+
+    def test_the_exit_code_is_distinct_from_the_stall_code(self):
+        """A scheduler has to tell "the kernel took a worker, retry smaller" from
+        "no progress and nobody knows why"."""
+        from generic_converter.pipeline import EXIT_WORKER_KILLED
+
+        assert EXIT_WORKER_KILLED == 76
+
+
+class TestWorkerMemoryFollowsTheEpisode:
+    """A constant per worker was the second wrong answer.
+
+    With 6 GB assumed, a 64-core 247 GB node took 41 workers for toto, whose workers
+    reach 9.3 GB. Fitted on the two datasets that were actually measured.
+    """
+
+    def test_it_covers_both_measurements(self):
+        from generic_converter.pipeline import worker_memory
+
+        # jaco_play 9.9 GB / 976 episodes, workers measured at 4.74 GB
+        assert worker_memory(10_100_000) > 4.74 * 1024**3
+        # toto 137.1 GB / 902 episodes, a worker OOM-killed at 9.28 GB
+        assert worker_memory(152_000_000) > 9.28 * 1024**3
+
+    def test_a_bigger_episode_costs_more(self):
+        from generic_converter.pipeline import worker_memory
+
+        assert worker_memory(152_000_000) > worker_memory(10_100_000)
+
+    def test_toto_gets_fewer_workers_than_cores(self, monkeypatch):
+        """The whole point: 64 cores and 247 GB is 22 workers for toto, not 41."""
+        from generic_converter import pipeline
+
+        monkeypatch.setattr(pipeline.os, "cpu_count", lambda: 64)
+        monkeypatch.setattr(pipeline, "available_memory", lambda: 247 * 1024**3)
+        assert pipeline.worker_budget(1, 152_000_000) < 30
+        assert pipeline.worker_budget(1, 10_100_000) > 35
+
+    def test_an_unknown_episode_keeps_the_old_constant(self, monkeypatch):
+        """Adapters that cannot say must not be silently given a huge budget."""
+        from generic_converter import pipeline
+
+        assert pipeline.worker_memory(None) == pipeline.WORKER_MEMORY_BYTES
+
+    def test_the_override_still_wins(self, monkeypatch):
+        """The escape hatch has to beat the model, not be averaged with it."""
+        from generic_converter import pipeline
+
+        monkeypatch.setenv("ANY4LEROBOT_WORKER_MEMORY_GB", "3")
+        assert pipeline.worker_memory(152_000_000) == 3 * 1024**3
