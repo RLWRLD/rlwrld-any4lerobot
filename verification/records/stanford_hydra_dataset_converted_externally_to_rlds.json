@@ -1,6 +1,6 @@
 {
   "dataset": "stanford_hydra_dataset_converted_externally_to_rlds",
-  "measured_at": "2026-08-20T08:48:12+00:00",
+  "measured_at": "2026-08-20T11:57:53+00:00",
   "rebuilt": "/scratch/out/stanford_hydra_dataset_converted_externally_to_rlds",
   "delivered": "/scratch/delivered_tree/stanford_hydra_dataset_converted_externally_to_rlds",
   "settings": {
@@ -158,11 +158,11 @@
       "reason": "ordering features follow the episode and task order; missing quantiles are the keys the v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream",
       "differences": {
         "observation.images.image.std": [
-          "differs by 0.2797",
+          "differs by 0.2786",
           "allowed 0.05"
         ],
         "observation.images.wrist_image.std": [
-          "differs by 0.2066",
+          "differs by 0.2062",
           "allowed 0.05"
         ]
       },
@@ -268,11 +268,11 @@
       "reason": "ordering features follow the episode and task order, which the episode question already reports; absent quantiles are the five keys the v3.0 to v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream",
       "differences": {
         "episodes_stats.jsonl.observation.images.image.std": [
-          "570 of 570 pairs differ, worst 0.3298",
+          "570 of 570 pairs differ, worst 0.3288",
           "the delivered copy records zero in every episode"
         ],
         "episodes_stats.jsonl.observation.images.wrist_image.std": [
-          "570 of 570 pairs differ, worst 0.3049",
+          "570 of 570 pairs differ, worst 0.3047",
           "the delivered copy records zero in every episode"
         ]
       },
@@ -1043,12 +1043,10 @@
           "action": "identical (549, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 549f av1/GOP2 2145968B vs 1839070B (1.17x) px 0.998 SIZE",
-          "observation.images.wrist_image": "256x192 549f av1/GOP2 1026358B vs 920519B (1.11x) px 0.993 ok"
+          "observation.images.image": "256x192 549f av1/GOP2 1865822B vs 1839070B (1.01x) px 0.999 ok",
+          "observation.images.wrist_image": "256x192 549f av1/GOP2 933587B vs 920519B (1.01x) px 0.994 ok"
         },
-        "problems": [
-          "video observation.images.image: 2145968 bytes against delivered 1839070 (1.17x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 1,
@@ -1063,12 +1061,10 @@
           "action": "identical (507, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 507f av1/GOP2 2001128B vs 1725495B (1.16x) px 0.998 SIZE",
-          "observation.images.wrist_image": "256x192 507f av1/GOP2 1016410B vs 917782B (1.11x) px 0.994 ok"
+          "observation.images.image": "256x192 507f av1/GOP2 1752941B vs 1725495B (1.02x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 507f av1/GOP2 938643B vs 917782B (1.02x) px 0.996 ok"
         },
-        "problems": [
-          "video observation.images.image: 2001128 bytes against delivered 1725495 (1.16x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 2,
@@ -1083,12 +1079,11 @@
           "action": "identical (514, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 514f av1/GOP2 2922891B vs 2536132B (1.15x) px 0.996 SIZE",
-          "observation.images.wrist_image": "256x192 514f av1/GOP2 1535859B vs 1377717B (1.11x) px 0.972 PIXELS"
+          "observation.images.image": "256x192 514f av1/GOP2 2632491B vs 2536132B (1.04x) px 0.997 ok",
+          "observation.images.wrist_image": "256x192 514f av1/GOP2 1415544B vs 1377717B (1.03x) px 0.976 PIXELS"
         },
         "problems": [
-          "video observation.images.image: 2922891 bytes against delivered 2536132 (1.15x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.wrist_image: frames agree 0.972 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.wrist_image: frames agree 0.976 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -1104,8 +1099,8 @@
           "action": "identical (485, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 485f av1/GOP2 2754151B vs 2397917B (1.15x) px 0.996 ok",
-          "observation.images.wrist_image": "256x192 485f av1/GOP2 1395485B vs 1240355B (1.13x) px 0.984 ok"
+          "observation.images.image": "256x192 485f av1/GOP2 2483907B vs 2397917B (1.04x) px 0.997 ok",
+          "observation.images.wrist_image": "256x192 485f av1/GOP2 1284386B vs 1240355B (1.04x) px 0.985 ok"
         },
         "problems": []
       },
@@ -1122,12 +1117,10 @@
           "action": "identical (517, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 517f av1/GOP2 2940038B vs 2547226B (1.15x) px 0.996 SIZE",
-          "observation.images.wrist_image": "256x192 517f av1/GOP2 1485678B vs 1335949B (1.11x) px 0.988 ok"
+          "observation.images.image": "256x192 517f av1/GOP2 2635889B vs 2547226B (1.03x) px 0.997 ok",
+          "observation.images.wrist_image": "256x192 517f av1/GOP2 1371421B vs 1335949B (1.03x) px 0.989 ok"
         },
-        "problems": [
-          "video observation.images.image: 2940038 bytes against delivered 2547226 (1.15x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 5,
@@ -1142,12 +1135,10 @@
           "action": "identical (526, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 526f av1/GOP2 2982696B vs 2584765B (1.15x) px 0.996 SIZE",
-          "observation.images.wrist_image": "256x192 526f av1/GOP2 1486731B vs 1322228B (1.12x) px 0.986 ok"
+          "observation.images.image": "256x192 526f av1/GOP2 2685609B vs 2584765B (1.04x) px 0.997 ok",
+          "observation.images.wrist_image": "256x192 526f av1/GOP2 1370747B vs 1322228B (1.04x) px 0.987 ok"
         },
-        "problems": [
-          "video observation.images.image: 2982696 bytes against delivered 2584765 (1.15x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 6,
@@ -1162,8 +1153,8 @@
           "action": "identical (833, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 833f av1/GOP2 3188757B vs 2778736B (1.15x) px 0.998 ok",
-          "observation.images.wrist_image": "256x192 833f av1/GOP2 2140452B vs 1876126B (1.14x) px 0.993 ok"
+          "observation.images.image": "256x192 833f av1/GOP2 2824994B vs 2778736B (1.02x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 833f av1/GOP2 1927717B vs 1876126B (1.03x) px 0.993 ok"
         },
         "problems": []
       },
@@ -1180,8 +1171,8 @@
           "action": "identical (751, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 751f av1/GOP2 3346530B vs 2923271B (1.14x) px 0.998 ok",
-          "observation.images.wrist_image": "256x192 751f av1/GOP2 1879618B vs 1684119B (1.12x) px 0.993 ok"
+          "observation.images.image": "256x192 751f av1/GOP2 2983712B vs 2923271B (1.02x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 751f av1/GOP2 1727788B vs 1684119B (1.03x) px 0.995 ok"
         },
         "problems": []
       },
@@ -1198,12 +1189,10 @@
           "action": "identical (571, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 571f av1/GOP2 2343222B vs 2031696B (1.15x) px 0.998 SIZE",
-          "observation.images.wrist_image": "256x192 571f av1/GOP2 1300083B vs 1159994B (1.12x) px 0.995 ok"
+          "observation.images.image": "256x192 571f av1/GOP2 2043458B vs 2031696B (1.01x) px 0.999 ok",
+          "observation.images.wrist_image": "256x192 571f av1/GOP2 1176416B vs 1159994B (1.01x) px 0.996 ok"
         },
-        "problems": [
-          "video observation.images.image: 2343222 bytes against delivered 2031696 (1.15x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 9,
@@ -1218,8 +1207,8 @@
           "action": "identical (511, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 511f av1/GOP2 1992936B vs 1745477B (1.14x) px 0.998 ok",
-          "observation.images.wrist_image": "256x192 511f av1/GOP2 1458020B vs 1296305B (1.12x) px 0.996 ok"
+          "observation.images.image": "256x192 511f av1/GOP2 1766862B vs 1745477B (1.01x) px 0.999 ok",
+          "observation.images.wrist_image": "256x192 511f av1/GOP2 1335277B vs 1296305B (1.03x) px 0.997 ok"
         },
         "problems": []
       },
@@ -1236,8 +1225,8 @@
           "action": "identical (569, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 569f av1/GOP2 2511661B vs 2184955B (1.15x) px 0.998 ok",
-          "observation.images.wrist_image": "256x192 569f av1/GOP2 1445323B vs 1298723B (1.11x) px 0.991 ok"
+          "observation.images.image": "256x192 569f av1/GOP2 2228444B vs 2184955B (1.02x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 569f av1/GOP2 1329902B vs 1298723B (1.02x) px 0.993 ok"
         },
         "problems": []
       },
@@ -1254,8 +1243,8 @@
           "action": "identical (705, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 705f av1/GOP2 2956974B vs 2619098B (1.13x) px 0.997 ok",
-          "observation.images.wrist_image": "256x192 705f av1/GOP2 1871320B vs 1681767B (1.11x) px 0.987 ok"
+          "observation.images.image": "256x192 705f av1/GOP2 2644115B vs 2619098B (1.01x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 705f av1/GOP2 1715836B vs 1681767B (1.02x) px 0.991 ok"
         },
         "problems": []
       },
@@ -1272,8 +1261,8 @@
           "action": "identical (629, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 629f av1/GOP2 2617544B vs 2322851B (1.13x) px 0.997 ok",
-          "observation.images.wrist_image": "256x192 629f av1/GOP2 1718182B vs 1543134B (1.11x) px 0.988 ok"
+          "observation.images.image": "256x192 629f av1/GOP2 2347349B vs 2322851B (1.01x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 629f av1/GOP2 1575262B vs 1543134B (1.02x) px 0.992 ok"
         },
         "problems": []
       },
@@ -1290,8 +1279,8 @@
           "action": "identical (924, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 924f av1/GOP2 3756025B vs 3338225B (1.13x) px 0.997 ok",
-          "observation.images.wrist_image": "256x192 924f av1/GOP2 2568635B vs 2302123B (1.12x) px 0.992 ok"
+          "observation.images.image": "256x192 924f av1/GOP2 3369984B vs 3338225B (1.01x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 924f av1/GOP2 2353870B vs 2302123B (1.02x) px 0.995 ok"
         },
         "problems": []
       },
@@ -1308,12 +1297,10 @@
           "action": "identical (682, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 682f av1/GOP2 2747266B vs 2375596B (1.16x) px 0.998 SIZE",
-          "observation.images.wrist_image": "256x192 682f av1/GOP2 1519928B vs 1348963B (1.13x) px 0.994 ok"
+          "observation.images.image": "256x192 682f av1/GOP2 2409198B vs 2375596B (1.01x) px 0.999 ok",
+          "observation.images.wrist_image": "256x192 682f av1/GOP2 1372165B vs 1348963B (1.02x) px 0.996 ok"
         },
-        "problems": [
-          "video observation.images.image: 2747266 bytes against delivered 2375596 (1.16x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 15,
@@ -1328,11 +1315,11 @@
           "action": "identical (488, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 488f av1/GOP2 2726335B vs 2376942B (1.15x) px 0.996 ok",
-          "observation.images.wrist_image": "256x192 488f av1/GOP2 1432975B vs 1280343B (1.12x) px 0.973 PIXELS"
+          "observation.images.image": "256x192 488f av1/GOP2 2459792B vs 2376942B (1.03x) px 0.997 ok",
+          "observation.images.wrist_image": "256x192 488f av1/GOP2 1319117B vs 1280343B (1.03x) px 0.976 PIXELS"
         },
         "problems": [
-          "video observation.images.wrist_image: frames agree 0.973 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.wrist_image: frames agree 0.976 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -1348,12 +1335,11 @@
           "action": "identical (486, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 486f av1/GOP2 2734444B vs 2376447B (1.15x) px 0.996 SIZE",
-          "observation.images.wrist_image": "256x192 486f av1/GOP2 1377792B vs 1235043B (1.12x) px 0.973 PIXELS"
+          "observation.images.image": "256x192 486f av1/GOP2 2449070B vs 2376447B (1.03x) px 0.997 ok",
+          "observation.images.wrist_image": "256x192 486f av1/GOP2 1272609B vs 1235043B (1.03x) px 0.978 PIXELS"
         },
         "problems": [
-          "video observation.images.image: 2734444 bytes against delivered 2376447 (1.15x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.wrist_image: frames agree 0.973 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.wrist_image: frames agree 0.978 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -1369,8 +1355,8 @@
           "action": "identical (1170, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 1170f av1/GOP2 4783556B vs 4254179B (1.12x) px 0.997 ok",
-          "observation.images.wrist_image": "256x192 1170f av1/GOP2 2832144B vs 2575228B (1.10x) px 0.989 ok"
+          "observation.images.image": "256x192 1170f av1/GOP2 4290345B vs 4254179B (1.01x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 1170f av1/GOP2 2627999B vs 2575228B (1.02x) px 0.992 ok"
         },
         "problems": []
       },
@@ -1387,8 +1373,8 @@
           "action": "identical (825, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 825f av1/GOP2 3654242B vs 3203436B (1.14x) px 0.997 ok",
-          "observation.images.wrist_image": "256x192 825f av1/GOP2 2242337B vs 2020038B (1.11x) px 0.993 ok"
+          "observation.images.image": "256x192 825f av1/GOP2 3253183B vs 3203436B (1.02x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 825f av1/GOP2 2072805B vs 2020038B (1.03x) px 0.995 ok"
         },
         "problems": []
       },
@@ -1405,12 +1391,11 @@
           "action": "identical (530, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 530f av1/GOP2 2982709B vs 2591830B (1.15x) px 0.996 SIZE",
-          "observation.images.wrist_image": "256x192 530f av1/GOP2 1673964B vs 1480985B (1.13x) px 0.972 PIXELS"
+          "observation.images.image": "256x192 530f av1/GOP2 2676297B vs 2591830B (1.03x) px 0.997 ok",
+          "observation.images.wrist_image": "256x192 530f av1/GOP2 1535676B vs 1480985B (1.04x) px 0.973 PIXELS"
         },
         "problems": [
-          "video observation.images.image: 2982709 bytes against delivered 2591830 (1.15x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.wrist_image: frames agree 0.972 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.wrist_image: frames agree 0.973 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -1426,8 +1411,8 @@
           "action": "identical (1190, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 1190f av1/GOP2 4772331B vs 4257564B (1.12x) px 0.998 ok",
-          "observation.images.wrist_image": "256x192 1190f av1/GOP2 3578266B vs 3192730B (1.12x) px 0.990 ok"
+          "observation.images.image": "256x192 1190f av1/GOP2 4292218B vs 4257564B (1.01x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 1190f av1/GOP2 3283302B vs 3192730B (1.03x) px 0.994 ok"
         },
         "problems": []
       },
@@ -1444,8 +1429,8 @@
           "action": "identical (589, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 589f av1/GOP2 2278138B vs 1984602B (1.15x) px 0.998 ok",
-          "observation.images.wrist_image": "256x192 589f av1/GOP2 1520306B vs 1365394B (1.11x) px 0.996 ok"
+          "observation.images.image": "256x192 589f av1/GOP2 2009721B vs 1984602B (1.01x) px 0.999 ok",
+          "observation.images.wrist_image": "256x192 589f av1/GOP2 1409051B vs 1365394B (1.03x) px 0.997 ok"
         },
         "problems": []
       },
@@ -1462,12 +1447,10 @@
           "action": "identical (565, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 565f av1/GOP2 2192880B vs 1886858B (1.16x) px 0.998 SIZE",
-          "observation.images.wrist_image": "256x192 565f av1/GOP2 1201410B vs 1076558B (1.12x) px 0.995 ok"
+          "observation.images.image": "256x192 565f av1/GOP2 1901782B vs 1886858B (1.01x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 565f av1/GOP2 1095759B vs 1076558B (1.02x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 2192880 bytes against delivered 1886858 (1.16x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 23,
@@ -1482,8 +1465,8 @@
           "action": "identical (769, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 769f av1/GOP2 3491230B vs 3056123B (1.14x) px 0.997 ok",
-          "observation.images.wrist_image": "256x192 769f av1/GOP2 2039253B vs 1848802B (1.10x) px 0.993 ok"
+          "observation.images.image": "256x192 769f av1/GOP2 3117607B vs 3056123B (1.02x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 769f av1/GOP2 1890208B vs 1848802B (1.02x) px 0.995 ok"
         },
         "problems": []
       },
@@ -1500,12 +1483,11 @@
           "action": "identical (527, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 527f av1/GOP2 2995663B vs 2598374B (1.15x) px 0.996 SIZE",
-          "observation.images.wrist_image": "256x192 527f av1/GOP2 1510553B vs 1347595B (1.12x) px 0.977 PIXELS"
+          "observation.images.image": "256x192 527f av1/GOP2 2691662B vs 2598374B (1.04x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 527f av1/GOP2 1390121B vs 1347595B (1.03x) px 0.979 PIXELS"
         },
         "problems": [
-          "video observation.images.image: 2995663 bytes against delivered 2598374 (1.15x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.wrist_image: frames agree 0.977 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.wrist_image: frames agree 0.979 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -1521,8 +1503,8 @@
           "action": "identical (927, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 927f av1/GOP2 3812235B vs 3390439B (1.12x) px 0.998 ok",
-          "observation.images.wrist_image": "256x192 927f av1/GOP2 2121302B vs 1917929B (1.11x) px 0.989 ok"
+          "observation.images.image": "256x192 927f av1/GOP2 3430348B vs 3390439B (1.01x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 927f av1/GOP2 1961087B vs 1917929B (1.02x) px 0.993 ok"
         },
         "problems": []
       },
@@ -1539,12 +1521,10 @@
           "action": "identical (498, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 498f av1/GOP2 1925292B vs 1673621B (1.15x) px 0.998 SIZE",
-          "observation.images.wrist_image": "256x192 498f av1/GOP2 1530706B vs 1352079B (1.13x) px 0.995 ok"
+          "observation.images.image": "256x192 498f av1/GOP2 1709306B vs 1673621B (1.02x) px 0.999 ok",
+          "observation.images.wrist_image": "256x192 498f av1/GOP2 1392163B vs 1352079B (1.03x) px 0.996 ok"
         },
-        "problems": [
-          "video observation.images.image: 1925292 bytes against delivered 1673621 (1.15x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 27,
@@ -1559,8 +1539,8 @@
           "action": "identical (622, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 622f av1/GOP2 2566188B vs 2280356B (1.13x) px 0.997 ok",
-          "observation.images.wrist_image": "256x192 622f av1/GOP2 1833973B vs 1638296B (1.12x) px 0.991 ok"
+          "observation.images.image": "256x192 622f av1/GOP2 2302145B vs 2280356B (1.01x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 622f av1/GOP2 1683085B vs 1638296B (1.03x) px 0.994 ok"
         },
         "problems": []
       },
@@ -1577,12 +1557,10 @@
           "action": "identical (810, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 810f av1/GOP2 3313650B vs 2851711B (1.16x) px 0.998 SIZE",
-          "observation.images.wrist_image": "256x192 810f av1/GOP2 1693323B vs 1514947B (1.12x) px 0.992 ok"
+          "observation.images.image": "256x192 810f av1/GOP2 2907987B vs 2851711B (1.02x) px 0.999 ok",
+          "observation.images.wrist_image": "256x192 810f av1/GOP2 1553877B vs 1514947B (1.03x) px 0.993 ok"
         },
-        "problems": [
-          "video observation.images.image: 3313650 bytes against delivered 2851711 (1.16x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 29,
@@ -1597,12 +1575,10 @@
           "action": "identical (612, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 612f av1/GOP2 2465394B vs 2142392B (1.15x) px 0.998 SIZE",
-          "observation.images.wrist_image": "256x192 612f av1/GOP2 1456766B vs 1282704B (1.14x) px 0.989 ok"
+          "observation.images.image": "256x192 612f av1/GOP2 2166607B vs 2142392B (1.01x) px 0.999 ok",
+          "observation.images.wrist_image": "256x192 612f av1/GOP2 1305582B vs 1282704B (1.02x) px 0.993 ok"
         },
-        "problems": [
-          "video observation.images.image: 2465394 bytes against delivered 2142392 (1.15x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 30,
@@ -1617,8 +1593,8 @@
           "action": "identical (693, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 693f av1/GOP2 3247191B vs 2855142B (1.14x) px 0.997 ok",
-          "observation.images.wrist_image": "256x192 693f av1/GOP2 1630505B vs 1505052B (1.08x) px 0.991 ok"
+          "observation.images.image": "256x192 693f av1/GOP2 2905525B vs 2855142B (1.02x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 693f av1/GOP2 1516301B vs 1505052B (1.01x) px 0.995 ok"
         },
         "problems": []
       },
@@ -1635,8 +1611,8 @@
           "action": "identical (654, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 654f av1/GOP2 2925513B vs 2546705B (1.15x) px 0.998 ok",
-          "observation.images.wrist_image": "256x192 654f av1/GOP2 1714631B vs 1541610B (1.11x) px 0.990 ok"
+          "observation.images.image": "256x192 654f av1/GOP2 2599721B vs 2546705B (1.02x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 654f av1/GOP2 1578027B vs 1541610B (1.02x) px 0.993 ok"
         },
         "problems": []
       },
@@ -1653,8 +1629,8 @@
           "action": "identical (620, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 620f av1/GOP2 2484107B vs 2161058B (1.15x) px 0.998 ok",
-          "observation.images.wrist_image": "256x192 620f av1/GOP2 1348870B vs 1186741B (1.14x) px 0.995 ok"
+          "observation.images.image": "256x192 620f av1/GOP2 2179368B vs 2161058B (1.01x) px 0.999 ok",
+          "observation.images.wrist_image": "256x192 620f av1/GOP2 1207377B vs 1186741B (1.02x) px 0.996 ok"
         },
         "problems": []
       },
@@ -1671,8 +1647,8 @@
           "action": "identical (509, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 509f av1/GOP2 1991085B vs 1743988B (1.14x) px 0.998 ok",
-          "observation.images.wrist_image": "256x192 509f av1/GOP2 1388097B vs 1228141B (1.13x) px 0.996 ok"
+          "observation.images.image": "256x192 509f av1/GOP2 1768686B vs 1743988B (1.01x) px 0.999 ok",
+          "observation.images.wrist_image": "256x192 509f av1/GOP2 1264303B vs 1228141B (1.03x) px 0.997 ok"
         },
         "problems": []
       },
@@ -1689,12 +1665,10 @@
           "action": "identical (429, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 429f av1/GOP2 1697268B vs 1459134B (1.16x) px 0.998 SIZE",
-          "observation.images.wrist_image": "256x192 429f av1/GOP2 896161B vs 803512B (1.12x) px 0.991 ok"
+          "observation.images.image": "256x192 429f av1/GOP2 1476823B vs 1459134B (1.01x) px 0.999 ok",
+          "observation.images.wrist_image": "256x192 429f av1/GOP2 815983B vs 803512B (1.02x) px 0.990 ok"
         },
-        "problems": [
-          "video observation.images.image: 1697268 bytes against delivered 1459134 (1.16x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 541,
@@ -1709,8 +1683,8 @@
           "action": "identical (694, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 694f av1/GOP2 2707132B vs 2359851B (1.15x) px 0.998 ok",
-          "observation.images.wrist_image": "256x192 694f av1/GOP2 2086191B vs 1829664B (1.14x) px 0.995 ok"
+          "observation.images.image": "256x192 694f av1/GOP2 2390854B vs 2359851B (1.01x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 694f av1/GOP2 1884238B vs 1829664B (1.03x) px 0.996 ok"
         },
         "problems": []
       },
@@ -1727,12 +1701,10 @@
           "action": "identical (527, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 527f av1/GOP2 2000319B vs 1729834B (1.16x) px 0.998 SIZE",
-          "observation.images.wrist_image": "256x192 527f av1/GOP2 1076610B vs 968780B (1.11x) px 0.991 ok"
+          "observation.images.image": "256x192 527f av1/GOP2 1762736B vs 1729834B (1.02x) px 0.999 ok",
+          "observation.images.wrist_image": "256x192 527f av1/GOP2 979785B vs 968780B (1.01x) px 0.992 ok"
         },
-        "problems": [
-          "video observation.images.image: 2000319 bytes against delivered 1729834 (1.16x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 543,
@@ -1747,8 +1719,8 @@
           "action": "identical (579, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 579f av1/GOP2 2252653B vs 1962661B (1.15x) px 0.998 ok",
-          "observation.images.wrist_image": "256x192 579f av1/GOP2 1651218B vs 1462606B (1.13x) px 0.996 ok"
+          "observation.images.image": "256x192 579f av1/GOP2 1997551B vs 1962661B (1.02x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 579f av1/GOP2 1499582B vs 1462606B (1.03x) px 0.997 ok"
         },
         "problems": []
       },
@@ -1765,8 +1737,8 @@
           "action": "identical (747, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 747f av1/GOP2 3037327B vs 2645188B (1.15x) px 0.998 ok",
-          "observation.images.wrist_image": "256x192 747f av1/GOP2 1760439B vs 1574515B (1.12x) px 0.995 ok"
+          "observation.images.image": "256x192 747f av1/GOP2 2681193B vs 2645188B (1.01x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 747f av1/GOP2 1605571B vs 1574515B (1.02x) px 0.996 ok"
         },
         "problems": []
       },
@@ -1783,12 +1755,10 @@
           "action": "identical (534, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 534f av1/GOP2 2058571B vs 1785159B (1.15x) px 0.998 SIZE",
-          "observation.images.wrist_image": "256x192 534f av1/GOP2 1383404B vs 1229088B (1.13x) px 0.995 ok"
+          "observation.images.image": "256x192 534f av1/GOP2 1817650B vs 1785159B (1.02x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 534f av1/GOP2 1263377B vs 1229088B (1.03x) px 0.995 ok"
         },
-        "problems": [
-          "video observation.images.image: 2058571 bytes against delivered 1785159 (1.15x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 546,
@@ -1803,8 +1773,8 @@
           "action": "identical (540, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 540f av1/GOP2 2093901B vs 1839134B (1.14x) px 0.998 ok",
-          "observation.images.wrist_image": "256x192 540f av1/GOP2 1630162B vs 1445242B (1.13x) px 0.995 ok"
+          "observation.images.image": "256x192 540f av1/GOP2 1870157B vs 1839134B (1.02x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 540f av1/GOP2 1486131B vs 1445242B (1.03x) px 0.995 ok"
         },
         "problems": []
       },
@@ -1821,8 +1791,8 @@
           "action": "identical (524, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 524f av1/GOP2 2020739B vs 1769195B (1.14x) px 0.998 ok",
-          "observation.images.wrist_image": "256x192 524f av1/GOP2 1584787B vs 1398529B (1.13x) px 0.996 ok"
+          "observation.images.image": "256x192 524f av1/GOP2 1792042B vs 1769195B (1.01x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 524f av1/GOP2 1439884B vs 1398529B (1.03x) px 0.997 ok"
         },
         "problems": []
       },
@@ -1839,8 +1809,8 @@
           "action": "identical (753, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 753f av1/GOP2 3170089B vs 2810082B (1.13x) px 0.997 ok",
-          "observation.images.wrist_image": "256x192 753f av1/GOP2 2034831B vs 1820516B (1.12x) px 0.989 ok"
+          "observation.images.image": "256x192 753f av1/GOP2 2846143B vs 2810082B (1.01x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 753f av1/GOP2 1867874B vs 1820516B (1.03x) px 0.993 ok"
         },
         "problems": []
       },
@@ -1857,8 +1827,8 @@
           "action": "identical (1169, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 1169f av1/GOP2 5189982B vs 4551805B (1.14x) px 0.997 ok",
-          "observation.images.wrist_image": "256x192 1169f av1/GOP2 2820191B vs 2557345B (1.10x) px 0.994 ok"
+          "observation.images.image": "256x192 1169f av1/GOP2 4641433B vs 4551805B (1.02x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 1169f av1/GOP2 2623379B vs 2557345B (1.03x) px 0.996 ok"
         },
         "problems": []
       },
@@ -1875,8 +1845,8 @@
           "action": "identical (573, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 573f av1/GOP2 2508830B vs 2193780B (1.14x) px 0.997 ok",
-          "observation.images.wrist_image": "256x192 573f av1/GOP2 1524220B vs 1371454B (1.11x) px 0.993 ok"
+          "observation.images.image": "256x192 573f av1/GOP2 2227423B vs 2193780B (1.02x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 573f av1/GOP2 1402087B vs 1371454B (1.02x) px 0.995 ok"
         },
         "problems": []
       },
@@ -1893,8 +1863,8 @@
           "action": "identical (614, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 614f av1/GOP2 2556917B vs 2269990B (1.13x) px 0.997 ok",
-          "observation.images.wrist_image": "256x192 614f av1/GOP2 1695196B vs 1519374B (1.12x) px 0.990 ok"
+          "observation.images.image": "256x192 614f av1/GOP2 2301201B vs 2269990B (1.01x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 614f av1/GOP2 1553375B vs 1519374B (1.02x) px 0.993 ok"
         },
         "problems": []
       },
@@ -1911,8 +1881,8 @@
           "action": "identical (669, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 669f av1/GOP2 2991037B vs 2610113B (1.15x) px 0.997 ok",
-          "observation.images.wrist_image": "256x192 669f av1/GOP2 1812428B vs 1641758B (1.10x) px 0.993 ok"
+          "observation.images.image": "256x192 669f av1/GOP2 2671550B vs 2610113B (1.02x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 669f av1/GOP2 1679690B vs 1641758B (1.02x) px 0.995 ok"
         },
         "problems": []
       },
@@ -1929,8 +1899,8 @@
           "action": "identical (597, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 597f av1/GOP2 2301225B vs 2021957B (1.14x) px 0.998 ok",
-          "observation.images.wrist_image": "256x192 597f av1/GOP2 1581574B vs 1405903B (1.12x) px 0.996 ok"
+          "observation.images.image": "256x192 597f av1/GOP2 2046259B vs 2021957B (1.01x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 597f av1/GOP2 1444794B vs 1405903B (1.03x) px 0.997 ok"
         },
         "problems": []
       },
@@ -1947,12 +1917,10 @@
           "action": "identical (509, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 509f av1/GOP2 2021610B vs 1737995B (1.16x) px 0.998 SIZE",
-          "observation.images.wrist_image": "256x192 509f av1/GOP2 1162153B vs 1026710B (1.13x) px 0.995 ok"
+          "observation.images.image": "256x192 509f av1/GOP2 1764367B vs 1737995B (1.02x) px 0.999 ok",
+          "observation.images.wrist_image": "256x192 509f av1/GOP2 1051815B vs 1026710B (1.02x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 2021610 bytes against delivered 1737995 (1.16x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 555,
@@ -1967,8 +1935,8 @@
           "action": "identical (686, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 686f av1/GOP2 3063578B vs 2688183B (1.14x) px 0.997 ok",
-          "observation.images.wrist_image": "256x192 686f av1/GOP2 1938248B vs 1740138B (1.11x) px 0.992 ok"
+          "observation.images.image": "256x192 686f av1/GOP2 2738032B vs 2688183B (1.02x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 686f av1/GOP2 1780409B vs 1740138B (1.02x) px 0.995 ok"
         },
         "problems": []
       },
@@ -1985,8 +1953,8 @@
           "action": "identical (624, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 624f av1/GOP2 2751605B vs 2397710B (1.15x) px 0.998 ok",
-          "observation.images.wrist_image": "256x192 624f av1/GOP2 1637634B vs 1468795B (1.11x) px 0.990 ok"
+          "observation.images.image": "256x192 624f av1/GOP2 2444221B vs 2397710B (1.02x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 624f av1/GOP2 1507518B vs 1468795B (1.03x) px 0.992 ok"
         },
         "problems": []
       },
@@ -2003,8 +1971,8 @@
           "action": "identical (486, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 486f av1/GOP2 1910049B vs 1664175B (1.15x) px 0.998 ok",
-          "observation.images.wrist_image": "256x192 486f av1/GOP2 1357499B vs 1203680B (1.13x) px 0.992 ok"
+          "observation.images.image": "256x192 486f av1/GOP2 1691533B vs 1664175B (1.02x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 486f av1/GOP2 1233637B vs 1203680B (1.02x) px 0.993 ok"
         },
         "problems": []
       },
@@ -2021,11 +1989,11 @@
           "action": "identical (508, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 508f av1/GOP2 2848675B vs 2477903B (1.15x) px 0.996 ok",
-          "observation.images.wrist_image": "256x192 508f av1/GOP2 1437113B vs 1286506B (1.12x) px 0.963 PIXELS"
+          "observation.images.image": "256x192 508f av1/GOP2 2566287B vs 2477903B (1.04x) px 0.997 ok",
+          "observation.images.wrist_image": "256x192 508f av1/GOP2 1325908B vs 1286506B (1.03x) px 0.967 PIXELS"
         },
         "problems": [
-          "video observation.images.wrist_image: frames agree 0.963 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.wrist_image: frames agree 0.967 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -2041,12 +2009,10 @@
           "action": "identical (486, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 486f av1/GOP2 2770191B vs 2407140B (1.15x) px 0.996 SIZE",
-          "observation.images.wrist_image": "256x192 486f av1/GOP2 1375599B vs 1227684B (1.12x) px 0.987 ok"
+          "observation.images.image": "256x192 486f av1/GOP2 2493414B vs 2407140B (1.04x) px 0.997 ok",
+          "observation.images.wrist_image": "256x192 486f av1/GOP2 1266311B vs 1227684B (1.03x) px 0.988 ok"
         },
-        "problems": [
-          "video observation.images.image: 2770191 bytes against delivered 2407140 (1.15x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 560,
@@ -2061,12 +2027,10 @@
           "action": "identical (656, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 656f av1/GOP2 2648491B vs 2283450B (1.16x) px 0.998 SIZE",
-          "observation.images.wrist_image": "256x192 656f av1/GOP2 1602677B vs 1421159B (1.13x) px 0.996 ok"
+          "observation.images.image": "256x192 656f av1/GOP2 2325961B vs 2283450B (1.02x) px 0.999 ok",
+          "observation.images.wrist_image": "256x192 656f av1/GOP2 1444323B vs 1421159B (1.02x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 2648491 bytes against delivered 2283450 (1.16x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 561,
@@ -2081,8 +2045,8 @@
           "action": "identical (751, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 751f av1/GOP2 3111048B vs 2761912B (1.13x) px 0.998 ok",
-          "observation.images.wrist_image": "256x192 751f av1/GOP2 1900916B vs 1710274B (1.11x) px 0.988 ok"
+          "observation.images.image": "256x192 751f av1/GOP2 2791085B vs 2761912B (1.01x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 751f av1/GOP2 1746471B vs 1710274B (1.02x) px 0.992 ok"
         },
         "problems": []
       },
@@ -2099,8 +2063,8 @@
           "action": "identical (475, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 475f av1/GOP2 1837085B vs 1606644B (1.14x) px 0.998 ok",
-          "observation.images.wrist_image": "256x192 475f av1/GOP2 1288425B vs 1149645B (1.12x) px 0.996 ok"
+          "observation.images.image": "256x192 475f av1/GOP2 1631477B vs 1606644B (1.02x) px 0.999 ok",
+          "observation.images.wrist_image": "256x192 475f av1/GOP2 1185892B vs 1149645B (1.03x) px 0.996 ok"
         },
         "problems": []
       },
@@ -2117,12 +2081,10 @@
           "action": "identical (537, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 537f av1/GOP2 3048222B vs 2640013B (1.15x) px 0.996 SIZE",
-          "observation.images.wrist_image": "256x192 537f av1/GOP2 1539678B vs 1370405B (1.12x) px 0.988 ok"
+          "observation.images.image": "256x192 537f av1/GOP2 2744237B vs 2640013B (1.04x) px 0.997 ok",
+          "observation.images.wrist_image": "256x192 537f av1/GOP2 1415895B vs 1370405B (1.03x) px 0.990 ok"
         },
-        "problems": [
-          "video observation.images.image: 3048222 bytes against delivered 2640013 (1.15x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 564,
@@ -2137,12 +2099,10 @@
           "action": "identical (745, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 745f av1/GOP2 3354798B vs 2930012B (1.14x) px 0.997 ok",
-          "observation.images.wrist_image": "256x192 745f av1/GOP2 1815532B vs 1648334B (1.10x) px 0.979 PIXELS"
+          "observation.images.image": "256x192 745f av1/GOP2 2989203B vs 2930012B (1.02x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 745f av1/GOP2 1684330B vs 1648334B (1.02x) px 0.981 ok"
         },
-        "problems": [
-          "video observation.images.wrist_image: frames agree 0.979 against delivered, below 0.98 -- the same size encoded from a different picture"
-        ]
+        "problems": []
       },
       {
         "index": 565,
@@ -2157,12 +2117,11 @@
           "action": "identical (485, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 485f av1/GOP2 2769225B vs 2395261B (1.16x) px 0.996 SIZE",
-          "observation.images.wrist_image": "256x192 485f av1/GOP2 1381369B vs 1234149B (1.12x) px 0.966 PIXELS"
+          "observation.images.image": "256x192 485f av1/GOP2 2484531B vs 2395261B (1.04x) px 0.997 ok",
+          "observation.images.wrist_image": "256x192 485f av1/GOP2 1274783B vs 1234149B (1.03x) px 0.969 PIXELS"
         },
         "problems": [
-          "video observation.images.image: 2769225 bytes against delivered 2395261 (1.16x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.wrist_image: frames agree 0.966 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.wrist_image: frames agree 0.969 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -2178,12 +2137,11 @@
           "action": "identical (515, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 515f av1/GOP2 2906641B vs 2518828B (1.15x) px 0.996 SIZE",
-          "observation.images.wrist_image": "256x192 515f av1/GOP2 1540677B vs 1373384B (1.12x) px 0.970 PIXELS"
+          "observation.images.image": "256x192 515f av1/GOP2 2617160B vs 2518828B (1.04x) px 0.997 ok",
+          "observation.images.wrist_image": "256x192 515f av1/GOP2 1421620B vs 1373384B (1.04x) px 0.975 PIXELS"
         },
         "problems": [
-          "video observation.images.image: 2906641 bytes against delivered 2518828 (1.15x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.wrist_image: frames agree 0.970 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.wrist_image: frames agree 0.975 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -2199,12 +2157,10 @@
           "action": "identical (668, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 668f av1/GOP2 2972921B vs 2599413B (1.14x) px 0.997 ok",
-          "observation.images.wrist_image": "256x192 668f av1/GOP2 1887526B vs 1683016B (1.12x) px 0.978 PIXELS"
+          "observation.images.image": "256x192 668f av1/GOP2 2644371B vs 2599413B (1.02x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 668f av1/GOP2 1725396B vs 1683016B (1.03x) px 0.984 ok"
         },
-        "problems": [
-          "video observation.images.wrist_image: frames agree 0.978 against delivered, below 0.98 -- the same size encoded from a different picture"
-        ]
+        "problems": []
       },
       {
         "index": 568,
@@ -2219,12 +2175,10 @@
           "action": "identical (511, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 511f av1/GOP2 2880627B vs 2500917B (1.15x) px 0.996 SIZE",
-          "observation.images.wrist_image": "256x192 511f av1/GOP2 1472612B vs 1312961B (1.12x) px 0.981 ok"
+          "observation.images.image": "256x192 511f av1/GOP2 2593338B vs 2500917B (1.04x) px 0.997 ok",
+          "observation.images.wrist_image": "256x192 511f av1/GOP2 1355257B vs 1312961B (1.03x) px 0.982 ok"
         },
-        "problems": [
-          "video observation.images.image: 2880627 bytes against delivered 2500917 (1.15x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 569,
@@ -2239,8 +2193,8 @@
           "action": "identical (718, 7)"
         },
         "video": {
-          "observation.images.image": "256x192 718f av1/GOP2 3069449B vs 2699866B (1.14x) px 0.997 ok",
-          "observation.images.wrist_image": "256x192 718f av1/GOP2 1381540B vs 1297533B (1.06x) px 0.999 ok"
+          "observation.images.image": "256x192 718f av1/GOP2 2743896B vs 2699866B (1.02x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 718f av1/GOP2 1314407B vs 1297533B (1.01x) px 0.999 ok"
         },
         "problems": []
       }
@@ -2250,11 +2204,11 @@
     "rebuilt": {
       "observation.images.image": {
         "files": 570,
-        "bytes": 1553555037
+        "bytes": 1382571266
       },
       "observation.images.wrist_image": {
         "files": 570,
-        "bytes": 915814629
+        "bytes": 839631662
       }
     },
     "delivered": {

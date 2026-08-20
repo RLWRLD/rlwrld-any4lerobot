@@ -1,16 +1,16 @@
 {
-  "bytes": 2502684736,
+  "bytes": 2255519735,
   "created": [
     "/scratch/out/stanford_hydra_dataset_converted_externally_to_rlds"
   ],
   "dataset": "stanford_hydra_dataset_converted_externally_to_rlds",
   "dest_uri": null,
   "error": null,
-  "finished": "2026-08-20T08:39:43+00:00",
+  "finished": "2026-08-20T11:49:16+00:00",
   "profile": "rldx1",
   "source_uri": null,
   "spec_sha": "0bfbcc950ef7418b",
-  "started": "2026-08-20T08:32:36+00:00",
+  "started": "2026-08-20T11:42:04+00:00",
   "status": "ok",
   "step": "build"
 }

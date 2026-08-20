@@ -374,9 +374,29 @@ resolve the rule through the same step object, which a test asserts directly —
 that answered differently on the two would build half a collection one way and half the
 other, which is the failure the declared value was introduced to prevent.
 
-Still to check on a node: that this puts `stanford_hydra` and `taco_play` back inside the
-band. Everything above is measured, but the threshold itself has not yet been run
-end-to-end.
+### Verified: the threshold improves both sides, and it is not a trade
+
+Run end-to-end on image `node:by-scale` over four datasets chosen to straddle 1.3x —
+`taco_play` 1.21x and `stanford_hydra` 1.25x below it, `austin_sirius` 1.31x and
+`dlr_edan` 1.94x above:
+
+| dataset | filter | video | SIZE failures | sampled identical, sinc → by_scale |
+|---|---|--:|--:|--:|
+| `taco_play` | bicubic | 1.03-1.13x | **0** (was 11) | 5/64 → **29/64** |
+| `stanford_hydra` | bicubic | 1.02-1.04x | **0** (was 24) | 36/64 → **56/64** |
+| `austin_sirius` | sinc | 1.09-1.10x | 0 | 64/64, unchanged |
+| `dlr_edan` | sinc | 0.96x | 0 | 64/64, unchanged |
+
+The two that switched were failing on **both** size and picture under plain sinc, not
+size alone, and both got better: worst frame agreement went from 0.963 to 0.976. So this
+is not a size failure traded for a picture failure — it is fewer of each.
+
+What is left is narrow and worth naming. Those two still miss on picture, at 0.976 and
+0.977 against the 0.98 threshold, on 35 and 8 of 64 sampled episodes. Bicubic is much
+closer to whatever rldx1 resized with at these factors than sinc is, and it is still not
+it. That is the only video difference remaining anywhere in the collection, and it is
+0.3-0.4% wide — small enough that the next move is probably to find out what the
+threshold is actually measuring at that margin before hunting a third filter.
 
 ### The delivered image `std` is zero
 

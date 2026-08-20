@@ -1,6 +1,6 @@
 {
   "dataset": "austin_sirius_dataset_converted_externally_to_rlds",
-  "measured_at": "2026-08-20T08:11:45+00:00",
+  "measured_at": "2026-08-20T12:06:36+00:00",
   "rebuilt": "/scratch/out/austin_sirius_dataset_converted_externally_to_rlds",
   "delivered": "/scratch/delivered_tree/austin_sirius_dataset_converted_externally_to_rlds",
   "settings": {
@@ -1363,7 +1363,7 @@
         },
         "video": {
           "observation.images.image": "64x64 430f av1/GOP2 193102B vs 176270B (1.10x) px 0.996 ok",
-          "observation.images.wrist_image": "64x64 430f av1/GOP2 200877B vs 187145B (1.07x) px 0.992 ok"
+          "observation.images.wrist_image": "64x64 430f av1/GOP2 200689B vs 187145B (1.07x) px 0.992 ok"
         },
         "problems": []
       },
@@ -2201,11 +2201,11 @@
     "rebuilt": {
       "observation.images.image": {
         "files": 559,
-        "bytes": 170417261
+        "bytes": 170417255
       },
       "observation.images.wrist_image": {
         "files": 559,
-        "bytes": 141027064
+        "bytes": 141026876
       }
     },
     "delivered": {

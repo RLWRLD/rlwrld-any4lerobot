@@ -29,8 +29,8 @@ stanford_hydra_dataset_converted_externally_to_rlds
            task_index 2                                 'make a piece of toast with the oven' vs 'palce dishes in the dish rack'
      [ ok ] meta/modality.json
      [FAIL] meta/stats.json
-       ! observation.images.image.std                   'differs by 0.2797' vs 'allowed 0.05'
-       ! observation.images.wrist_image.std             'differs by 0.2066' vs 'allowed 0.05'
+       ! observation.images.image.std                   'differs by 0.2786' vs 'allowed 0.05'
+       ! observation.images.wrist_image.std             'differs by 0.2062' vs 'allowed 0.05'
          23 set aside -- ordering features follow the episode and task order; missing quantiles are the keys the v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream
            episode_index.max                            'differs by 545' vs 'allowed 1e-06'
            episode_index.mean                           'differs by 273.6' vs 'allowed 1e-06'
@@ -55,187 +55,61 @@ stanford_hydra_dataset_converted_externally_to_rlds
 
 3  sample         [FAIL]  the episodes that are there, compared in full
      compared         64 of 570 paired episodes, half from each end of the index range
-     identical        36  (28 differ)
-     [FAIL] episode     0->324  549 rows
-              observation.state    identical (549, 8)
-              action               identical (549, 7)
-              video observation.images.image 256x192 549f av1/GOP2 2145968B vs 1839070B (1.17x) px 0.998 SIZE
-              video observation.images.wrist_image 256x192 549f av1/GOP2 1026358B vs 920519B (1.11x) px 0.993 ok
-              ! video observation.images.image: 2145968 bytes against delivered 1839070 (1.17x) -- beyond what a different ffmpeg build explains
-     [FAIL] episode     1->419  507 rows
-              observation.state    identical (507, 8)
-              action               identical (507, 7)
-              video observation.images.image 256x192 507f av1/GOP2 2001128B vs 1725495B (1.16x) px 0.998 SIZE
-              video observation.images.wrist_image 256x192 507f av1/GOP2 1016410B vs 917782B (1.11x) px 0.994 ok
-              ! video observation.images.image: 2001128 bytes against delivered 1725495 (1.16x) -- beyond what a different ffmpeg build explains
+     identical        56  (8 differ)
      [FAIL] episode     2->537  514 rows
               observation.state    identical (514, 8)
               action               identical (514, 7)
-              video observation.images.image 256x192 514f av1/GOP2 2922891B vs 2536132B (1.15x) px 0.996 SIZE
-              video observation.images.wrist_image 256x192 514f av1/GOP2 1535859B vs 1377717B (1.11x) px 0.972 PIXELS
-              ! video observation.images.image: 2922891 bytes against delivered 2536132 (1.15x) -- beyond what a different ffmpeg build explains
-              ! video observation.images.wrist_image: frames agree 0.972 against delivered, below 0.98 -- the same size encoded from a different picture
-     [FAIL] episode     4->244  517 rows
-              observation.state    identical (517, 8)
-              action               identical (517, 7)
-              video observation.images.image 256x192 517f av1/GOP2 2940038B vs 2547226B (1.15x) px 0.996 SIZE
-              video observation.images.wrist_image 256x192 517f av1/GOP2 1485678B vs 1335949B (1.11x) px 0.988 ok
-              ! video observation.images.image: 2940038 bytes against delivered 2547226 (1.15x) -- beyond what a different ffmpeg build explains
-     [FAIL] episode     5->128  526 rows
-              observation.state    identical (526, 8)
-              action               identical (526, 7)
-              video observation.images.image 256x192 526f av1/GOP2 2982696B vs 2584765B (1.15x) px 0.996 SIZE
-              video observation.images.wrist_image 256x192 526f av1/GOP2 1486731B vs 1322228B (1.12x) px 0.986 ok
-              ! video observation.images.image: 2982696 bytes against delivered 2584765 (1.15x) -- beyond what a different ffmpeg build explains
-     [FAIL] episode     8->357  571 rows
-              observation.state    identical (571, 8)
-              action               identical (571, 7)
-              video observation.images.image 256x192 571f av1/GOP2 2343222B vs 2031696B (1.15x) px 0.998 SIZE
-              video observation.images.wrist_image 256x192 571f av1/GOP2 1300083B vs 1159994B (1.12x) px 0.995 ok
-              ! video observation.images.image: 2343222 bytes against delivered 2031696 (1.15x) -- beyond what a different ffmpeg build explains
-     [FAIL] episode    14->96  682 rows
-              observation.state    identical (682, 8)
-              action               identical (682, 7)
-              video observation.images.image 256x192 682f av1/GOP2 2747266B vs 2375596B (1.16x) px 0.998 SIZE
-              video observation.images.wrist_image 256x192 682f av1/GOP2 1519928B vs 1348963B (1.13x) px 0.994 ok
-              ! video observation.images.image: 2747266 bytes against delivered 2375596 (1.16x) -- beyond what a different ffmpeg build explains
+              video observation.images.image 256x192 514f av1/GOP2 2632491B vs 2536132B (1.04x) px 0.997 ok
+              video observation.images.wrist_image 256x192 514f av1/GOP2 1415544B vs 1377717B (1.03x) px 0.976 PIXELS
+              ! video observation.images.wrist_image: frames agree 0.976 against delivered, below 0.98 -- the same size encoded from a different picture
      [FAIL] episode    15->178  488 rows
               observation.state    identical (488, 8)
               action               identical (488, 7)
-              video observation.images.image 256x192 488f av1/GOP2 2726335B vs 2376942B (1.15x) px 0.996 ok
-              video observation.images.wrist_image 256x192 488f av1/GOP2 1432975B vs 1280343B (1.12x) px 0.973 PIXELS
-              ! video observation.images.wrist_image: frames agree 0.973 against delivered, below 0.98 -- the same size encoded from a different picture
+              video observation.images.image 256x192 488f av1/GOP2 2459792B vs 2376942B (1.03x) px 0.997 ok
+              video observation.images.wrist_image 256x192 488f av1/GOP2 1319117B vs 1280343B (1.03x) px 0.976 PIXELS
+              ! video observation.images.wrist_image: frames agree 0.976 against delivered, below 0.98 -- the same size encoded from a different picture
      [FAIL] episode    16->50  486 rows
               observation.state    identical (486, 8)
               action               identical (486, 7)
-              video observation.images.image 256x192 486f av1/GOP2 2734444B vs 2376447B (1.15x) px 0.996 SIZE
-              video observation.images.wrist_image 256x192 486f av1/GOP2 1377792B vs 1235043B (1.12x) px 0.973 PIXELS
-              ! video observation.images.image: 2734444 bytes against delivered 2376447 (1.15x) -- beyond what a different ffmpeg build explains
-              ! video observation.images.wrist_image: frames agree 0.973 against delivered, below 0.98 -- the same size encoded from a different picture
+              video observation.images.image 256x192 486f av1/GOP2 2449070B vs 2376447B (1.03x) px 0.997 ok
+              video observation.images.wrist_image 256x192 486f av1/GOP2 1272609B vs 1235043B (1.03x) px 0.978 PIXELS
+              ! video observation.images.wrist_image: frames agree 0.978 against delivered, below 0.98 -- the same size encoded from a different picture
      [FAIL] episode    19->54  530 rows
               observation.state    identical (530, 8)
               action               identical (530, 7)
-              video observation.images.image 256x192 530f av1/GOP2 2982709B vs 2591830B (1.15x) px 0.996 SIZE
-              video observation.images.wrist_image 256x192 530f av1/GOP2 1673964B vs 1480985B (1.13x) px 0.972 PIXELS
-              ! video observation.images.image: 2982709 bytes against delivered 2591830 (1.15x) -- beyond what a different ffmpeg build explains
-              ! video observation.images.wrist_image: frames agree 0.972 against delivered, below 0.98 -- the same size encoded from a different picture
-     [FAIL] episode    22->287  565 rows
-              observation.state    identical (565, 8)
-              action               identical (565, 7)
-              video observation.images.image 256x192 565f av1/GOP2 2192880B vs 1886858B (1.16x) px 0.998 SIZE
-              video observation.images.wrist_image 256x192 565f av1/GOP2 1201410B vs 1076558B (1.12x) px 0.995 ok
-              ! video observation.images.image: 2192880 bytes against delivered 1886858 (1.16x) -- beyond what a different ffmpeg build explains
+              video observation.images.image 256x192 530f av1/GOP2 2676297B vs 2591830B (1.03x) px 0.997 ok
+              video observation.images.wrist_image 256x192 530f av1/GOP2 1535676B vs 1480985B (1.04x) px 0.973 PIXELS
+              ! video observation.images.wrist_image: frames agree 0.973 against delivered, below 0.98 -- the same size encoded from a different picture
      [FAIL] episode    24->439  527 rows
               observation.state    identical (527, 8)
               action               identical (527, 7)
-              video observation.images.image 256x192 527f av1/GOP2 2995663B vs 2598374B (1.15x) px 0.996 SIZE
-              video observation.images.wrist_image 256x192 527f av1/GOP2 1510553B vs 1347595B (1.12x) px 0.977 PIXELS
-              ! video observation.images.image: 2995663 bytes against delivered 2598374 (1.15x) -- beyond what a different ffmpeg build explains
-              ! video observation.images.wrist_image: frames agree 0.977 against delivered, below 0.98 -- the same size encoded from a different picture
-     [FAIL] episode    26->142  498 rows
-              observation.state    identical (498, 8)
-              action               identical (498, 7)
-              video observation.images.image 256x192 498f av1/GOP2 1925292B vs 1673621B (1.15x) px 0.998 SIZE
-              video observation.images.wrist_image 256x192 498f av1/GOP2 1530706B vs 1352079B (1.13x) px 0.995 ok
-              ! video observation.images.image: 1925292 bytes against delivered 1673621 (1.15x) -- beyond what a different ffmpeg build explains
-     [FAIL] episode    28->22  810 rows
-              observation.state    identical (810, 8)
-              action               identical (810, 7)
-              video observation.images.image 256x192 810f av1/GOP2 3313650B vs 2851711B (1.16x) px 0.998 SIZE
-              video observation.images.wrist_image 256x192 810f av1/GOP2 1693323B vs 1514947B (1.12x) px 0.992 ok
-              ! video observation.images.image: 3313650 bytes against delivered 2851711 (1.16x) -- beyond what a different ffmpeg build explains
-     [FAIL] episode    29->250  612 rows
-              observation.state    identical (612, 8)
-              action               identical (612, 7)
-              video observation.images.image 256x192 612f av1/GOP2 2465394B vs 2142392B (1.15x) px 0.998 SIZE
-              video observation.images.wrist_image 256x192 612f av1/GOP2 1456766B vs 1282704B (1.14x) px 0.989 ok
-              ! video observation.images.image: 2465394 bytes against delivered 2142392 (1.15x) -- beyond what a different ffmpeg build explains
-     [FAIL] episode   540->484  429 rows
-              observation.state    identical (429, 8)
-              action               identical (429, 7)
-              video observation.images.image 256x192 429f av1/GOP2 1697268B vs 1459134B (1.16x) px 0.998 SIZE
-              video observation.images.wrist_image 256x192 429f av1/GOP2 896161B vs 803512B (1.12x) px 0.991 ok
-              ! video observation.images.image: 1697268 bytes against delivered 1459134 (1.16x) -- beyond what a different ffmpeg build explains
-     [FAIL] episode   542->14  527 rows
-              observation.state    identical (527, 8)
-              action               identical (527, 7)
-              video observation.images.image 256x192 527f av1/GOP2 2000319B vs 1729834B (1.16x) px 0.998 SIZE
-              video observation.images.wrist_image 256x192 527f av1/GOP2 1076610B vs 968780B (1.11x) px 0.991 ok
-              ! video observation.images.image: 2000319 bytes against delivered 1729834 (1.16x) -- beyond what a different ffmpeg build explains
-     [FAIL] episode   545->329  534 rows
-              observation.state    identical (534, 8)
-              action               identical (534, 7)
-              video observation.images.image 256x192 534f av1/GOP2 2058571B vs 1785159B (1.15x) px 0.998 SIZE
-              video observation.images.wrist_image 256x192 534f av1/GOP2 1383404B vs 1229088B (1.13x) px 0.995 ok
-              ! video observation.images.image: 2058571 bytes against delivered 1785159 (1.15x) -- beyond what a different ffmpeg build explains
-     [FAIL] episode   554->251  509 rows
-              observation.state    identical (509, 8)
-              action               identical (509, 7)
-              video observation.images.image 256x192 509f av1/GOP2 2021610B vs 1737995B (1.16x) px 0.998 SIZE
-              video observation.images.wrist_image 256x192 509f av1/GOP2 1162153B vs 1026710B (1.13x) px 0.995 ok
-              ! video observation.images.image: 2021610 bytes against delivered 1737995 (1.16x) -- beyond what a different ffmpeg build explains
+              video observation.images.image 256x192 527f av1/GOP2 2691662B vs 2598374B (1.04x) px 0.998 ok
+              video observation.images.wrist_image 256x192 527f av1/GOP2 1390121B vs 1347595B (1.03x) px 0.979 PIXELS
+              ! video observation.images.wrist_image: frames agree 0.979 against delivered, below 0.98 -- the same size encoded from a different picture
      [FAIL] episode   558->133  508 rows
               observation.state    identical (508, 8)
               action               identical (508, 7)
-              video observation.images.image 256x192 508f av1/GOP2 2848675B vs 2477903B (1.15x) px 0.996 ok
-              video observation.images.wrist_image 256x192 508f av1/GOP2 1437113B vs 1286506B (1.12x) px 0.963 PIXELS
-              ! video observation.images.wrist_image: frames agree 0.963 against delivered, below 0.98 -- the same size encoded from a different picture
-     [FAIL] episode   559->201  486 rows
-              observation.state    identical (486, 8)
-              action               identical (486, 7)
-              video observation.images.image 256x192 486f av1/GOP2 2770191B vs 2407140B (1.15x) px 0.996 SIZE
-              video observation.images.wrist_image 256x192 486f av1/GOP2 1375599B vs 1227684B (1.12x) px 0.987 ok
-              ! video observation.images.image: 2770191 bytes against delivered 2407140 (1.15x) -- beyond what a different ffmpeg build explains
-     [FAIL] episode   560->241  656 rows
-              observation.state    identical (656, 8)
-              action               identical (656, 7)
-              video observation.images.image 256x192 656f av1/GOP2 2648491B vs 2283450B (1.16x) px 0.998 SIZE
-              video observation.images.wrist_image 256x192 656f av1/GOP2 1602677B vs 1421159B (1.13x) px 0.996 ok
-              ! video observation.images.image: 2648491 bytes against delivered 2283450 (1.16x) -- beyond what a different ffmpeg build explains
-     [FAIL] episode   563->360  537 rows
-              observation.state    identical (537, 8)
-              action               identical (537, 7)
-              video observation.images.image 256x192 537f av1/GOP2 3048222B vs 2640013B (1.15x) px 0.996 SIZE
-              video observation.images.wrist_image 256x192 537f av1/GOP2 1539678B vs 1370405B (1.12x) px 0.988 ok
-              ! video observation.images.image: 3048222 bytes against delivered 2640013 (1.15x) -- beyond what a different ffmpeg build explains
-     [FAIL] episode   564->155  745 rows
-              observation.state    identical (745, 8)
-              action               identical (745, 7)
-              video observation.images.image 256x192 745f av1/GOP2 3354798B vs 2930012B (1.14x) px 0.997 ok
-              video observation.images.wrist_image 256x192 745f av1/GOP2 1815532B vs 1648334B (1.10x) px 0.979 PIXELS
-              ! video observation.images.wrist_image: frames agree 0.979 against delivered, below 0.98 -- the same size encoded from a different picture
+              video observation.images.image 256x192 508f av1/GOP2 2566287B vs 2477903B (1.04x) px 0.997 ok
+              video observation.images.wrist_image 256x192 508f av1/GOP2 1325908B vs 1286506B (1.03x) px 0.967 PIXELS
+              ! video observation.images.wrist_image: frames agree 0.967 against delivered, below 0.98 -- the same size encoded from a different picture
      [FAIL] episode   565->219  485 rows
               observation.state    identical (485, 8)
               action               identical (485, 7)
-              video observation.images.image 256x192 485f av1/GOP2 2769225B vs 2395261B (1.16x) px 0.996 SIZE
-              video observation.images.wrist_image 256x192 485f av1/GOP2 1381369B vs 1234149B (1.12x) px 0.966 PIXELS
-              ! video observation.images.image: 2769225 bytes against delivered 2395261 (1.16x) -- beyond what a different ffmpeg build explains
-              ! video observation.images.wrist_image: frames agree 0.966 against delivered, below 0.98 -- the same size encoded from a different picture
+              video observation.images.image 256x192 485f av1/GOP2 2484531B vs 2395261B (1.04x) px 0.997 ok
+              video observation.images.wrist_image 256x192 485f av1/GOP2 1274783B vs 1234149B (1.03x) px 0.969 PIXELS
+              ! video observation.images.wrist_image: frames agree 0.969 against delivered, below 0.98 -- the same size encoded from a different picture
      [FAIL] episode   566->520  515 rows
               observation.state    identical (515, 8)
               action               identical (515, 7)
-              video observation.images.image 256x192 515f av1/GOP2 2906641B vs 2518828B (1.15x) px 0.996 SIZE
-              video observation.images.wrist_image 256x192 515f av1/GOP2 1540677B vs 1373384B (1.12x) px 0.970 PIXELS
-              ! video observation.images.image: 2906641 bytes against delivered 2518828 (1.15x) -- beyond what a different ffmpeg build explains
-              ! video observation.images.wrist_image: frames agree 0.970 against delivered, below 0.98 -- the same size encoded from a different picture
-     [FAIL] episode   567->548  668 rows
-              observation.state    identical (668, 8)
-              action               identical (668, 7)
-              video observation.images.image 256x192 668f av1/GOP2 2972921B vs 2599413B (1.14x) px 0.997 ok
-              video observation.images.wrist_image 256x192 668f av1/GOP2 1887526B vs 1683016B (1.12x) px 0.978 PIXELS
-              ! video observation.images.wrist_image: frames agree 0.978 against delivered, below 0.98 -- the same size encoded from a different picture
-     [FAIL] episode   568->162  511 rows
-              observation.state    identical (511, 8)
-              action               identical (511, 7)
-              video observation.images.image 256x192 511f av1/GOP2 2880627B vs 2500917B (1.15x) px 0.996 SIZE
-              video observation.images.wrist_image 256x192 511f av1/GOP2 1472612B vs 1312961B (1.12x) px 0.981 ok
-              ! video observation.images.image: 2880627 bytes against delivered 2500917 (1.15x) -- beyond what a different ffmpeg build explains
-     video observation.images.image    570 files,   2,725,535B each against 570 / 2,381,294B (1.14x)
-     video observation.images.wrist_image    570 files,   1,606,692B each against 570 / 1,438,720B (1.12x)
+              video observation.images.image 256x192 515f av1/GOP2 2617160B vs 2518828B (1.04x) px 0.997 ok
+              video observation.images.wrist_image 256x192 515f av1/GOP2 1421620B vs 1373384B (1.04x) px 0.975 PIXELS
+              ! video observation.images.wrist_image: frames agree 0.975 against delivered, below 0.98 -- the same size encoded from a different picture
+     video observation.images.image    570 files,   2,425,564B each against 570 / 2,381,294B (1.02x)
+     video observation.images.wrist_image    570 files,   1,473,038B each against 570 / 1,438,720B (1.02x)
      prompts         570 paired episodes checked; all agree
      [FAIL] meta/episodes.jsonl + meta/episodes_stats.jsonl
-       ! episodes_stats.jsonl.observation.images.image.std '570 of 570 pairs differ, worst 0.3298' vs 'the delivered copy records zero in every episode'
-       ! episodes_stats.jsonl.observation.images.wrist_image.std '570 of 570 pairs differ, worst 0.3049' vs 'the delivered copy records zero in every episode'
+       ! episodes_stats.jsonl.observation.images.image.std '570 of 570 pairs differ, worst 0.3288' vs 'the delivered copy records zero in every episode'
+       ! episodes_stats.jsonl.observation.images.wrist_image.std '570 of 570 pairs differ, worst 0.3047' vs 'the delivered copy records zero in every episode'
          24 set aside -- ordering features follow the episode and task order, which the episode question already reports; absent quantiles are the five keys the v3.0 to v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream
            episodes_stats.jsonl.episode_index.max       '569 of 570 pairs differ, worst 566' vs 'allowed 1e-06'
            episodes_stats.jsonl.episode_index.mean      '569 of 570 pairs differ, worst 566' vs 'allowed 1e-06'

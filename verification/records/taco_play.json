@@ -1,6 +1,6 @@
 {
   "dataset": "taco_play",
-  "measured_at": "2026-08-20T08:36:48+00:00",
+  "measured_at": "2026-08-20T11:37:41+00:00",
   "rebuilt": "/scratch/out/taco_play",
   "delivered": "/scratch/delivered_tree/taco_play",
   "settings": {
@@ -38,8 +38,7 @@
     "reasons": [
       "meta/stats.json differs",
       "per-episode metadata differs",
-      "sampled episodes differ",
-      "the videos do not add up over all episodes"
+      "sampled episodes differ"
     ]
   },
   "declaration": {
@@ -1767,7 +1766,7 @@
           "allowed 0.05"
         ],
         "observation.images.rgb_static.std": [
-          "differs by 0.2061",
+          "differs by 0.2075",
           "allowed 0.05"
         ]
       },
@@ -1901,7 +1900,7 @@
           "the delivered copy records zero in every episode"
         ],
         "episodes_stats.jsonl.observation.images.rgb_static.std": [
-          "3242 of 3242 pairs differ, worst 0.2313",
+          "3242 of 3242 pairs differ, worst 0.2327",
           "the delivered copy records zero in every episode"
         ]
       },
@@ -5345,11 +5344,9 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 31567B vs 28825B (1.10x) px 0.983 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 188345B vs 164129B (1.15x) px 0.979 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 170057B vs 164129B (1.04x) px 0.982 ok"
         },
-        "problems": [
-          "video observation.images.rgb_static: frames agree 0.979 against delivered, below 0.98 -- the same size encoded from a different picture"
-        ]
+        "problems": []
       },
       {
         "index": 1,
@@ -5365,11 +5362,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 29827B vs 26859B (1.11x) px 0.982 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 189920B vs 164664B (1.15x) px 0.973 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 169987B vs 164664B (1.03x) px 0.977 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: 189920 bytes against delivered 164664 (1.15x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.973 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.977 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -5386,7 +5382,7 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 28785B vs 26439B (1.09x) px 0.991 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 186932B vs 163358B (1.14x) px 0.981 ok"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 168952B vs 163358B (1.03x) px 0.984 ok"
         },
         "problems": []
       },
@@ -5404,11 +5400,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 28008B vs 25305B (1.11x) px 0.990 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 190681B vs 165701B (1.15x) px 0.974 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 171810B vs 165701B (1.04x) px 0.977 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: 190681 bytes against delivered 165701 (1.15x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.974 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.977 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -5425,12 +5420,11 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 41488B vs 36728B (1.13x) px 0.979 PIXELS",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 193009B vs 166751B (1.16x) px 0.972 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 173515B vs 166751B (1.04x) px 0.975 PIXELS"
         },
         "problems": [
           "video observation.images.rgb_gripper: frames agree 0.979 against delivered, below 0.98 -- the same size encoded from a different picture",
-          "video observation.images.rgb_static: 193009 bytes against delivered 166751 (1.16x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.972 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.975 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -5447,11 +5441,9 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 36384B vs 33172B (1.10x) px 0.992 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 185600B vs 159977B (1.16x) px 0.981 SIZE"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 166590B vs 159977B (1.04x) px 0.983 ok"
         },
-        "problems": [
-          "video observation.images.rgb_static: 185600 bytes against delivered 159977 (1.16x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 6,
@@ -5467,12 +5459,9 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 29848B vs 26622B (1.12x) px 0.986 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 194521B vs 168619B (1.15x) px 0.978 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 174221B vs 168619B (1.03x) px 0.981 ok"
         },
-        "problems": [
-          "video observation.images.rgb_static: 194521 bytes against delivered 168619 (1.15x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.978 against delivered, below 0.98 -- the same size encoded from a different picture"
-        ]
+        "problems": []
       },
       {
         "index": 7,
@@ -5488,11 +5477,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 29104B vs 26292B (1.11x) px 0.985 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 184704B vs 159930B (1.15x) px 0.977 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 168008B vs 159930B (1.05x) px 0.980 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: 184704 bytes against delivered 159930 (1.15x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.977 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.980 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -5509,11 +5497,9 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 44850B vs 39986B (1.12x) px 0.985 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 189929B vs 163170B (1.16x) px 0.981 SIZE"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 171292B vs 163170B (1.05x) px 0.983 ok"
         },
-        "problems": [
-          "video observation.images.rgb_static: 189929 bytes against delivered 163170 (1.16x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 9,
@@ -5529,11 +5515,9 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 43437B vs 38253B (1.14x) px 0.986 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 187124B vs 162289B (1.15x) px 0.980 SIZE"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 167557B vs 162289B (1.03x) px 0.983 ok"
         },
-        "problems": [
-          "video observation.images.rgb_static: 187124 bytes against delivered 162289 (1.15x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 10,
@@ -5549,11 +5533,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 41108B vs 37328B (1.10x) px 0.986 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 185072B vs 160472B (1.15x) px 0.972 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 166749B vs 160472B (1.04x) px 0.975 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: 185072 bytes against delivered 160472 (1.15x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.972 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.975 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -5570,11 +5553,9 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 30270B vs 28061B (1.08x) px 0.988 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 185998B vs 160572B (1.16x) px 0.981 SIZE"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 166659B vs 160572B (1.04x) px 0.983 ok"
         },
-        "problems": [
-          "video observation.images.rgb_static: 185998 bytes against delivered 160572 (1.16x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 12,
@@ -5590,11 +5571,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 22203B vs 21218B (1.05x) px 0.989 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 188955B vs 164129B (1.15x) px 0.972 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 170061B vs 164129B (1.04x) px 0.975 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: 188955 bytes against delivered 164129 (1.15x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.972 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.975 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -5611,11 +5591,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 35223B vs 32585B (1.08x) px 0.990 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 187341B vs 162627B (1.15x) px 0.973 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 168092B vs 162627B (1.03x) px 0.976 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: 187341 bytes against delivered 162627 (1.15x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.973 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.976 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -5632,11 +5611,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 26478B vs 25113B (1.05x) px 0.987 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 190679B vs 165452B (1.15x) px 0.970 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 170072B vs 165452B (1.03x) px 0.974 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: 190679 bytes against delivered 165452 (1.15x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.970 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.974 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -5653,12 +5631,9 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 20945B vs 19739B (1.06x) px 0.991 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 187691B vs 161406B (1.16x) px 0.979 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 167811B vs 161406B (1.04x) px 0.982 ok"
         },
-        "problems": [
-          "video observation.images.rgb_static: 187691 bytes against delivered 161406 (1.16x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.979 against delivered, below 0.98 -- the same size encoded from a different picture"
-        ]
+        "problems": []
       },
       {
         "index": 16,
@@ -5674,11 +5649,9 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 47204B vs 42418B (1.11x) px 0.990 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 187211B vs 161453B (1.16x) px 0.981 SIZE"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 167961B vs 161453B (1.04x) px 0.983 ok"
         },
-        "problems": [
-          "video observation.images.rgb_static: 187211 bytes against delivered 161453 (1.16x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 17,
@@ -5694,11 +5667,9 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 28353B vs 25650B (1.11x) px 0.986 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 189064B vs 165260B (1.14x) px 0.978 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 171005B vs 165260B (1.03x) px 0.980 ok"
         },
-        "problems": [
-          "video observation.images.rgb_static: frames agree 0.978 against delivered, below 0.98 -- the same size encoded from a different picture"
-        ]
+        "problems": []
       },
       {
         "index": 18,
@@ -5714,12 +5685,9 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 21462B vs 20557B (1.04x) px 0.986 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 186418B vs 161233B (1.16x) px 0.979 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 167634B vs 161233B (1.04x) px 0.982 ok"
         },
-        "problems": [
-          "video observation.images.rgb_static: 186418 bytes against delivered 161233 (1.16x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.979 against delivered, below 0.98 -- the same size encoded from a different picture"
-        ]
+        "problems": []
       },
       {
         "index": 19,
@@ -5735,11 +5703,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 26835B vs 24794B (1.08x) px 0.984 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 191836B vs 165449B (1.16x) px 0.976 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 171971B vs 165449B (1.04x) px 0.979 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: 191836 bytes against delivered 165449 (1.16x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.976 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.979 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -5756,11 +5723,9 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 20474B vs 19810B (1.03x) px 0.991 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 189661B vs 163873B (1.16x) px 0.981 SIZE"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 171403B vs 163873B (1.05x) px 0.983 ok"
         },
-        "problems": [
-          "video observation.images.rgb_static: 189661 bytes against delivered 163873 (1.16x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 21,
@@ -5776,12 +5741,11 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 26188B vs 23764B (1.10x) px 0.978 PIXELS",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 184848B vs 160006B (1.16x) px 0.977 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 165708B vs 160006B (1.04x) px 0.980 PIXELS"
         },
         "problems": [
           "video observation.images.rgb_gripper: frames agree 0.978 against delivered, below 0.98 -- the same size encoded from a different picture",
-          "video observation.images.rgb_static: 184848 bytes against delivered 160006 (1.16x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.977 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.980 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -5798,12 +5762,9 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 31700B vs 27789B (1.14x) px 0.983 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 199067B vs 172052B (1.16x) px 0.980 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 179546B vs 172052B (1.04x) px 0.982 ok"
         },
-        "problems": [
-          "video observation.images.rgb_static: 199067 bytes against delivered 172052 (1.16x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.980 against delivered, below 0.98 -- the same size encoded from a different picture"
-        ]
+        "problems": []
       },
       {
         "index": 23,
@@ -5819,11 +5780,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 28992B vs 25868B (1.12x) px 0.983 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 190758B vs 165162B (1.15x) px 0.975 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 171515B vs 165162B (1.04x) px 0.978 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: 190758 bytes against delivered 165162 (1.15x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.975 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.978 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -5840,12 +5800,9 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 38690B vs 35247B (1.10x) px 0.993 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 174062B vs 151317B (1.15x) px 0.980 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 157033B vs 151317B (1.04x) px 0.982 ok"
         },
-        "problems": [
-          "video observation.images.rgb_static: 174062 bytes against delivered 151317 (1.15x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.980 against delivered, below 0.98 -- the same size encoded from a different picture"
-        ]
+        "problems": []
       },
       {
         "index": 25,
@@ -5861,11 +5818,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 28559B vs 27043B (1.06x) px 0.991 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 194734B vs 167350B (1.16x) px 0.974 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 174533B vs 167350B (1.04x) px 0.977 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: 194734 bytes against delivered 167350 (1.16x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.974 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.977 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -5882,11 +5838,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 29248B vs 27067B (1.08x) px 0.993 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 184455B vs 160029B (1.15x) px 0.969 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 166695B vs 160029B (1.04x) px 0.972 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: 184455 bytes against delivered 160029 (1.15x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.969 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.972 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -5903,11 +5858,9 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 28534B vs 27043B (1.06x) px 0.992 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 193625B vs 167969B (1.15x) px 0.981 SIZE"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 174027B vs 167969B (1.04x) px 0.983 ok"
         },
-        "problems": [
-          "video observation.images.rgb_static: 193625 bytes against delivered 167969 (1.15x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 28,
@@ -5923,12 +5876,9 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 33481B vs 31182B (1.07x) px 0.992 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 186453B vs 160210B (1.16x) px 0.978 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 167140B vs 160210B (1.04x) px 0.980 ok"
         },
-        "problems": [
-          "video observation.images.rgb_static: 186453 bytes against delivered 160210 (1.16x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.978 against delivered, below 0.98 -- the same size encoded from a different picture"
-        ]
+        "problems": []
       },
       {
         "index": 29,
@@ -5944,11 +5894,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 27881B vs 26180B (1.06x) px 0.990 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 179940B vs 156200B (1.15x) px 0.976 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 161903B vs 156200B (1.04x) px 0.979 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: 179940 bytes against delivered 156200 (1.15x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.976 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.979 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -5965,12 +5914,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 33561B vs 30089B (1.12x) px 0.976 PIXELS",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 191819B vs 166324B (1.15x) px 0.977 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 172767B vs 166324B (1.04x) px 0.981 ok"
         },
         "problems": [
-          "video observation.images.rgb_gripper: frames agree 0.976 against delivered, below 0.98 -- the same size encoded from a different picture",
-          "video observation.images.rgb_static: 191819 bytes against delivered 166324 (1.15x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.977 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_gripper: frames agree 0.976 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -5987,11 +5934,9 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 37220B vs 33890B (1.10x) px 0.994 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 182236B vs 157759B (1.16x) px 0.980 SIZE"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 164315B vs 157759B (1.04x) px 0.983 ok"
         },
-        "problems": [
-          "video observation.images.rgb_static: 182236 bytes against delivered 157759 (1.16x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 3210,
@@ -6007,11 +5952,9 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 45848B vs 41161B (1.11x) px 0.985 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 188950B vs 162276B (1.16x) px 0.981 SIZE"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 169830B vs 162276B (1.05x) px 0.983 ok"
         },
-        "problems": [
-          "video observation.images.rgb_static: 188950 bytes against delivered 162276 (1.16x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 3211,
@@ -6027,11 +5970,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 28467B vs 25296B (1.13x) px 0.988 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 193307B vs 167283B (1.16x) px 0.971 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 173308B vs 167283B (1.04x) px 0.975 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: 193307 bytes against delivered 167283 (1.16x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.971 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.975 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -6048,10 +5990,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 24313B vs 22532B (1.08x) px 0.982 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 185192B vs 161651B (1.15x) px 0.966 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 166058B vs 161651B (1.03x) px 0.970 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: frames agree 0.966 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.970 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -6068,10 +6010,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 28965B vs 26988B (1.07x) px 0.992 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 193249B vs 168756B (1.15x) px 0.976 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 174584B vs 168756B (1.03x) px 0.978 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: frames agree 0.976 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.978 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -6088,11 +6030,9 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 37654B vs 34348B (1.10x) px 0.994 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 183478B vs 159920B (1.15x) px 0.979 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 165061B vs 159920B (1.03x) px 0.982 ok"
         },
-        "problems": [
-          "video observation.images.rgb_static: frames agree 0.979 against delivered, below 0.98 -- the same size encoded from a different picture"
-        ]
+        "problems": []
       },
       {
         "index": 3215,
@@ -6108,11 +6048,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 20810B vs 19912B (1.05x) px 0.983 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 197296B vs 170462B (1.16x) px 0.973 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 176705B vs 170462B (1.04x) px 0.976 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: 197296 bytes against delivered 170462 (1.16x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.973 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.976 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -6129,12 +6068,9 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 33343B vs 29837B (1.12x) px 0.985 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 185465B vs 160201B (1.16x) px 0.978 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 166344B vs 160201B (1.04x) px 0.981 ok"
         },
-        "problems": [
-          "video observation.images.rgb_static: 185465 bytes against delivered 160201 (1.16x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.978 against delivered, below 0.98 -- the same size encoded from a different picture"
-        ]
+        "problems": []
       },
       {
         "index": 3217,
@@ -6150,11 +6086,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 19531B vs 18820B (1.04x) px 0.987 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 192413B vs 167299B (1.15x) px 0.973 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 171740B vs 167299B (1.03x) px 0.976 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: 192413 bytes against delivered 167299 (1.15x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.973 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.976 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -6171,10 +6106,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 28193B vs 26409B (1.07x) px 0.990 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 185434B vs 163021B (1.14x) px 0.968 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 168057B vs 163021B (1.03x) px 0.971 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: frames agree 0.968 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.971 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -6191,11 +6126,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 30567B vs 27547B (1.11x) px 0.985 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 185206B vs 160594B (1.15x) px 0.977 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 166960B vs 160594B (1.04x) px 0.980 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: 185206 bytes against delivered 160594 (1.15x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.977 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.980 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -6212,11 +6146,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 19724B vs 18975B (1.04x) px 0.996 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 205073B vs 175776B (1.17x) px 0.970 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 183733B vs 175776B (1.05x) px 0.973 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: 205073 bytes against delivered 175776 (1.17x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.970 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.973 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -6233,11 +6166,9 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 23640B vs 22219B (1.06x) px 0.993 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 192504B vs 167017B (1.15x) px 0.981 SIZE"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 173993B vs 167017B (1.04x) px 0.984 ok"
         },
-        "problems": [
-          "video observation.images.rgb_static: 192504 bytes against delivered 167017 (1.15x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 3222,
@@ -6253,12 +6184,9 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 39162B vs 36203B (1.08x) px 0.987 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 192856B vs 166853B (1.16x) px 0.980 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 172602B vs 166853B (1.03x) px 0.982 ok"
         },
-        "problems": [
-          "video observation.images.rgb_static: 192856 bytes against delivered 166853 (1.16x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.980 against delivered, below 0.98 -- the same size encoded from a different picture"
-        ]
+        "problems": []
       },
       {
         "index": 3223,
@@ -6274,10 +6202,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 22755B vs 21480B (1.06x) px 0.994 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 189738B vs 165081B (1.15x) px 0.973 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 170650B vs 165081B (1.03x) px 0.975 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: frames agree 0.973 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.975 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -6294,7 +6222,7 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 33981B vs 30784B (1.10x) px 0.988 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 184888B vs 161374B (1.15x) px 0.980 ok"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 167064B vs 161374B (1.04x) px 0.983 ok"
         },
         "problems": []
       },
@@ -6312,11 +6240,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 26053B vs 23541B (1.11x) px 0.986 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 189680B vs 163690B (1.16x) px 0.977 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 170516B vs 163690B (1.04x) px 0.979 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: 189680 bytes against delivered 163690 (1.16x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.977 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.979 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -6333,10 +6260,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 32856B vs 30003B (1.10x) px 0.985 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 192775B vs 168052B (1.15x) px 0.972 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 174468B vs 168052B (1.04x) px 0.975 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: frames agree 0.972 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.975 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -6353,11 +6280,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 49421B vs 43584B (1.13x) px 0.985 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 184145B vs 159282B (1.16x) px 0.972 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 166146B vs 159282B (1.04x) px 0.975 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: 184145 bytes against delivered 159282 (1.16x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.972 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.975 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -6374,10 +6300,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 30645B vs 27825B (1.10x) px 0.982 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 189259B vs 165071B (1.15x) px 0.976 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 170582B vs 165071B (1.03x) px 0.979 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: frames agree 0.976 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.979 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -6394,7 +6320,7 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 36197B vs 32994B (1.10x) px 0.993 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 177968B vs 154969B (1.15x) px 0.981 ok"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 161662B vs 154969B (1.04x) px 0.983 ok"
         },
         "problems": []
       },
@@ -6412,7 +6338,7 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 36425B vs 33218B (1.10x) px 0.992 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 183281B vs 159451B (1.15x) px 0.981 ok"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 164761B vs 159451B (1.03x) px 0.984 ok"
         },
         "problems": []
       },
@@ -6430,10 +6356,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 27314B vs 24196B (1.13x) px 0.986 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 181779B vs 158240B (1.15x) px 0.971 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 163691B vs 158240B (1.03x) px 0.974 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: frames agree 0.971 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.974 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -6450,11 +6376,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 25225B vs 23852B (1.06x) px 0.987 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 187951B vs 162459B (1.16x) px 0.971 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 169720B vs 162459B (1.04x) px 0.974 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: 187951 bytes against delivered 162459 (1.16x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.971 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.974 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -6471,12 +6396,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 36158B vs 32983B (1.10x) px 0.978 PIXELS",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 187731B vs 161882B (1.16x) px 0.980 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 167705B vs 161882B (1.04x) px 0.982 ok"
         },
         "problems": [
-          "video observation.images.rgb_gripper: frames agree 0.978 against delivered, below 0.98 -- the same size encoded from a different picture",
-          "video observation.images.rgb_static: 187731 bytes against delivered 161882 (1.16x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.980 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_gripper: frames agree 0.978 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -6493,11 +6416,9 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 45946B vs 41384B (1.11x) px 0.989 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 194614B vs 164963B (1.18x) px 0.980 SIZE"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 174468B vs 164963B (1.06x) px 0.983 ok"
         },
-        "problems": [
-          "video observation.images.rgb_static: 194614 bytes against delivered 164963 (1.18x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 3235,
@@ -6513,10 +6434,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 18269B vs 17488B (1.04x) px 0.996 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 192233B vs 168048B (1.14x) px 0.970 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 173088B vs 168048B (1.03x) px 0.974 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: frames agree 0.970 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.974 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -6533,11 +6454,9 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 29615B vs 26903B (1.10x) px 0.984 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 187853B vs 164123B (1.14x) px 0.979 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 169122B vs 164123B (1.03x) px 0.982 ok"
         },
-        "problems": [
-          "video observation.images.rgb_static: frames agree 0.979 against delivered, below 0.98 -- the same size encoded from a different picture"
-        ]
+        "problems": []
       },
       {
         "index": 3237,
@@ -6553,10 +6472,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 26412B vs 25019B (1.06x) px 0.987 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 182205B vs 158621B (1.15x) px 0.971 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 163565B vs 158621B (1.03x) px 0.973 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: frames agree 0.971 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.973 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -6573,7 +6492,7 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 42627B vs 38237B (1.11x) px 0.989 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 198589B vs 173074B (1.15x) px 0.981 ok"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 179927B vs 173074B (1.04x) px 0.983 ok"
         },
         "problems": []
       },
@@ -6591,10 +6510,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 20534B vs 19086B (1.08x) px 0.986 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 192702B vs 167886B (1.15x) px 0.977 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 173976B vs 167886B (1.04x) px 0.980 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: frames agree 0.977 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.980 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       },
       {
@@ -6611,12 +6530,9 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 31125B vs 28125B (1.11x) px 0.987 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 191368B vs 165326B (1.16x) px 0.978 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 173675B vs 165326B (1.05x) px 0.980 ok"
         },
-        "problems": [
-          "video observation.images.rgb_static: 191368 bytes against delivered 165326 (1.16x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.978 against delivered, below 0.98 -- the same size encoded from a different picture"
-        ]
+        "problems": []
       },
       {
         "index": 3241,
@@ -6632,11 +6548,10 @@
         },
         "video": {
           "observation.images.rgb_gripper": "64x64 66f av1/GOP2 19173B vs 18209B (1.05x) px 0.989 ok",
-          "observation.images.rgb_static": "160x128 66f av1/GOP2 198060B vs 171929B (1.15x) px 0.977 PIXELS"
+          "observation.images.rgb_static": "160x128 66f av1/GOP2 177483B vs 171929B (1.03x) px 0.979 PIXELS"
         },
         "problems": [
-          "video observation.images.rgb_static: 198060 bytes against delivered 171929 (1.15x) -- beyond what a different ffmpeg build explains",
-          "video observation.images.rgb_static: frames agree 0.977 against delivered, below 0.98 -- the same size encoded from a different picture"
+          "video observation.images.rgb_static: frames agree 0.979 against delivered, below 0.98 -- the same size encoded from a different picture"
         ]
       }
     ]
@@ -6649,7 +6564,7 @@
       },
       "observation.images.rgb_static": {
         "files": 3242,
-        "bytes": 611427338
+        "bytes": 550175326
       }
     },
     "delivered": {
@@ -6662,9 +6577,7 @@
         "bytes": 530969892
       }
     },
-    "problems": [
-      "video observation.images.rgb_static: 188,596 bytes a file on average against delivered 163,778 (1.15x) -- beyond what a different ffmpeg build explains"
-    ]
+    "problems": []
   },
   "prompts": {
     "pairs_checked": 3242,

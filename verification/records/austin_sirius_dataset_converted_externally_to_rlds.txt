@@ -58,7 +58,7 @@ austin_sirius_dataset_converted_externally_to_rlds
      compared         64 of 559 paired episodes, half from each end of the index range
      identical        64
      video observation.images.image    559 files,     304,861B each against 559 / 277,169B (1.10x)
-     video observation.images.wrist_image    559 files,     252,285B each against 559 / 231,797B (1.09x)
+     video observation.images.wrist_image    559 files,     252,284B each against 559 / 231,797B (1.09x)
      prompts         559 paired episodes checked; all agree
      [FAIL] meta/episodes.jsonl + meta/episodes_stats.jsonl
        ! episodes_stats.jsonl.absolute_action           '(absent)' vs 'present'

@@ -1,0 +1,14 @@
+{
+  "bytes": 51941788,
+  "created": [],
+  "dataset": "dlr_edan_shared_control_converted_externally_to_rlds",
+  "dest_uri": "s3://rlwrld-foundry-data/lerobot/rldx1/dlr_edan_shared_control_converted_externally_to_rlds/",
+  "error": null,
+  "finished": "2026-08-20T12:01:13+00:00",
+  "profile": null,
+  "source_uri": null,
+  "spec_sha": null,
+  "started": "2026-08-20T12:01:11+00:00",
+  "status": "ok",
+  "step": "publish"
+}

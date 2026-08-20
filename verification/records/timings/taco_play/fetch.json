@@ -6,11 +6,11 @@
   "dataset": "taco_play",
   "dest_uri": null,
   "error": null,
-  "finished": "2026-08-20T08:30:01+00:00",
+  "finished": "2026-08-20T11:30:12+00:00",
   "profile": null,
   "source_uri": "s3://rlwrld-foundry-data/external/taco_play/",
   "spec_sha": null,
-  "started": "2026-08-20T08:27:58+00:00",
+  "started": "2026-08-20T11:28:18+00:00",
   "status": "ok",
   "step": "fetch"
 }
