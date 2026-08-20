@@ -261,9 +261,17 @@ foundry artifact `c213aa21e25849dbb3dfa07742f92288`, fetched per dataset:
 foundry pull c213aa21e25849dbb3dfa07742f92288 --include '<dataset>/**'
 ```
 
-The API is not reachable from inside the VPC -- its address resolves to a public EIP
-that does not hairpin -- so a run on EC2 has to have the copies staged onto the image
-beforehand rather than pulling them as it goes.
+A node pulls its own, as it goes. That needs the **internal** ALB, because
+`foundry.internal.rlwrld.ai` resolves to the public ALB's addresses and those do not
+hairpin from inside the VPC:
+
+```bash
+export FOUNDRY_URL=http://internal-rlwrld-foundry-api-425985869.us-east-1.elb.amazonaws.com/api
+```
+
+Which group a node launches with decides whether that works — the internal ALB admits
+named source groups only. See
+[reaching Foundry from a node](../orchestrator/bootstrap/README.md#reaching-foundry-from-a-node).
 
 ## Refreshing
 

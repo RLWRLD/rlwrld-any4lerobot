@@ -76,8 +76,33 @@ leaves the repo to be delivered separately. Everything below applies either way.
 | type | `m7i.12xlarge` (48 vCPU, 185 GB) | see [memory](#memory-is-per-episode-not-per-core) |
 | disk | ~1 TB root | sources are not deleted until a dataset is done; taco_play alone is 48 GB |
 | region | `us-east-1` | where the mirrors are — a cross-region sync of 27 datasets is not worth paying for |
-| IAM | an instance profile with SSM and read on `s3://rlwrld-foundry-data` | SSM is how the run is driven; there is no key pair |
+| IAM | instance profile `rlwrld-any4lerobot-ec2` | SSM, read on `external/`, write on `lerobot/`, ECR pull |
+| network | security group `rlwrld-any4lerobot-ec2-sg` | outbound-only, and the one group the Foundry API admits — see below |
 | packages | `ffmpeg`, `uv` | ffmpeg does the video work; nothing else is needed at the system level |
+
+Both are declared in `rlwrld-terraform` — the profile in `envs/iam/any4lerobot_ec2.tf`,
+the group in `envs/prod/any4lerobot.tf` — and they share a name because they are the
+two halves of the same thing: the profile says what a node may call, the group says
+what it may reach. Launching with a group made at the console is what the second one
+replaces, and a node launched that way cannot reach Foundry.
+
+### Reaching Foundry from a node
+
+The delivered copies come from the Foundry API, and a node has to use the **internal**
+ALB:
+
+```bash
+export FOUNDRY_URL=http://internal-rlwrld-foundry-api-425985869.us-east-1.elb.amazonaws.com/api
+```
+
+`http`, not `https` — the internal ALB has one listener and it is plain HTTP on 80.
+
+`foundry.internal.rlwrld.ai` does not work from a node despite the name: it resolves
+to the *public* ALB's addresses, which do not hairpin from inside the VPC. The bytes
+do not cross either ALB in any case — Foundry answers with presigned S3 URLs, and the
+VPC has an S3 gateway endpoint, so the download is S3 to instance and never leaves the
+network.
+
 
 ### Memory is per episode, not per core
 
