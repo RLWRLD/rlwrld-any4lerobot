@@ -325,6 +325,42 @@ video went from 0.79x with 63 of 64 sampled episodes failing to **0.96x with non
 while ucsd went 0.885x to 0.99x. Every remaining difference in the collection so far is
 the delivered copy's zero `std`.
 
+### Then 15 more, four nodes at once
+
+A parallel run over 25 datasets, stopped part way. 15 finished the full cycle; timings
+and the stall that ended it are in [`records/speed.md`](records/speed.md). Every one of
+them reproduces its data and fails on the same zero `std`, with four exceptions worth
+naming:
+
+| dataset | also differs in |
+|---|---|
+| `iamlab_cmu_pickup_insert_…` | `robot_type` `'franka'` vs `'Franka'`; state slot names — ours `motor_0…motor_6, gripper`, delivered `x, y, z, roll, pitch, yaw, pad, gripper` |
+| `bc_z` | `robot_type` `'google_robot'` vs `'Google Robot'` |
+| `berkeley_autolab_ur5` | one prompt differs by a **trailing space** |
+| `stanford_hydra`, `taco_play` | video size — the gentle end of the resize |
+
+The first three are spec data this repository can correct. Two are the capitalisation of
+a string; the third is real layout information the delivered copy carries and our spec
+does not — `x, y, z, roll, pitch, yaw` says the block is a pose, where `motor_0…6` says
+only that it is seven of something.
+
+`absolute_action` turned up in **7 of the 15**, not the 1 of 3 first recorded. It is set
+aside every time, which is the undeclared-column rule working: no delivered `info.json`
+declares it.
+
+### One filter is not enough, and this is the evidence
+
+`sinc` fixed the strong downscales and broke the gentle ones. Of the 15, exactly two fail
+on video size — `stanford_hydra` at 1.25x down and `taco_play` at 1.21x — which is
+precisely where the sweep said sinc would overshoot: 1.09-1.10x measured at 1.31x against
+a 15% bound, and gentler than that is worse. Everything else lands in 0.96-1.15x.
+
+The change is still a net gain, five or more datasets fixed against two broken. But the
+conclusion the sweep hedged on is now settled: **the resampler has to follow the scale
+factor, not the collection.** `video.resize.filter` being a declared value rather than a
+default is what makes that a small change — a per-spec override, or a threshold in the
+step, would each do it.
+
 ### The delivered image `std` is zero
 
 Every delivered episode of both datasets records image `std` as exactly `[0,0,0]` where
