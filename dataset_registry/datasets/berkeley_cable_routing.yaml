@@ -53,10 +53,10 @@ lerobot:
   video:
     # measured from the RLDS mirror's own features.json, per camera
     cameras:
-      top_image: {shape: [128, 128, 3]}
-      image: {shape: [128, 128, 3]}
-      wrist45_image: {shape: [128, 128, 3]}
-      wrist225_image: {shape: [128, 128, 3]}
+      top_image: {shape: [128, 128, 3], modality: secondary}
+      image: {shape: [128, 128, 3], modality: primary}
+      wrist45_image: {shape: [128, 128, 3], modality: wrist}
+      wrist225_image: {shape: [128, 128, 3], modality: null}
     # The delivered size is exactly what the rldx1 resize makes of the source size
     # above -- checked for every OXE camera whose delivered shape is recorded, and it
     # holds for all of them. The AV1/GOP2 encoding does not contradict that:

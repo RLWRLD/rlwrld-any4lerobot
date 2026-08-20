@@ -130,13 +130,26 @@ class TestMetadata:
         assert features["observation.state"]["shape"] == [44]
         assert features["action"]["names"]["motors"][:2] == ["m0", "m1"]
 
-    def test_modality_matches_the_vector_width(self, step, dataset, tmp_path):
+    def test_modality_matches_the_vector_width(self, step, tmp_path):
+        """The writer is still here; the step no longer calls it. modality.json has to
+        be written last, after any version conversion, and for datasets that have no
+        table step at all -- so `run_pipeline` writes it into the finished dataset."""
+        from lerobot_pipeline.steps.state_layout import write_modality
+
         out = tmp_path / "out"
-        step.apply(dataset, out)
+        write_modality(step.spec, out)
         modality = json.loads((out / "meta" / "modality.json").read_text())
         assert modality["state"] == {"state": {"start": 0, "end": 44}}
         assert modality["action"]["action"]["absolute"] is True
         assert modality["video"] == {"primary": {"original_key": "observation.images.primary"}}
+
+    def test_the_step_no_longer_writes_it(self, step, dataset, tmp_path):
+        """Writing it here put it in an intermediate tree that a version conversion
+        then left behind, and skipped every dataset with no table step -- which is all
+        27 OpenX sets, whose converter writes observation.state itself."""
+        out = tmp_path / "out"
+        step.apply(dataset, out)
+        assert not (out / "meta" / "modality.json").exists()
 
 
 class TestRefusal:

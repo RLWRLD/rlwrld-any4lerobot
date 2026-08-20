@@ -50,7 +50,7 @@ lerobot:
   video:
     # measured from the RLDS mirror's features.json, not inferred
     cameras:
-      image: {shape: [128, 128, 3]}
+      image: {shape: [128, 128, 3], modality: primary}
     # 128x128 is already on the rldx1 grid, so this resize composes to nothing and
     # the file is hard-linked rather than re-encoded -- which is why the delivered
     # copy still carries LeRobot's own AV1/GOP2 writer default. Declared all the

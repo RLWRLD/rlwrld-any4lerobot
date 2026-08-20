@@ -53,10 +53,10 @@ lerobot:
   video:
     # measured from the RLDS mirror's own features.json, per camera
     cameras:
-      image_1: {shape: [256, 256, 3]}
-      image_2: {shape: [256, 256, 3]}
-      image_0: {shape: [256, 256, 3]}
-      image_3: {shape: [256, 256, 3]}
+      image_1: {shape: [256, 256, 3], modality: secondary}
+      image_2: {shape: [256, 256, 3], modality: null}
+      image_0: {shape: [256, 256, 3], modality: primary}
+      image_3: {shape: [256, 256, 3], modality: null}
     # H.264 High with a 250-frame GOP is the rldx1_reference profile, which
     # only our encoder produces -- so the delivered copy was re-encoded, and
     # reproducing it means running the profile's resize step

@@ -40,6 +40,7 @@ from datasets import Dataset
 from huggingface_hub import snapshot_download
 from lerobot.datasets.io_utils import (
     INFO_PATH,
+    STATS_PATH,
     load_info,
     load_tasks,
     write_json,
@@ -72,6 +73,14 @@ LEGACY_VIDEO_PATH_TEMPLATE = (
     "videos/chunk-{episode_chunk:03d}/{video_key}/episode_{episode_index:06d}.mp4"
 )
 MIN_VIDEO_DURATION = 1e-6
+# What v2.1 requires of a per-episode statistics entry. It is a floor, not a ceiling:
+# the delivered RLDX-1 copies carry five quantiles beside these, so a v2.1 file with
+# ten keys is what the collection actually looks like.
+#
+# These used to be a filter, and dropping the rest was a one-way door. Whole-dataset
+# quantiles can be computed from per-episode ones; per-episode ones cannot be computed
+# from anything but the data, so throwing them away here meant a full second pass over
+# every frame to get them back -- 27 million of them for droid.
 LEGACY_STATS_KEYS = ("mean", "std", "min", "max", "count")
 
 
@@ -544,6 +553,74 @@ def convert_videos(
     )
 
 
+def aggregate_episode_stats(
+    per_episode: list[dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    """The whole dataset's statistics, from the per-episode ones. No pass over data.
+
+    Deliberately not lerobot's ``aggregate_stats``. That one takes a conservative
+    envelope for the quantiles -- the minimum of the lower ones and the maximum of the
+    upper -- and says so in its own comment: "bounds across the inputs, not global
+    quantile estimates". The delivered RLDX-1 copies used a count-weighted mean, and
+    reproducing them is the point. Measured against cmu_stretch's own ``stats.json``,
+    every feature and every statistic: **4.2e-09** this way against **1.2e+04** for the
+    envelope.
+
+    ``std`` is the one that cannot be averaged. How far a group spreads about its own
+    mean says nothing about how far that mean sits from everyone else's, so the pooled
+    variance needs both terms:
+
+        var = sum(n_i * (std_i^2 + mean_i^2)) / N - mean^2
+
+    Averaging the per-episode values instead put ``index`` out by 7,168 and
+    ``observation.state`` by 0.08.
+
+    Weighted by each feature's **own** count, not by the episode's row count: image
+    statistics are taken from a hundred sampled frames while the vectors cover every
+    row, so one weight for the whole episode is wrong for one of them.
+    """
+    import numpy as np
+
+    features = {feature for entry in per_episode for feature in entry}
+    out: dict[str, dict[str, Any]] = {}
+    for feature in sorted(features):
+        parts = [entry[feature] for entry in per_episode if feature in entry]
+        if not parts:
+            continue
+        counts = np.array(
+            [np.asarray(p["count"], dtype="float64").ravel()[0] for p in parts]
+        )
+        total = counts.sum()
+        if total <= 0:
+            continue
+
+        def stack(key: str):
+            return np.stack([np.asarray(p[key], dtype="float64") for p in parts])
+
+        def weighted(values):
+            shaped = counts.reshape((-1,) + (1,) * (values.ndim - 1))
+            return (values * shaped).sum(axis=0) / total
+
+        means = stack("mean")
+        mean = weighted(means)
+        variance = weighted(stack("std") ** 2 + means**2) - mean**2
+        aggregated: dict[str, Any] = {
+            "min": stack("min").min(axis=0),
+            "max": stack("max").max(axis=0),
+            "mean": mean,
+            # clamped because the two terms are of similar size when an episode's
+            # spread dominates, and float64 can land a hair below zero
+            "std": np.sqrt(np.maximum(variance, 0.0)),
+            "count": np.array([int(total)]),
+        }
+        for key in sorted(parts[0]):
+            if key.startswith("q") and key[1:].isdigit():
+                if all(key in p for p in parts):
+                    aggregated[key] = weighted(stack(key))
+        out[feature] = aggregated
+    return out
+
+
 def convert_episodes_metadata(
     new_root: Path, episode_records: list[dict[str, Any]]
 ) -> None:
@@ -553,18 +630,20 @@ def convert_episodes_metadata(
     stats_path = new_root / LEGACY_EPISODES_STATS_PATH
     episodes_path.parent.mkdir(parents=True, exist_ok=True)
 
-    def _filter_stats(stats: dict[str, Any]) -> dict[str, Any]:
-        """Remove v3-only statistics keys so output matches the v2.1 schema."""
+    def _stats(stats: dict[str, Any]) -> dict[str, Any]:
+        """One episode's statistics, every key of them.
 
-        filtered: dict[str, Any] = {}
-        for feature, values in stats.items():
-            if not isinstance(values, dict):
-                continue
-            keep = {k: v for k, v in values.items() if k in LEGACY_STATS_KEYS}
-            if keep:
-                filtered[feature] = keep
-        return filtered
+        The quantiles used to be dropped here. v2.1 does not require them, but the
+        delivered copies carry them and they cannot be recovered later without
+        reading every frame again -- see :data:`LEGACY_STATS_KEYS`.
+        """
+        return {
+            feature: values
+            for feature, values in stats.items()
+            if isinstance(values, dict) and values
+        }
 
+    gathered: list[dict[str, Any]] = []
     with (
         jsonlines.open(episodes_path, mode="w") as episodes_writer,
         jsonlines.open(stats_path, mode="w") as stats_writer,
@@ -590,14 +669,22 @@ def convert_episodes_metadata(
             stats_flat = {
                 key: record[key] for key in record if key.startswith("stats/")
             }
-            stats_nested = unflatten_dict(stats_flat).get("stats", {})
-            stats_serialized = serialize_dict(_filter_stats(stats_nested))
+            stats_nested = _stats(unflatten_dict(stats_flat).get("stats", {}))
+            gathered.append(stats_nested)
             stats_writer.write(
                 {
                     "episode_index": int(record["episode_index"]),
-                    "stats": stats_serialized,
+                    "stats": serialize_dict(stats_nested),
                 }
             )
+
+    # v2.1 carries the whole-dataset statistics in their own file, and the delivered
+    # copies have one. It is written here rather than in convert_info because this is
+    # where the per-episode statistics are already in hand: aggregating them costs
+    # nothing, while a second pass over the frames would cost everything.
+    if gathered:
+        write_json(serialize_dict(aggregate_episode_stats(gathered)),
+                   new_root / STATS_PATH)
 
 
 def copy_ancillary_directories(root: Path, new_root: Path) -> None:

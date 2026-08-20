@@ -72,7 +72,7 @@ _LEROBOT = {
     "modality",
 }
 _VIDEO = {"cameras", "resize", "encoding", "keeps_original"}
-_CAMERA = {"source", "shape"}
+_CAMERA = {"source", "shape", "modality"}
 _STATE = {"width", "layout", "source_features", "blocks"}
 _BLOCK = {"width", "pad", "source", "evidence", "note"}
 _SOURCE = {"feature", "columns"}
@@ -383,6 +383,31 @@ class DatasetSpec:
     def camera_source(self, key: str) -> str:
         """The directory this camera has in the raw source; defaults to its own name."""
         return (self.cameras.get(key) or {}).get("source") or key
+
+    def camera_modality(self, key: str) -> str | None:
+        """The name ``meta/modality.json`` gives this camera, or ``None`` if it has
+        none because the dataset does not expose it.
+
+        A third name for one camera, and all three are in use at once. The delivered
+        cmu_stretch has the feature ``observation.images.image``, its video directory
+        is named after that in full, and its modality entry calls it ``primary`` --
+        the alias openx2lerobot's ``image_obs_keys`` maps the source key to. The
+        training stack reads the modality name, so getting it wrong renames a camera
+        as far as the model is concerned.
+
+        Read back from the delivered ``meta/modality.json`` files rather than derived,
+        for the same reason ``resize`` is: it is a fact about what was shipped. Only
+        the datasets whose alias differs from their camera key declare it -- 19 of the
+        27 openx sets -- because for the rest the two are already the same word.
+        """
+        camera = self.cameras.get(key) or {}
+        if "modality" not in camera:
+            return key
+        # declared and empty means "on disk, not exposed" -- bridge_orig keeps two
+        # spare views of four and berkeley_cable_routing a fourth wrist angle, and
+        # the delivered modality files list neither. A camera nothing reads is not a
+        # camera as far as the training stack is concerned.
+        return camera["modality"] or None
 
     def camera_shape(self, key: str) -> tuple[int, int, int] | None:
         shape = (self.cameras.get(key) or {}).get("shape")

@@ -335,3 +335,69 @@ class TestMeasuredEncodings:
         from lerobot_pipeline.encoding import load_profile
 
         assert load_profile(name) | settings == load_profile(name)
+
+
+class TestCameraModality:
+    """The third name a camera has.
+
+    Delivered cmu_stretch has the feature `observation.images.image`, names its video
+    directory after that in full, and calls it `primary` in modality.json -- the alias
+    openx2lerobot's `image_obs_keys` maps the source key to. The training stack reads
+    the alias, so getting it wrong renames the camera as far as the model is concerned.
+    """
+
+    def test_a_camera_with_no_alias_keeps_its_own_name(self):
+        """The 8 OpenX sets whose delivered feature name already *is* the alias, plus
+        everything outside the collection. Two names, not three."""
+        spec = load("action_net")
+        for camera in spec.cameras:
+            assert spec.camera_modality(camera) == camera
+
+    def test_a_declared_alias_is_used(self):
+        assert load("cmu_stretch").camera_modality("image") == "primary"
+
+    def test_the_source_key_is_not_the_alias(self):
+        """Three different names for one camera, all in use at once."""
+        spec = load("taco_play")
+        assert spec.camera_modality("rgb_static") == "primary"
+        assert spec.camera_source("rgb_static") == "rgb_static"
+
+    def test_an_empty_alias_means_the_dataset_does_not_expose_it(self):
+        """bridge_orig keeps two spare views of four and berkeley_cable_routing a
+        fourth wrist angle; the delivered modality files list neither. A camera
+        nothing reads is not a camera as far as the training stack is concerned."""
+        spec = load("bridge_orig")
+        assert spec.camera_modality("image_0") == "primary"
+        assert spec.camera_modality("image_2") is None
+        assert spec.camera_modality("image_3") is None
+
+    def test_an_unknown_camera_answers_with_its_own_name(self):
+        assert load("cmu_stretch").camera_modality("not_a_camera") == "not_a_camera"
+
+    def test_every_openx_spec_reproduces_its_delivered_modality_file(self):
+        """The check that made this field necessary, run against all 36 snapshots in
+        `verification/modality`. 31 match outright; the 5 that do not are non-OpenX
+        datasets whose `annotation` block, and in two cases their state and action
+        blocks, are not in their specs at all -- a gap in the spec data, not here."""
+        import json
+        import tempfile
+
+        from lerobot_pipeline.steps.state_layout import write_modality
+
+        root = Path(tempfile.mkdtemp())
+        checked = mismatched = 0
+        for name in available():
+            snapshot = Path(__file__).resolve().parents[2] / "verification" / "modality" / f"{name}.json"
+            if not snapshot.is_file():
+                continue
+            spec = load(name)
+            if not spec.cameras:
+                continue
+            checked += 1
+            ours = json.loads(write_modality(spec, root / name).read_text())
+            theirs = json.loads(snapshot.read_text())
+            if ours["video"] != theirs.get("video"):
+                mismatched += 1
+                print(f"{name}: {ours['video']} != {theirs.get('video')}")
+        assert checked >= 30
+        assert mismatched == 0
