@@ -26,10 +26,10 @@ austin_buds_dataset_converted_externally_to_rlds
      [ ok ] meta/tasks.jsonl
      [ ok ] meta/modality.json
      [FAIL] meta/stats.json
-       ! absolute_action                                '(absent)' vs 'present'
        ! observation.images.image.std                   'differs by 0.2885' vs 'allowed 0.05'
        ! observation.images.wrist_image.std             'differs by 0.2204' vs 'allowed 0.05'
-         16 set aside -- ordering features follow the episode and task order; missing quantiles are the keys the v2.1 downgrade drops
+         17 set aside -- ordering features follow the episode and task order; missing quantiles are the keys the v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream
+           absolute_action                              '(absent)' vs 'present'
            episode_index.max                            'differs by 25' vs 'allowed 1e-06'
            episode_index.mean                           'differs by 12.47' vs 'allowed 1e-06'
            episode_index.q01                            'differs by 12.47' vs 'allowed 1e-06'
@@ -41,8 +41,7 @@ austin_buds_dataset_converted_externally_to_rlds
            index.max                                    'differs by 1.684e+04' vs 'allowed 1e-06'
            index.mean                                   'differs by 8527' vs 'allowed 1e-06'
            index.q01                                    'differs by 8527' vs 'allowed 1e-06'
-           index.q10                                    'differs by 8527' vs 'allowed 1e-06'
-           ... and 4 more
+           ... and 5 more
 
 2  episodes       [ -- ]  counted, never failed -- which episodes a rebuild has is decided elsewhere
      rebuilt          50 episodes     34,112 rows
@@ -58,10 +57,10 @@ austin_buds_dataset_converted_externally_to_rlds
      video observation.images.wrist_image     50 files,     279,863B each against 50 / 288,462B (0.97x)
      prompts          50 paired episodes checked; all agree
      [FAIL] meta/episodes.jsonl + meta/episodes_stats.jsonl
-       ! episodes_stats.jsonl.absolute_action           '(absent)' vs 'present'
        ! episodes_stats.jsonl.observation.images.image.std '50 of 50 pairs differ, worst 0.2937' vs 'the delivered copy records zero in every episode'
        ! episodes_stats.jsonl.observation.images.wrist_image.std '50 of 50 pairs differ, worst 0.2701' vs 'the delivered copy records zero in every episode'
-         16 set aside -- ordering features follow the episode and task order, which the episode question already reports; absent quantiles are the five keys the v3.0 to v2.1 downgrade drops
+         17 set aside -- ordering features follow the episode and task order, which the episode question already reports; absent quantiles are the five keys the v3.0 to v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream
+           episodes_stats.jsonl.absolute_action         '(absent)' vs 'present'
            episodes_stats.jsonl.episode_index.max       '50 of 50 pairs differ, worst 45' vs 'allowed 1e-06'
            episodes_stats.jsonl.episode_index.mean      '50 of 50 pairs differ, worst 45' vs 'allowed 1e-06'
            episodes_stats.jsonl.episode_index.min       '50 of 50 pairs differ, worst 45' vs 'allowed 1e-06'
@@ -73,8 +72,7 @@ austin_buds_dataset_converted_externally_to_rlds
            episodes_stats.jsonl.index.max               '50 of 50 pairs differ, worst 3.07e+04' vs 'allowed 1e-06'
            episodes_stats.jsonl.index.mean              '50 of 50 pairs differ, worst 3.07e+04' vs 'allowed 1e-06'
            episodes_stats.jsonl.index.min               '50 of 50 pairs differ, worst 3.07e+04' vs 'allowed 1e-06'
-           episodes_stats.jsonl.index.q01               '50 of 50 pairs differ, worst 3.07e+04' vs 'allowed 1e-06'
-           ... and 4 more
+           ... and 5 more
 
 4  distributions  [ ok ]  max difference per column, as a fraction of its range
      every episode        action 7.5e-16   observation.state 6.5e-15

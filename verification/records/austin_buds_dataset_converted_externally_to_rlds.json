@@ -1,6 +1,6 @@
 {
   "dataset": "austin_buds_dataset_converted_externally_to_rlds",
-  "measured_at": "2026-08-20T01:48:31+00:00",
+  "measured_at": "2026-08-20T02:57:20+00:00",
   "rebuilt": "/scratch/out/austin_buds_dataset_converted_externally_to_rlds",
   "delivered": "/scratch/delivered_tree/austin_buds_dataset_converted_externally_to_rlds",
   "settings": {
@@ -145,12 +145,8 @@
       "subject": "meta/stats.json",
       "agree": false,
       "absent": [],
-      "reason": "ordering features follow the episode and task order; missing quantiles are the keys the v2.1 downgrade drops",
+      "reason": "ordering features follow the episode and task order; missing quantiles are the keys the v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream",
       "differences": {
-        "absolute_action": [
-          "(absent)",
-          "present"
-        ],
         "observation.images.image.std": [
           "differs by 0.2885",
           "allowed 0.05"
@@ -161,6 +157,10 @@
         ]
       },
       "set_aside": {
+        "absolute_action": [
+          "(absent)",
+          "present"
+        ],
         "episode_index.max": [
           "differs by 25",
           "allowed 1e-06"
@@ -231,12 +231,8 @@
       "subject": "meta/episodes.jsonl + meta/episodes_stats.jsonl",
       "agree": false,
       "absent": [],
-      "reason": "ordering features follow the episode and task order, which the episode question already reports; absent quantiles are the five keys the v3.0 to v2.1 downgrade drops",
+      "reason": "ordering features follow the episode and task order, which the episode question already reports; absent quantiles are the five keys the v3.0 to v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream",
       "differences": {
-        "episodes_stats.jsonl.absolute_action": [
-          "(absent)",
-          "present"
-        ],
         "episodes_stats.jsonl.observation.images.image.std": [
           "50 of 50 pairs differ, worst 0.2937",
           "the delivered copy records zero in every episode"
@@ -247,6 +243,10 @@
         ]
       },
       "set_aside": {
+        "episodes_stats.jsonl.absolute_action": [
+          "(absent)",
+          "present"
+        ],
         "episodes_stats.jsonl.episode_index.max": [
           "50 of 50 pairs differ, worst 45",
           "allowed 1e-06"

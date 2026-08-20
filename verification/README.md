@@ -302,14 +302,17 @@ So a node that is going to compare passes `--keep`, or compares between `build` 
 
 ## What the records say so far
 
-| dataset | episodes | verdict | why |
-|---|--:|---|---|
-| `cmu_stretch` | 135/135 | FAIL | delivered image `std` is zero in every episode |
-| `austin_buds_…_rlds` | 50/50 | FAIL | same, both cameras; plus an undeclared `absolute_action` column |
+| dataset | episodes | resized | verdict | why |
+|---|--:|---|---|---|
+| `cmu_stretch` | 135/135 | no | FAIL | delivered image `std` is zero in every episode |
+| `austin_buds_…_rlds` | 50/50 | no | FAIL | same, both cameras |
+| `dlr_edan_…_rlds` | 104/104 | **2.0x down** | FAIL | **our video is 0.79x the delivered size** |
 
-Both reproduce their data exactly — every episode byte-identical on state and action,
-every sampled episode identical, distributions agreeing to 1e-15. Both fail on what the
-*delivered* copy contains.
+All three reproduce their data exactly — every episode byte-identical on state and
+action, every sampled episode identical on state and action, prompts all agreeing,
+distributions to 1e-15. The first two fail only on what the *delivered* copy contains.
+dlr_edan is the first failure that is **ours**, and the `resized` column is why: it is
+the first dataset in the funnel whose source has to be downscaled at all.
 
 ### The delivered image `std` is zero
 
@@ -319,6 +322,46 @@ like a property of how the collection was made rather than one bad run. It is re
 as a difference with its cause named, not tolerated: the rebuild computed the statistic
 and the delivered copy did not.
 
+### The resize loses detail, and dlr_edan is where it shows
+
+63 of dlr_edan's 64 sampled episodes fail on video size and nothing else: state and
+action identical, geometry, frame count, codec and keyframe interval all matching,
+pixels agreeing at 0.997 — and every file about 0.80x the delivered one. A ratio that
+steady across 63 episodes is a setting, not noise.
+
+It is the downscale. cmu_stretch and austin_buds are 128x128 at the source and are not
+resized; their video lands at 0.98x and 0.99x, which is the encoder build difference
+alone. dlr_edan is 360x640 down to 192x320, and `resize_frame` low-passes more than
+whatever rldx1 used: measured on episode 6, our frames carry **78% of the delivered
+high-frequency detail** — almost exactly the 0.79x size ratio, because a softer picture
+costs the encoder less.
+
+`resize_frame`'s docstring already measured this and chose swscale BICUBIC as the one
+that "stays inside tolerance everywhere". dlr_edan is the counterexample: ucsd at 2.5x
+down came out 0.86x and cleared the size tolerance; this does not.
+
+**Lanczos was never in that table.** Resizing the real source frames every available
+way and measuring the detail each keeps, with the delivered file as the target:
+
+| filter | detail kept, vs delivered |
+|---|--:|
+| swscale BILINEAR | 0.68x |
+| swscale AREA | 0.80x |
+| cv2 INTER_AREA | 0.84x |
+| swscale BICUBIC — *what ships* | 0.85x |
+| **swscale LANCZOS** | **0.93x** |
+| swscale SINC | 1.12x |
+| cv2 INTER_CUBIC | 1.19x |
+| cv2 INTER_LANCZOS4 | 1.22x |
+
+Two cautions before anyone changes the filter. This measures *detail*, not file size,
+and the two are related without being the same number. And it is one dataset at one
+scale factor — the original table's own point was that the offset moves with how gentle
+the downscale is, so Lanczos has to be re-measured on ucsd and taco_play, on the size
+metric, before it replaces bicubic. What is settled is narrower and still worth having:
+bicubic is not the best available on a 2x downscale, and the option that beats it was
+never tried.
+
 ### `absolute_action`, and why the rebuild has none
 
 austin_buds' delivered parquet carries an eighth column its own `meta/info.json` does
@@ -327,7 +370,8 @@ absolute pose, matching to the last digit on every column but the gripper — an
 `meta/stats.json` too. The RLDS source has no such field, so nothing in the source says
 to build it.
 
-Undeclared is the load-bearing word. A LeRobot loader builds its feature set from
+It is set aside with its reason printed rather than failed. Undeclared is the
+load-bearing word. A LeRobot loader builds its feature set from
 `info.json`, so a column absent from there is not read by anything downstream, which is
 also why this is a difference to decide about rather than a hole to fill. Of the three
 delivered copies examined it appears in one, so it is not a collection-wide convention
