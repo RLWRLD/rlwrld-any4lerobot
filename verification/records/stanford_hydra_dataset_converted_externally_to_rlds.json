@@ -1,0 +1,2858 @@
+{
+  "dataset": "stanford_hydra_dataset_converted_externally_to_rlds",
+  "measured_at": "2026-08-20T08:48:12+00:00",
+  "rebuilt": "/scratch/out/stanford_hydra_dataset_converted_externally_to_rlds",
+  "delivered": "/scratch/delivered_tree/stanford_hydra_dataset_converted_externally_to_rlds",
+  "settings": {
+    "sample_episodes": 64,
+    "row_tolerance": 2,
+    "video_checked": true,
+    "size_tolerance": 0.15,
+    "pixel_agreement": 0.98,
+    "pixel_frames": 6,
+    "distribution_tolerance": 1e-06,
+    "prefix_rows": 8,
+    "gop_probe_frames": 320,
+    "distribution_stats": [
+      "mean",
+      "std",
+      "min",
+      "max",
+      "q01",
+      "q50",
+      "q99"
+    ],
+    "count_fields": [
+      "total_episodes",
+      "total_frames",
+      "total_videos",
+      "total_chunks",
+      "splits"
+    ]
+  },
+  "verdict": {
+    "overall": false,
+    "declaration": false,
+    "sample": false,
+    "distributions": true,
+    "reasons": [
+      "meta/stats.json differs",
+      "per-episode metadata differs",
+      "sampled episodes differ"
+    ]
+  },
+  "declaration": {
+    "missing": [],
+    "differences": {},
+    "counts": {},
+    "one_sided": {
+      "features.observation.images.image.info.is_depth_map": [
+        false,
+        "(absent)"
+      ],
+      "features.observation.images.image.info.video.crf": [
+        30,
+        "(absent)"
+      ],
+      "features.observation.images.image.info.video.extra_options": [
+        {},
+        "(absent)"
+      ],
+      "features.observation.images.image.info.video.fast_decode": [
+        0,
+        "(absent)"
+      ],
+      "features.observation.images.image.info.video.g": [
+        2,
+        "(absent)"
+      ],
+      "features.observation.images.image.info.video.is_depth_map": [
+        "(absent)",
+        false
+      ],
+      "features.observation.images.image.info.video.preset": [
+        12,
+        "(absent)"
+      ],
+      "features.observation.images.image.info.video.video_backend": [
+        "pyav",
+        "(absent)"
+      ],
+      "features.observation.images.wrist_image.info.is_depth_map": [
+        false,
+        "(absent)"
+      ],
+      "features.observation.images.wrist_image.info.video.crf": [
+        30,
+        "(absent)"
+      ],
+      "features.observation.images.wrist_image.info.video.extra_options": [
+        {},
+        "(absent)"
+      ],
+      "features.observation.images.wrist_image.info.video.fast_decode": [
+        0,
+        "(absent)"
+      ],
+      "features.observation.images.wrist_image.info.video.g": [
+        2,
+        "(absent)"
+      ],
+      "features.observation.images.wrist_image.info.video.is_depth_map": [
+        "(absent)",
+        false
+      ],
+      "features.observation.images.wrist_image.info.video.preset": [
+        12,
+        "(absent)"
+      ],
+      "features.observation.images.wrist_image.info.video.video_backend": [
+        "pyav",
+        "(absent)"
+      ]
+    }
+  },
+  "meta": [
+    {
+      "subject": "meta/",
+      "agree": true,
+      "absent": [],
+      "reason": "excluded from the comparison by decision",
+      "differences": {},
+      "set_aside": {
+        "relative_stats.json": [
+          "not compared",
+          "not compared"
+        ]
+      }
+    },
+    {
+      "subject": "meta/tasks.jsonl",
+      "agree": true,
+      "absent": [],
+      "reason": "the index a task is given follows the order it was first seen, not the data",
+      "differences": {},
+      "set_aside": {
+        "task_index 1": [
+          "palce dishes in the dish rack",
+          "make a piece of toast with the oven"
+        ],
+        "task_index 2": [
+          "make a piece of toast with the oven",
+          "palce dishes in the dish rack"
+        ]
+      }
+    },
+    {
+      "subject": "meta/modality.json",
+      "agree": true,
+      "absent": [],
+      "reason": "",
+      "differences": {},
+      "set_aside": {}
+    },
+    {
+      "subject": "meta/stats.json",
+      "agree": false,
+      "absent": [],
+      "reason": "ordering features follow the episode and task order; missing quantiles are the keys the v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream",
+      "differences": {
+        "observation.images.image.std": [
+          "differs by 0.2797",
+          "allowed 0.05"
+        ],
+        "observation.images.wrist_image.std": [
+          "differs by 0.2066",
+          "allowed 0.05"
+        ]
+      },
+      "set_aside": {
+        "episode_index.max": [
+          "differs by 545",
+          "allowed 1e-06"
+        ],
+        "episode_index.mean": [
+          "differs by 273.6",
+          "allowed 1e-06"
+        ],
+        "episode_index.q01": [
+          "differs by 273.6",
+          "allowed 1e-06"
+        ],
+        "episode_index.q10": [
+          "differs by 273.6",
+          "allowed 1e-06"
+        ],
+        "episode_index.q50": [
+          "differs by 273.6",
+          "allowed 1e-06"
+        ],
+        "episode_index.q90": [
+          "differs by 273.6",
+          "allowed 1e-06"
+        ],
+        "episode_index.q99": [
+          "differs by 273.6",
+          "allowed 1e-06"
+        ],
+        "episode_index.std": [
+          "differs by 156.7",
+          "allowed 1e-06"
+        ],
+        "index.max": [
+          "differs by 3.41e+05",
+          "allowed 1e-06"
+        ],
+        "index.mean": [
+          "differs by 1.713e+05",
+          "allowed 1e-06"
+        ],
+        "index.q01": [
+          "differs by 1.713e+05",
+          "allowed 1e-06"
+        ],
+        "index.q10": [
+          "differs by 1.713e+05",
+          "allowed 1e-06"
+        ],
+        "index.q50": [
+          "differs by 1.713e+05",
+          "allowed 1e-06"
+        ],
+        "index.q90": [
+          "differs by 1.713e+05",
+          "allowed 1e-06"
+        ],
+        "index.q99": [
+          "differs by 1.713e+05",
+          "allowed 1e-06"
+        ],
+        "index.std": [
+          "differs by 9.886e+04",
+          "allowed 1e-06"
+        ],
+        "task_index.mean": [
+          "differs by 0.07483",
+          "allowed 1e-06"
+        ],
+        "task_index.q01": [
+          "differs by 0.07483",
+          "allowed 1e-06"
+        ],
+        "task_index.q10": [
+          "differs by 0.07483",
+          "allowed 1e-06"
+        ],
+        "task_index.q50": [
+          "differs by 0.07483",
+          "allowed 1e-06"
+        ],
+        "task_index.q90": [
+          "differs by 0.07483",
+          "allowed 1e-06"
+        ],
+        "task_index.q99": [
+          "differs by 0.07483",
+          "allowed 1e-06"
+        ],
+        "task_index.std": [
+          "differs by 0.07784",
+          "allowed 1e-06"
+        ]
+      }
+    },
+    {
+      "subject": "meta/episodes.jsonl + meta/episodes_stats.jsonl",
+      "agree": false,
+      "absent": [],
+      "reason": "ordering features follow the episode and task order, which the episode question already reports; absent quantiles are the five keys the v3.0 to v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream",
+      "differences": {
+        "episodes_stats.jsonl.observation.images.image.std": [
+          "570 of 570 pairs differ, worst 0.3298",
+          "the delivered copy records zero in every episode"
+        ],
+        "episodes_stats.jsonl.observation.images.wrist_image.std": [
+          "570 of 570 pairs differ, worst 0.3049",
+          "the delivered copy records zero in every episode"
+        ]
+      },
+      "set_aside": {
+        "episodes_stats.jsonl.episode_index.max": [
+          "569 of 570 pairs differ, worst 566",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.episode_index.mean": [
+          "569 of 570 pairs differ, worst 566",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.episode_index.min": [
+          "569 of 570 pairs differ, worst 566",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.episode_index.q01": [
+          "569 of 570 pairs differ, worst 566",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.episode_index.q10": [
+          "569 of 570 pairs differ, worst 566",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.episode_index.q50": [
+          "569 of 570 pairs differ, worst 566",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.episode_index.q90": [
+          "569 of 570 pairs differ, worst 566",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.episode_index.q99": [
+          "569 of 570 pairs differ, worst 566",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.index.max": [
+          "570 of 570 pairs differ, worst 3.557e+05",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.index.mean": [
+          "570 of 570 pairs differ, worst 3.557e+05",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.index.min": [
+          "570 of 570 pairs differ, worst 3.557e+05",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.index.q01": [
+          "570 of 570 pairs differ, worst 3.557e+05",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.index.q10": [
+          "570 of 570 pairs differ, worst 3.557e+05",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.index.q50": [
+          "570 of 570 pairs differ, worst 3.557e+05",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.index.q90": [
+          "570 of 570 pairs differ, worst 3.557e+05",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.index.q99": [
+          "570 of 570 pairs differ, worst 3.557e+05",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.task_index.max": [
+          "315 of 570 pairs differ, worst 2",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.task_index.mean": [
+          "315 of 570 pairs differ, worst 2",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.task_index.min": [
+          "315 of 570 pairs differ, worst 2",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.task_index.q01": [
+          "315 of 570 pairs differ, worst 2",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.task_index.q10": [
+          "315 of 570 pairs differ, worst 2",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.task_index.q50": [
+          "315 of 570 pairs differ, worst 2",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.task_index.q90": [
+          "315 of 570 pairs differ, worst 2",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.task_index.q99": [
+          "315 of 570 pairs differ, worst 2",
+          "allowed 1e-06"
+        ]
+      }
+    }
+  ],
+  "episodes": {
+    "rebuilt_total": 570,
+    "delivered_total": 570,
+    "rebuilt_rows": 358234,
+    "delivered_rows": 358234,
+    "exact": 570,
+    "prefix_only": 0,
+    "same_length_but_differing": [],
+    "reordered": 569,
+    "worst_row_delta": 0,
+    "pairs": {
+      "0": 324,
+      "1": 419,
+      "2": 537,
+      "3": 395,
+      "4": 244,
+      "5": 128,
+      "6": 40,
+      "7": 469,
+      "8": 357,
+      "9": 467,
+      "10": 271,
+      "11": 509,
+      "12": 63,
+      "13": 169,
+      "14": 96,
+      "15": 178,
+      "16": 50,
+      "17": 288,
+      "18": 126,
+      "19": 54,
+      "20": 450,
+      "21": 228,
+      "22": 287,
+      "23": 377,
+      "24": 439,
+      "25": 100,
+      "26": 142,
+      "27": 137,
+      "28": 22,
+      "29": 250,
+      "30": 424,
+      "31": 214,
+      "32": 204,
+      "33": 45,
+      "34": 138,
+      "35": 176,
+      "36": 161,
+      "37": 565,
+      "38": 500,
+      "39": 13,
+      "40": 53,
+      "41": 316,
+      "42": 465,
+      "43": 472,
+      "44": 441,
+      "45": 229,
+      "46": 551,
+      "47": 43,
+      "48": 150,
+      "49": 210,
+      "50": 42,
+      "51": 413,
+      "52": 340,
+      "53": 378,
+      "54": 283,
+      "55": 20,
+      "56": 385,
+      "57": 556,
+      "58": 160,
+      "59": 111,
+      "60": 404,
+      "61": 423,
+      "62": 188,
+      "63": 507,
+      "64": 27,
+      "65": 166,
+      "66": 374,
+      "67": 108,
+      "68": 498,
+      "69": 292,
+      "70": 495,
+      "71": 259,
+      "72": 455,
+      "73": 217,
+      "74": 224,
+      "75": 502,
+      "76": 213,
+      "77": 112,
+      "78": 232,
+      "79": 120,
+      "80": 563,
+      "81": 32,
+      "82": 318,
+      "83": 470,
+      "84": 252,
+      "85": 519,
+      "86": 297,
+      "87": 202,
+      "88": 223,
+      "89": 497,
+      "90": 30,
+      "91": 107,
+      "92": 529,
+      "93": 501,
+      "94": 140,
+      "95": 302,
+      "96": 445,
+      "97": 356,
+      "98": 347,
+      "99": 362,
+      "100": 434,
+      "101": 258,
+      "102": 275,
+      "103": 320,
+      "104": 65,
+      "105": 68,
+      "106": 339,
+      "107": 313,
+      "108": 440,
+      "109": 412,
+      "110": 124,
+      "111": 447,
+      "112": 454,
+      "113": 363,
+      "114": 123,
+      "115": 477,
+      "116": 390,
+      "117": 400,
+      "118": 468,
+      "119": 341,
+      "120": 253,
+      "121": 294,
+      "122": 41,
+      "123": 266,
+      "124": 72,
+      "125": 523,
+      "126": 508,
+      "127": 262,
+      "128": 227,
+      "129": 348,
+      "130": 478,
+      "131": 90,
+      "132": 436,
+      "133": 387,
+      "134": 196,
+      "135": 18,
+      "136": 389,
+      "137": 174,
+      "138": 235,
+      "139": 485,
+      "140": 562,
+      "141": 104,
+      "142": 264,
+      "143": 21,
+      "144": 471,
+      "145": 95,
+      "146": 97,
+      "147": 44,
+      "148": 546,
+      "149": 514,
+      "150": 23,
+      "151": 382,
+      "152": 88,
+      "153": 236,
+      "154": 167,
+      "155": 417,
+      "156": 298,
+      "157": 350,
+      "158": 197,
+      "159": 503,
+      "160": 208,
+      "161": 379,
+      "162": 255,
+      "163": 73,
+      "164": 268,
+      "165": 279,
+      "166": 336,
+      "167": 249,
+      "168": 184,
+      "169": 364,
+      "170": 199,
+      "171": 295,
+      "172": 113,
+      "173": 221,
+      "174": 422,
+      "175": 70,
+      "176": 121,
+      "177": 117,
+      "178": 399,
+      "179": 19,
+      "180": 397,
+      "181": 193,
+      "182": 261,
+      "183": 110,
+      "184": 420,
+      "185": 98,
+      "186": 480,
+      "187": 105,
+      "188": 69,
+      "189": 547,
+      "190": 545,
+      "191": 59,
+      "192": 177,
+      "193": 448,
+      "194": 269,
+      "195": 296,
+      "196": 410,
+      "197": 285,
+      "198": 147,
+      "199": 499,
+      "200": 25,
+      "201": 49,
+      "202": 299,
+      "203": 418,
+      "204": 57,
+      "205": 118,
+      "206": 87,
+      "207": 544,
+      "208": 230,
+      "209": 77,
+      "210": 122,
+      "211": 444,
+      "212": 231,
+      "213": 192,
+      "214": 462,
+      "215": 83,
+      "216": 66,
+      "217": 289,
+      "218": 429,
+      "219": 408,
+      "220": 515,
+      "221": 211,
+      "222": 518,
+      "223": 334,
+      "224": 511,
+      "225": 552,
+      "226": 274,
+      "227": 163,
+      "228": 314,
+      "229": 34,
+      "230": 5,
+      "231": 207,
+      "232": 82,
+      "233": 136,
+      "234": 370,
+      "235": 143,
+      "236": 103,
+      "237": 38,
+      "238": 456,
+      "239": 154,
+      "240": 47,
+      "241": 277,
+      "242": 421,
+      "243": 11,
+      "244": 542,
+      "245": 215,
+      "246": 365,
+      "247": 10,
+      "248": 300,
+      "249": 534,
+      "250": 240,
+      "251": 538,
+      "252": 354,
+      "253": 26,
+      "254": 159,
+      "255": 109,
+      "256": 148,
+      "257": 359,
+      "258": 278,
+      "259": 531,
+      "260": 172,
+      "261": 28,
+      "262": 106,
+      "263": 330,
+      "264": 479,
+      "265": 135,
+      "266": 3,
+      "267": 257,
+      "268": 475,
+      "269": 319,
+      "270": 494,
+      "271": 225,
+      "272": 376,
+      "273": 522,
+      "274": 489,
+      "275": 335,
+      "276": 373,
+      "277": 198,
+      "278": 247,
+      "279": 173,
+      "280": 525,
+      "281": 327,
+      "282": 29,
+      "283": 487,
+      "284": 337,
+      "285": 342,
+      "286": 151,
+      "287": 353,
+      "288": 398,
+      "289": 24,
+      "290": 31,
+      "291": 459,
+      "292": 488,
+      "293": 55,
+      "294": 46,
+      "295": 391,
+      "296": 267,
+      "297": 248,
+      "298": 372,
+      "299": 233,
+      "300": 56,
+      "301": 209,
+      "302": 157,
+      "303": 430,
+      "304": 375,
+      "305": 134,
+      "306": 145,
+      "307": 6,
+      "308": 451,
+      "309": 492,
+      "310": 464,
+      "311": 51,
+      "312": 200,
+      "313": 369,
+      "314": 309,
+      "315": 428,
+      "316": 39,
+      "317": 367,
+      "318": 543,
+      "319": 482,
+      "320": 433,
+      "321": 559,
+      "322": 541,
+      "323": 383,
+      "324": 473,
+      "325": 305,
+      "326": 76,
+      "327": 457,
+      "328": 195,
+      "329": 301,
+      "330": 290,
+      "331": 401,
+      "332": 425,
+      "333": 94,
+      "334": 80,
+      "335": 206,
+      "336": 326,
+      "337": 517,
+      "338": 307,
+      "339": 291,
+      "340": 449,
+      "341": 474,
+      "342": 560,
+      "343": 310,
+      "344": 304,
+      "345": 265,
+      "346": 442,
+      "347": 273,
+      "348": 317,
+      "349": 403,
+      "350": 182,
+      "351": 557,
+      "352": 286,
+      "353": 476,
+      "354": 9,
+      "355": 431,
+      "356": 216,
+      "357": 84,
+      "358": 181,
+      "359": 521,
+      "360": 458,
+      "361": 190,
+      "362": 414,
+      "363": 322,
+      "364": 81,
+      "365": 141,
+      "366": 506,
+      "367": 438,
+      "368": 536,
+      "369": 234,
+      "370": 114,
+      "371": 512,
+      "372": 220,
+      "373": 550,
+      "374": 280,
+      "375": 481,
+      "376": 453,
+      "377": 526,
+      "378": 179,
+      "379": 33,
+      "380": 78,
+      "381": 381,
+      "382": 416,
+      "383": 568,
+      "384": 490,
+      "385": 366,
+      "386": 2,
+      "387": 102,
+      "388": 93,
+      "389": 491,
+      "390": 260,
+      "391": 345,
+      "392": 89,
+      "393": 153,
+      "394": 393,
+      "395": 533,
+      "396": 191,
+      "397": 549,
+      "398": 152,
+      "399": 392,
+      "400": 483,
+      "401": 312,
+      "402": 343,
+      "403": 332,
+      "404": 361,
+      "405": 466,
+      "406": 355,
+      "407": 331,
+      "408": 530,
+      "409": 528,
+      "410": 99,
+      "411": 333,
+      "412": 180,
+      "413": 75,
+      "414": 527,
+      "415": 524,
+      "416": 79,
+      "417": 64,
+      "418": 325,
+      "419": 127,
+      "420": 132,
+      "421": 189,
+      "422": 558,
+      "423": 463,
+      "424": 165,
+      "425": 158,
+      "426": 443,
+      "427": 62,
+      "428": 237,
+      "429": 303,
+      "430": 60,
+      "431": 446,
+      "432": 101,
+      "433": 17,
+      "434": 535,
+      "435": 384,
+      "436": 245,
+      "437": 566,
+      "438": 144,
+      "439": 168,
+      "440": 505,
+      "441": 164,
+      "442": 194,
+      "443": 388,
+      "444": 7,
+      "445": 242,
+      "446": 15,
+      "447": 149,
+      "448": 554,
+      "449": 539,
+      "450": 486,
+      "451": 321,
+      "452": 116,
+      "453": 119,
+      "454": 282,
+      "455": 328,
+      "456": 146,
+      "457": 564,
+      "458": 281,
+      "459": 493,
+      "460": 238,
+      "461": 183,
+      "462": 254,
+      "463": 52,
+      "464": 349,
+      "465": 504,
+      "466": 306,
+      "467": 358,
+      "468": 186,
+      "469": 276,
+      "470": 540,
+      "471": 131,
+      "472": 115,
+      "473": 86,
+      "474": 315,
+      "475": 243,
+      "476": 352,
+      "477": 346,
+      "478": 61,
+      "479": 351,
+      "480": 394,
+      "481": 344,
+      "482": 58,
+      "483": 402,
+      "484": 256,
+      "485": 8,
+      "486": 437,
+      "487": 74,
+      "488": 156,
+      "489": 272,
+      "490": 185,
+      "491": 175,
+      "492": 561,
+      "493": 284,
+      "494": 239,
+      "495": 36,
+      "496": 130,
+      "497": 4,
+      "498": 406,
+      "499": 0,
+      "500": 323,
+      "501": 510,
+      "502": 129,
+      "503": 338,
+      "504": 48,
+      "505": 553,
+      "506": 386,
+      "507": 405,
+      "508": 170,
+      "509": 205,
+      "510": 409,
+      "511": 12,
+      "512": 212,
+      "513": 516,
+      "514": 125,
+      "515": 222,
+      "516": 218,
+      "517": 435,
+      "518": 569,
+      "519": 432,
+      "520": 368,
+      "521": 460,
+      "522": 171,
+      "523": 85,
+      "524": 139,
+      "525": 461,
+      "526": 567,
+      "527": 35,
+      "528": 263,
+      "529": 91,
+      "530": 67,
+      "531": 371,
+      "532": 203,
+      "533": 513,
+      "534": 532,
+      "535": 427,
+      "536": 452,
+      "537": 308,
+      "538": 16,
+      "539": 92,
+      "540": 484,
+      "541": 411,
+      "542": 14,
+      "543": 246,
+      "544": 426,
+      "545": 329,
+      "546": 1,
+      "547": 496,
+      "548": 71,
+      "549": 37,
+      "550": 293,
+      "551": 380,
+      "552": 187,
+      "553": 396,
+      "554": 251,
+      "555": 407,
+      "556": 226,
+      "557": 311,
+      "558": 133,
+      "559": 201,
+      "560": 241,
+      "561": 555,
+      "562": 270,
+      "563": 360,
+      "564": 155,
+      "565": 219,
+      "566": 520,
+      "567": 548,
+      "568": 162,
+      "569": 415
+    },
+    "row_deltas": {},
+    "rebuilt_only": [],
+    "delivered_only": []
+  },
+  "sample": {
+    "chosen": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      538,
+      539,
+      540,
+      541,
+      542,
+      543,
+      544,
+      545,
+      546,
+      547,
+      548,
+      549,
+      550,
+      551,
+      552,
+      553,
+      554,
+      555,
+      556,
+      557,
+      558,
+      559,
+      560,
+      561,
+      562,
+      563,
+      564,
+      565,
+      566,
+      567,
+      568,
+      569
+    ],
+    "reports": [
+      {
+        "index": 0,
+        "delivered_index": 324,
+        "rows_rebuilt": 549,
+        "rows_delivered": 549,
+        "compared_rows": 549,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (549, 8)",
+          "action": "identical (549, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 549f av1/GOP2 2145968B vs 1839070B (1.17x) px 0.998 SIZE",
+          "observation.images.wrist_image": "256x192 549f av1/GOP2 1026358B vs 920519B (1.11x) px 0.993 ok"
+        },
+        "problems": [
+          "video observation.images.image: 2145968 bytes against delivered 1839070 (1.17x) -- beyond what a different ffmpeg build explains"
+        ]
+      },
+      {
+        "index": 1,
+        "delivered_index": 419,
+        "rows_rebuilt": 507,
+        "rows_delivered": 507,
+        "compared_rows": 507,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (507, 8)",
+          "action": "identical (507, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 507f av1/GOP2 2001128B vs 1725495B (1.16x) px 0.998 SIZE",
+          "observation.images.wrist_image": "256x192 507f av1/GOP2 1016410B vs 917782B (1.11x) px 0.994 ok"
+        },
+        "problems": [
+          "video observation.images.image: 2001128 bytes against delivered 1725495 (1.16x) -- beyond what a different ffmpeg build explains"
+        ]
+      },
+      {
+        "index": 2,
+        "delivered_index": 537,
+        "rows_rebuilt": 514,
+        "rows_delivered": 514,
+        "compared_rows": 514,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (514, 8)",
+          "action": "identical (514, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 514f av1/GOP2 2922891B vs 2536132B (1.15x) px 0.996 SIZE",
+          "observation.images.wrist_image": "256x192 514f av1/GOP2 1535859B vs 1377717B (1.11x) px 0.972 PIXELS"
+        },
+        "problems": [
+          "video observation.images.image: 2922891 bytes against delivered 2536132 (1.15x) -- beyond what a different ffmpeg build explains",
+          "video observation.images.wrist_image: frames agree 0.972 against delivered, below 0.98 -- the same size encoded from a different picture"
+        ]
+      },
+      {
+        "index": 3,
+        "delivered_index": 395,
+        "rows_rebuilt": 485,
+        "rows_delivered": 485,
+        "compared_rows": 485,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (485, 8)",
+          "action": "identical (485, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 485f av1/GOP2 2754151B vs 2397917B (1.15x) px 0.996 ok",
+          "observation.images.wrist_image": "256x192 485f av1/GOP2 1395485B vs 1240355B (1.13x) px 0.984 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 4,
+        "delivered_index": 244,
+        "rows_rebuilt": 517,
+        "rows_delivered": 517,
+        "compared_rows": 517,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (517, 8)",
+          "action": "identical (517, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 517f av1/GOP2 2940038B vs 2547226B (1.15x) px 0.996 SIZE",
+          "observation.images.wrist_image": "256x192 517f av1/GOP2 1485678B vs 1335949B (1.11x) px 0.988 ok"
+        },
+        "problems": [
+          "video observation.images.image: 2940038 bytes against delivered 2547226 (1.15x) -- beyond what a different ffmpeg build explains"
+        ]
+      },
+      {
+        "index": 5,
+        "delivered_index": 128,
+        "rows_rebuilt": 526,
+        "rows_delivered": 526,
+        "compared_rows": 526,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (526, 8)",
+          "action": "identical (526, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 526f av1/GOP2 2982696B vs 2584765B (1.15x) px 0.996 SIZE",
+          "observation.images.wrist_image": "256x192 526f av1/GOP2 1486731B vs 1322228B (1.12x) px 0.986 ok"
+        },
+        "problems": [
+          "video observation.images.image: 2982696 bytes against delivered 2584765 (1.15x) -- beyond what a different ffmpeg build explains"
+        ]
+      },
+      {
+        "index": 6,
+        "delivered_index": 40,
+        "rows_rebuilt": 833,
+        "rows_delivered": 833,
+        "compared_rows": 833,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (833, 8)",
+          "action": "identical (833, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 833f av1/GOP2 3188757B vs 2778736B (1.15x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 833f av1/GOP2 2140452B vs 1876126B (1.14x) px 0.993 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 7,
+        "delivered_index": 469,
+        "rows_rebuilt": 751,
+        "rows_delivered": 751,
+        "compared_rows": 751,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (751, 8)",
+          "action": "identical (751, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 751f av1/GOP2 3346530B vs 2923271B (1.14x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 751f av1/GOP2 1879618B vs 1684119B (1.12x) px 0.993 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 8,
+        "delivered_index": 357,
+        "rows_rebuilt": 571,
+        "rows_delivered": 571,
+        "compared_rows": 571,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (571, 8)",
+          "action": "identical (571, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 571f av1/GOP2 2343222B vs 2031696B (1.15x) px 0.998 SIZE",
+          "observation.images.wrist_image": "256x192 571f av1/GOP2 1300083B vs 1159994B (1.12x) px 0.995 ok"
+        },
+        "problems": [
+          "video observation.images.image: 2343222 bytes against delivered 2031696 (1.15x) -- beyond what a different ffmpeg build explains"
+        ]
+      },
+      {
+        "index": 9,
+        "delivered_index": 467,
+        "rows_rebuilt": 511,
+        "rows_delivered": 511,
+        "compared_rows": 511,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (511, 8)",
+          "action": "identical (511, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 511f av1/GOP2 1992936B vs 1745477B (1.14x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 511f av1/GOP2 1458020B vs 1296305B (1.12x) px 0.996 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 10,
+        "delivered_index": 271,
+        "rows_rebuilt": 569,
+        "rows_delivered": 569,
+        "compared_rows": 569,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (569, 8)",
+          "action": "identical (569, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 569f av1/GOP2 2511661B vs 2184955B (1.15x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 569f av1/GOP2 1445323B vs 1298723B (1.11x) px 0.991 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 11,
+        "delivered_index": 509,
+        "rows_rebuilt": 705,
+        "rows_delivered": 705,
+        "compared_rows": 705,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (705, 8)",
+          "action": "identical (705, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 705f av1/GOP2 2956974B vs 2619098B (1.13x) px 0.997 ok",
+          "observation.images.wrist_image": "256x192 705f av1/GOP2 1871320B vs 1681767B (1.11x) px 0.987 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 12,
+        "delivered_index": 63,
+        "rows_rebuilt": 629,
+        "rows_delivered": 629,
+        "compared_rows": 629,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (629, 8)",
+          "action": "identical (629, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 629f av1/GOP2 2617544B vs 2322851B (1.13x) px 0.997 ok",
+          "observation.images.wrist_image": "256x192 629f av1/GOP2 1718182B vs 1543134B (1.11x) px 0.988 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 13,
+        "delivered_index": 169,
+        "rows_rebuilt": 924,
+        "rows_delivered": 924,
+        "compared_rows": 924,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (924, 8)",
+          "action": "identical (924, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 924f av1/GOP2 3756025B vs 3338225B (1.13x) px 0.997 ok",
+          "observation.images.wrist_image": "256x192 924f av1/GOP2 2568635B vs 2302123B (1.12x) px 0.992 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 14,
+        "delivered_index": 96,
+        "rows_rebuilt": 682,
+        "rows_delivered": 682,
+        "compared_rows": 682,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (682, 8)",
+          "action": "identical (682, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 682f av1/GOP2 2747266B vs 2375596B (1.16x) px 0.998 SIZE",
+          "observation.images.wrist_image": "256x192 682f av1/GOP2 1519928B vs 1348963B (1.13x) px 0.994 ok"
+        },
+        "problems": [
+          "video observation.images.image: 2747266 bytes against delivered 2375596 (1.16x) -- beyond what a different ffmpeg build explains"
+        ]
+      },
+      {
+        "index": 15,
+        "delivered_index": 178,
+        "rows_rebuilt": 488,
+        "rows_delivered": 488,
+        "compared_rows": 488,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (488, 8)",
+          "action": "identical (488, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 488f av1/GOP2 2726335B vs 2376942B (1.15x) px 0.996 ok",
+          "observation.images.wrist_image": "256x192 488f av1/GOP2 1432975B vs 1280343B (1.12x) px 0.973 PIXELS"
+        },
+        "problems": [
+          "video observation.images.wrist_image: frames agree 0.973 against delivered, below 0.98 -- the same size encoded from a different picture"
+        ]
+      },
+      {
+        "index": 16,
+        "delivered_index": 50,
+        "rows_rebuilt": 486,
+        "rows_delivered": 486,
+        "compared_rows": 486,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (486, 8)",
+          "action": "identical (486, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 486f av1/GOP2 2734444B vs 2376447B (1.15x) px 0.996 SIZE",
+          "observation.images.wrist_image": "256x192 486f av1/GOP2 1377792B vs 1235043B (1.12x) px 0.973 PIXELS"
+        },
+        "problems": [
+          "video observation.images.image: 2734444 bytes against delivered 2376447 (1.15x) -- beyond what a different ffmpeg build explains",
+          "video observation.images.wrist_image: frames agree 0.973 against delivered, below 0.98 -- the same size encoded from a different picture"
+        ]
+      },
+      {
+        "index": 17,
+        "delivered_index": 288,
+        "rows_rebuilt": 1170,
+        "rows_delivered": 1170,
+        "compared_rows": 1170,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (1170, 8)",
+          "action": "identical (1170, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 1170f av1/GOP2 4783556B vs 4254179B (1.12x) px 0.997 ok",
+          "observation.images.wrist_image": "256x192 1170f av1/GOP2 2832144B vs 2575228B (1.10x) px 0.989 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 18,
+        "delivered_index": 126,
+        "rows_rebuilt": 825,
+        "rows_delivered": 825,
+        "compared_rows": 825,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (825, 8)",
+          "action": "identical (825, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 825f av1/GOP2 3654242B vs 3203436B (1.14x) px 0.997 ok",
+          "observation.images.wrist_image": "256x192 825f av1/GOP2 2242337B vs 2020038B (1.11x) px 0.993 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 19,
+        "delivered_index": 54,
+        "rows_rebuilt": 530,
+        "rows_delivered": 530,
+        "compared_rows": 530,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (530, 8)",
+          "action": "identical (530, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 530f av1/GOP2 2982709B vs 2591830B (1.15x) px 0.996 SIZE",
+          "observation.images.wrist_image": "256x192 530f av1/GOP2 1673964B vs 1480985B (1.13x) px 0.972 PIXELS"
+        },
+        "problems": [
+          "video observation.images.image: 2982709 bytes against delivered 2591830 (1.15x) -- beyond what a different ffmpeg build explains",
+          "video observation.images.wrist_image: frames agree 0.972 against delivered, below 0.98 -- the same size encoded from a different picture"
+        ]
+      },
+      {
+        "index": 20,
+        "delivered_index": 450,
+        "rows_rebuilt": 1190,
+        "rows_delivered": 1190,
+        "compared_rows": 1190,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (1190, 8)",
+          "action": "identical (1190, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 1190f av1/GOP2 4772331B vs 4257564B (1.12x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 1190f av1/GOP2 3578266B vs 3192730B (1.12x) px 0.990 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 21,
+        "delivered_index": 228,
+        "rows_rebuilt": 589,
+        "rows_delivered": 589,
+        "compared_rows": 589,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (589, 8)",
+          "action": "identical (589, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 589f av1/GOP2 2278138B vs 1984602B (1.15x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 589f av1/GOP2 1520306B vs 1365394B (1.11x) px 0.996 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 22,
+        "delivered_index": 287,
+        "rows_rebuilt": 565,
+        "rows_delivered": 565,
+        "compared_rows": 565,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (565, 8)",
+          "action": "identical (565, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 565f av1/GOP2 2192880B vs 1886858B (1.16x) px 0.998 SIZE",
+          "observation.images.wrist_image": "256x192 565f av1/GOP2 1201410B vs 1076558B (1.12x) px 0.995 ok"
+        },
+        "problems": [
+          "video observation.images.image: 2192880 bytes against delivered 1886858 (1.16x) -- beyond what a different ffmpeg build explains"
+        ]
+      },
+      {
+        "index": 23,
+        "delivered_index": 377,
+        "rows_rebuilt": 769,
+        "rows_delivered": 769,
+        "compared_rows": 769,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (769, 8)",
+          "action": "identical (769, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 769f av1/GOP2 3491230B vs 3056123B (1.14x) px 0.997 ok",
+          "observation.images.wrist_image": "256x192 769f av1/GOP2 2039253B vs 1848802B (1.10x) px 0.993 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 24,
+        "delivered_index": 439,
+        "rows_rebuilt": 527,
+        "rows_delivered": 527,
+        "compared_rows": 527,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (527, 8)",
+          "action": "identical (527, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 527f av1/GOP2 2995663B vs 2598374B (1.15x) px 0.996 SIZE",
+          "observation.images.wrist_image": "256x192 527f av1/GOP2 1510553B vs 1347595B (1.12x) px 0.977 PIXELS"
+        },
+        "problems": [
+          "video observation.images.image: 2995663 bytes against delivered 2598374 (1.15x) -- beyond what a different ffmpeg build explains",
+          "video observation.images.wrist_image: frames agree 0.977 against delivered, below 0.98 -- the same size encoded from a different picture"
+        ]
+      },
+      {
+        "index": 25,
+        "delivered_index": 100,
+        "rows_rebuilt": 927,
+        "rows_delivered": 927,
+        "compared_rows": 927,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (927, 8)",
+          "action": "identical (927, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 927f av1/GOP2 3812235B vs 3390439B (1.12x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 927f av1/GOP2 2121302B vs 1917929B (1.11x) px 0.989 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 26,
+        "delivered_index": 142,
+        "rows_rebuilt": 498,
+        "rows_delivered": 498,
+        "compared_rows": 498,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (498, 8)",
+          "action": "identical (498, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 498f av1/GOP2 1925292B vs 1673621B (1.15x) px 0.998 SIZE",
+          "observation.images.wrist_image": "256x192 498f av1/GOP2 1530706B vs 1352079B (1.13x) px 0.995 ok"
+        },
+        "problems": [
+          "video observation.images.image: 1925292 bytes against delivered 1673621 (1.15x) -- beyond what a different ffmpeg build explains"
+        ]
+      },
+      {
+        "index": 27,
+        "delivered_index": 137,
+        "rows_rebuilt": 622,
+        "rows_delivered": 622,
+        "compared_rows": 622,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (622, 8)",
+          "action": "identical (622, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 622f av1/GOP2 2566188B vs 2280356B (1.13x) px 0.997 ok",
+          "observation.images.wrist_image": "256x192 622f av1/GOP2 1833973B vs 1638296B (1.12x) px 0.991 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 28,
+        "delivered_index": 22,
+        "rows_rebuilt": 810,
+        "rows_delivered": 810,
+        "compared_rows": 810,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (810, 8)",
+          "action": "identical (810, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 810f av1/GOP2 3313650B vs 2851711B (1.16x) px 0.998 SIZE",
+          "observation.images.wrist_image": "256x192 810f av1/GOP2 1693323B vs 1514947B (1.12x) px 0.992 ok"
+        },
+        "problems": [
+          "video observation.images.image: 3313650 bytes against delivered 2851711 (1.16x) -- beyond what a different ffmpeg build explains"
+        ]
+      },
+      {
+        "index": 29,
+        "delivered_index": 250,
+        "rows_rebuilt": 612,
+        "rows_delivered": 612,
+        "compared_rows": 612,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (612, 8)",
+          "action": "identical (612, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 612f av1/GOP2 2465394B vs 2142392B (1.15x) px 0.998 SIZE",
+          "observation.images.wrist_image": "256x192 612f av1/GOP2 1456766B vs 1282704B (1.14x) px 0.989 ok"
+        },
+        "problems": [
+          "video observation.images.image: 2465394 bytes against delivered 2142392 (1.15x) -- beyond what a different ffmpeg build explains"
+        ]
+      },
+      {
+        "index": 30,
+        "delivered_index": 424,
+        "rows_rebuilt": 693,
+        "rows_delivered": 693,
+        "compared_rows": 693,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (693, 8)",
+          "action": "identical (693, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 693f av1/GOP2 3247191B vs 2855142B (1.14x) px 0.997 ok",
+          "observation.images.wrist_image": "256x192 693f av1/GOP2 1630505B vs 1505052B (1.08x) px 0.991 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 31,
+        "delivered_index": 214,
+        "rows_rebuilt": 654,
+        "rows_delivered": 654,
+        "compared_rows": 654,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (654, 8)",
+          "action": "identical (654, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 654f av1/GOP2 2925513B vs 2546705B (1.15x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 654f av1/GOP2 1714631B vs 1541610B (1.11x) px 0.990 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 538,
+        "delivered_index": 16,
+        "rows_rebuilt": 620,
+        "rows_delivered": 620,
+        "compared_rows": 620,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (620, 8)",
+          "action": "identical (620, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 620f av1/GOP2 2484107B vs 2161058B (1.15x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 620f av1/GOP2 1348870B vs 1186741B (1.14x) px 0.995 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 539,
+        "delivered_index": 92,
+        "rows_rebuilt": 509,
+        "rows_delivered": 509,
+        "compared_rows": 509,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (509, 8)",
+          "action": "identical (509, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 509f av1/GOP2 1991085B vs 1743988B (1.14x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 509f av1/GOP2 1388097B vs 1228141B (1.13x) px 0.996 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 540,
+        "delivered_index": 484,
+        "rows_rebuilt": 429,
+        "rows_delivered": 429,
+        "compared_rows": 429,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (429, 8)",
+          "action": "identical (429, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 429f av1/GOP2 1697268B vs 1459134B (1.16x) px 0.998 SIZE",
+          "observation.images.wrist_image": "256x192 429f av1/GOP2 896161B vs 803512B (1.12x) px 0.991 ok"
+        },
+        "problems": [
+          "video observation.images.image: 1697268 bytes against delivered 1459134 (1.16x) -- beyond what a different ffmpeg build explains"
+        ]
+      },
+      {
+        "index": 541,
+        "delivered_index": 411,
+        "rows_rebuilt": 694,
+        "rows_delivered": 694,
+        "compared_rows": 694,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (694, 8)",
+          "action": "identical (694, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 694f av1/GOP2 2707132B vs 2359851B (1.15x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 694f av1/GOP2 2086191B vs 1829664B (1.14x) px 0.995 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 542,
+        "delivered_index": 14,
+        "rows_rebuilt": 527,
+        "rows_delivered": 527,
+        "compared_rows": 527,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (527, 8)",
+          "action": "identical (527, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 527f av1/GOP2 2000319B vs 1729834B (1.16x) px 0.998 SIZE",
+          "observation.images.wrist_image": "256x192 527f av1/GOP2 1076610B vs 968780B (1.11x) px 0.991 ok"
+        },
+        "problems": [
+          "video observation.images.image: 2000319 bytes against delivered 1729834 (1.16x) -- beyond what a different ffmpeg build explains"
+        ]
+      },
+      {
+        "index": 543,
+        "delivered_index": 246,
+        "rows_rebuilt": 579,
+        "rows_delivered": 579,
+        "compared_rows": 579,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (579, 8)",
+          "action": "identical (579, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 579f av1/GOP2 2252653B vs 1962661B (1.15x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 579f av1/GOP2 1651218B vs 1462606B (1.13x) px 0.996 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 544,
+        "delivered_index": 426,
+        "rows_rebuilt": 747,
+        "rows_delivered": 747,
+        "compared_rows": 747,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (747, 8)",
+          "action": "identical (747, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 747f av1/GOP2 3037327B vs 2645188B (1.15x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 747f av1/GOP2 1760439B vs 1574515B (1.12x) px 0.995 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 545,
+        "delivered_index": 329,
+        "rows_rebuilt": 534,
+        "rows_delivered": 534,
+        "compared_rows": 534,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (534, 8)",
+          "action": "identical (534, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 534f av1/GOP2 2058571B vs 1785159B (1.15x) px 0.998 SIZE",
+          "observation.images.wrist_image": "256x192 534f av1/GOP2 1383404B vs 1229088B (1.13x) px 0.995 ok"
+        },
+        "problems": [
+          "video observation.images.image: 2058571 bytes against delivered 1785159 (1.15x) -- beyond what a different ffmpeg build explains"
+        ]
+      },
+      {
+        "index": 546,
+        "delivered_index": 1,
+        "rows_rebuilt": 540,
+        "rows_delivered": 540,
+        "compared_rows": 540,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (540, 8)",
+          "action": "identical (540, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 540f av1/GOP2 2093901B vs 1839134B (1.14x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 540f av1/GOP2 1630162B vs 1445242B (1.13x) px 0.995 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 547,
+        "delivered_index": 496,
+        "rows_rebuilt": 524,
+        "rows_delivered": 524,
+        "compared_rows": 524,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (524, 8)",
+          "action": "identical (524, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 524f av1/GOP2 2020739B vs 1769195B (1.14x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 524f av1/GOP2 1584787B vs 1398529B (1.13x) px 0.996 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 548,
+        "delivered_index": 71,
+        "rows_rebuilt": 753,
+        "rows_delivered": 753,
+        "compared_rows": 753,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (753, 8)",
+          "action": "identical (753, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 753f av1/GOP2 3170089B vs 2810082B (1.13x) px 0.997 ok",
+          "observation.images.wrist_image": "256x192 753f av1/GOP2 2034831B vs 1820516B (1.12x) px 0.989 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 549,
+        "delivered_index": 37,
+        "rows_rebuilt": 1169,
+        "rows_delivered": 1169,
+        "compared_rows": 1169,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (1169, 8)",
+          "action": "identical (1169, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 1169f av1/GOP2 5189982B vs 4551805B (1.14x) px 0.997 ok",
+          "observation.images.wrist_image": "256x192 1169f av1/GOP2 2820191B vs 2557345B (1.10x) px 0.994 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 550,
+        "delivered_index": 293,
+        "rows_rebuilt": 573,
+        "rows_delivered": 573,
+        "compared_rows": 573,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (573, 8)",
+          "action": "identical (573, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 573f av1/GOP2 2508830B vs 2193780B (1.14x) px 0.997 ok",
+          "observation.images.wrist_image": "256x192 573f av1/GOP2 1524220B vs 1371454B (1.11x) px 0.993 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 551,
+        "delivered_index": 380,
+        "rows_rebuilt": 614,
+        "rows_delivered": 614,
+        "compared_rows": 614,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (614, 8)",
+          "action": "identical (614, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 614f av1/GOP2 2556917B vs 2269990B (1.13x) px 0.997 ok",
+          "observation.images.wrist_image": "256x192 614f av1/GOP2 1695196B vs 1519374B (1.12x) px 0.990 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 552,
+        "delivered_index": 187,
+        "rows_rebuilt": 669,
+        "rows_delivered": 669,
+        "compared_rows": 669,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (669, 8)",
+          "action": "identical (669, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 669f av1/GOP2 2991037B vs 2610113B (1.15x) px 0.997 ok",
+          "observation.images.wrist_image": "256x192 669f av1/GOP2 1812428B vs 1641758B (1.10x) px 0.993 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 553,
+        "delivered_index": 396,
+        "rows_rebuilt": 597,
+        "rows_delivered": 597,
+        "compared_rows": 597,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (597, 8)",
+          "action": "identical (597, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 597f av1/GOP2 2301225B vs 2021957B (1.14x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 597f av1/GOP2 1581574B vs 1405903B (1.12x) px 0.996 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 554,
+        "delivered_index": 251,
+        "rows_rebuilt": 509,
+        "rows_delivered": 509,
+        "compared_rows": 509,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (509, 8)",
+          "action": "identical (509, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 509f av1/GOP2 2021610B vs 1737995B (1.16x) px 0.998 SIZE",
+          "observation.images.wrist_image": "256x192 509f av1/GOP2 1162153B vs 1026710B (1.13x) px 0.995 ok"
+        },
+        "problems": [
+          "video observation.images.image: 2021610 bytes against delivered 1737995 (1.16x) -- beyond what a different ffmpeg build explains"
+        ]
+      },
+      {
+        "index": 555,
+        "delivered_index": 407,
+        "rows_rebuilt": 686,
+        "rows_delivered": 686,
+        "compared_rows": 686,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (686, 8)",
+          "action": "identical (686, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 686f av1/GOP2 3063578B vs 2688183B (1.14x) px 0.997 ok",
+          "observation.images.wrist_image": "256x192 686f av1/GOP2 1938248B vs 1740138B (1.11x) px 0.992 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 556,
+        "delivered_index": 226,
+        "rows_rebuilt": 624,
+        "rows_delivered": 624,
+        "compared_rows": 624,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (624, 8)",
+          "action": "identical (624, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 624f av1/GOP2 2751605B vs 2397710B (1.15x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 624f av1/GOP2 1637634B vs 1468795B (1.11x) px 0.990 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 557,
+        "delivered_index": 311,
+        "rows_rebuilt": 486,
+        "rows_delivered": 486,
+        "compared_rows": 486,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (486, 8)",
+          "action": "identical (486, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 486f av1/GOP2 1910049B vs 1664175B (1.15x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 486f av1/GOP2 1357499B vs 1203680B (1.13x) px 0.992 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 558,
+        "delivered_index": 133,
+        "rows_rebuilt": 508,
+        "rows_delivered": 508,
+        "compared_rows": 508,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (508, 8)",
+          "action": "identical (508, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 508f av1/GOP2 2848675B vs 2477903B (1.15x) px 0.996 ok",
+          "observation.images.wrist_image": "256x192 508f av1/GOP2 1437113B vs 1286506B (1.12x) px 0.963 PIXELS"
+        },
+        "problems": [
+          "video observation.images.wrist_image: frames agree 0.963 against delivered, below 0.98 -- the same size encoded from a different picture"
+        ]
+      },
+      {
+        "index": 559,
+        "delivered_index": 201,
+        "rows_rebuilt": 486,
+        "rows_delivered": 486,
+        "compared_rows": 486,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (486, 8)",
+          "action": "identical (486, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 486f av1/GOP2 2770191B vs 2407140B (1.15x) px 0.996 SIZE",
+          "observation.images.wrist_image": "256x192 486f av1/GOP2 1375599B vs 1227684B (1.12x) px 0.987 ok"
+        },
+        "problems": [
+          "video observation.images.image: 2770191 bytes against delivered 2407140 (1.15x) -- beyond what a different ffmpeg build explains"
+        ]
+      },
+      {
+        "index": 560,
+        "delivered_index": 241,
+        "rows_rebuilt": 656,
+        "rows_delivered": 656,
+        "compared_rows": 656,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (656, 8)",
+          "action": "identical (656, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 656f av1/GOP2 2648491B vs 2283450B (1.16x) px 0.998 SIZE",
+          "observation.images.wrist_image": "256x192 656f av1/GOP2 1602677B vs 1421159B (1.13x) px 0.996 ok"
+        },
+        "problems": [
+          "video observation.images.image: 2648491 bytes against delivered 2283450 (1.16x) -- beyond what a different ffmpeg build explains"
+        ]
+      },
+      {
+        "index": 561,
+        "delivered_index": 555,
+        "rows_rebuilt": 751,
+        "rows_delivered": 751,
+        "compared_rows": 751,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (751, 8)",
+          "action": "identical (751, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 751f av1/GOP2 3111048B vs 2761912B (1.13x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 751f av1/GOP2 1900916B vs 1710274B (1.11x) px 0.988 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 562,
+        "delivered_index": 270,
+        "rows_rebuilt": 475,
+        "rows_delivered": 475,
+        "compared_rows": 475,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (475, 8)",
+          "action": "identical (475, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 475f av1/GOP2 1837085B vs 1606644B (1.14x) px 0.998 ok",
+          "observation.images.wrist_image": "256x192 475f av1/GOP2 1288425B vs 1149645B (1.12x) px 0.996 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 563,
+        "delivered_index": 360,
+        "rows_rebuilt": 537,
+        "rows_delivered": 537,
+        "compared_rows": 537,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (537, 8)",
+          "action": "identical (537, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 537f av1/GOP2 3048222B vs 2640013B (1.15x) px 0.996 SIZE",
+          "observation.images.wrist_image": "256x192 537f av1/GOP2 1539678B vs 1370405B (1.12x) px 0.988 ok"
+        },
+        "problems": [
+          "video observation.images.image: 3048222 bytes against delivered 2640013 (1.15x) -- beyond what a different ffmpeg build explains"
+        ]
+      },
+      {
+        "index": 564,
+        "delivered_index": 155,
+        "rows_rebuilt": 745,
+        "rows_delivered": 745,
+        "compared_rows": 745,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (745, 8)",
+          "action": "identical (745, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 745f av1/GOP2 3354798B vs 2930012B (1.14x) px 0.997 ok",
+          "observation.images.wrist_image": "256x192 745f av1/GOP2 1815532B vs 1648334B (1.10x) px 0.979 PIXELS"
+        },
+        "problems": [
+          "video observation.images.wrist_image: frames agree 0.979 against delivered, below 0.98 -- the same size encoded from a different picture"
+        ]
+      },
+      {
+        "index": 565,
+        "delivered_index": 219,
+        "rows_rebuilt": 485,
+        "rows_delivered": 485,
+        "compared_rows": 485,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (485, 8)",
+          "action": "identical (485, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 485f av1/GOP2 2769225B vs 2395261B (1.16x) px 0.996 SIZE",
+          "observation.images.wrist_image": "256x192 485f av1/GOP2 1381369B vs 1234149B (1.12x) px 0.966 PIXELS"
+        },
+        "problems": [
+          "video observation.images.image: 2769225 bytes against delivered 2395261 (1.16x) -- beyond what a different ffmpeg build explains",
+          "video observation.images.wrist_image: frames agree 0.966 against delivered, below 0.98 -- the same size encoded from a different picture"
+        ]
+      },
+      {
+        "index": 566,
+        "delivered_index": 520,
+        "rows_rebuilt": 515,
+        "rows_delivered": 515,
+        "compared_rows": 515,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (515, 8)",
+          "action": "identical (515, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 515f av1/GOP2 2906641B vs 2518828B (1.15x) px 0.996 SIZE",
+          "observation.images.wrist_image": "256x192 515f av1/GOP2 1540677B vs 1373384B (1.12x) px 0.970 PIXELS"
+        },
+        "problems": [
+          "video observation.images.image: 2906641 bytes against delivered 2518828 (1.15x) -- beyond what a different ffmpeg build explains",
+          "video observation.images.wrist_image: frames agree 0.970 against delivered, below 0.98 -- the same size encoded from a different picture"
+        ]
+      },
+      {
+        "index": 567,
+        "delivered_index": 548,
+        "rows_rebuilt": 668,
+        "rows_delivered": 668,
+        "compared_rows": 668,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (668, 8)",
+          "action": "identical (668, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 668f av1/GOP2 2972921B vs 2599413B (1.14x) px 0.997 ok",
+          "observation.images.wrist_image": "256x192 668f av1/GOP2 1887526B vs 1683016B (1.12x) px 0.978 PIXELS"
+        },
+        "problems": [
+          "video observation.images.wrist_image: frames agree 0.978 against delivered, below 0.98 -- the same size encoded from a different picture"
+        ]
+      },
+      {
+        "index": 568,
+        "delivered_index": 162,
+        "rows_rebuilt": 511,
+        "rows_delivered": 511,
+        "compared_rows": 511,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (511, 8)",
+          "action": "identical (511, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 511f av1/GOP2 2880627B vs 2500917B (1.15x) px 0.996 SIZE",
+          "observation.images.wrist_image": "256x192 511f av1/GOP2 1472612B vs 1312961B (1.12x) px 0.981 ok"
+        },
+        "problems": [
+          "video observation.images.image: 2880627 bytes against delivered 2500917 (1.15x) -- beyond what a different ffmpeg build explains"
+        ]
+      },
+      {
+        "index": 569,
+        "delivered_index": 415,
+        "rows_rebuilt": 718,
+        "rows_delivered": 718,
+        "compared_rows": 718,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (718, 8)",
+          "action": "identical (718, 7)"
+        },
+        "video": {
+          "observation.images.image": "256x192 718f av1/GOP2 3069449B vs 2699866B (1.14x) px 0.997 ok",
+          "observation.images.wrist_image": "256x192 718f av1/GOP2 1381540B vs 1297533B (1.06x) px 0.999 ok"
+        },
+        "problems": []
+      }
+    ]
+  },
+  "video": {
+    "rebuilt": {
+      "observation.images.image": {
+        "files": 570,
+        "bytes": 1553555037
+      },
+      "observation.images.wrist_image": {
+        "files": 570,
+        "bytes": 915814629
+      }
+    },
+    "delivered": {
+      "observation.images.image": {
+        "files": 570,
+        "bytes": 1357337378
+      },
+      "observation.images.wrist_image": {
+        "files": 570,
+        "bytes": 820070682
+      }
+    },
+    "problems": []
+  },
+  "prompts": {
+    "pairs_checked": 570,
+    "mismatched": {},
+    "rebuilt_only": {},
+    "delivered_only": {}
+  },
+  "distributions": {
+    "gap_overall": {
+      "action": 1.96509475359e-14,
+      "observation.state": 4.34111851435e-14
+    },
+    "gap_shared": {
+      "action": 1.96509475359e-14,
+      "observation.state": 4.34111851435e-14
+    },
+    "detail": {
+      "overall": {
+        "rebuilt": {
+          "observation.state": {
+            "rows": 358234,
+            "mean": [
+              0.424057704339,
+              -0.0139130263997,
+              0.376709946467,
+              -1.20085417636,
+              -0.0477696885985,
+              -0.359177865165,
+              0.0,
+              0.0490497231782
+            ],
+            "std": [
+              0.104679396095,
+              0.12742564432,
+              0.111643094545,
+              2.45999037504,
+              0.388692068736,
+              1.21136400924,
+              0.0,
+              0.031795478204
+            ],
+            "min": [
+              0.16438177228,
+              -0.341940075159,
+              0.0855940431356,
+              -3.14159059525,
+              -1.56077754498,
+              -3.14143848419,
+              0.0,
+              -0.000539123313501
+            ],
+            "max": [
+              0.779434382915,
+              0.358785420656,
+              0.638763964176,
+              3.14159178734,
+              1.50842559338,
+              3.14154624939,
+              0.0,
+              0.0811397060752
+            ],
+            "q01": [
+              0.20681494385,
+              -0.273981341124,
+              0.13177164942,
+              -3.1320993948,
+              -0.749593662024,
+              -3.02680127144,
+              0.0,
+              1.3133333141e-06
+            ],
+            "q50": [
+              0.418291598558,
+              -0.000459700313513,
+              0.391656428576,
+              -2.60516929626,
+              -0.0944734662771,
+              -0.104043204337,
+              0.0,
+              0.0490030944347
+            ],
+            "q99": [
+              0.699712120891,
+              0.224096658379,
+              0.590507249832,
+              3.13366723061,
+              0.767983116508,
+              2.79921736717,
+              0.0,
+              0.0810064002872
+            ]
+          },
+          "action": {
+            "rows": 358234,
+            "mean": [
+              0.000779001514811,
+              0.000137079189415,
+              -0.000254861144028,
+              0.0012903351993,
+              -0.00475175555353,
+              0.00269289233464,
+              0.488552175394
+            ],
+            "std": [
+              0.00802301630472,
+              0.00913223105384,
+              0.00957515190408,
+              0.0412261996987,
+              0.0384325592755,
+              0.0460741097423,
+              0.499868930132
+            ],
+            "min": [
+              -0.0249990448356,
+              -0.0249997004867,
+              -0.0249992981553,
+              -0.249932259321,
+              -0.249966606498,
+              -0.249993249774,
+              0.0
+            ],
+            "max": [
+              0.0249985456467,
+              0.0249990336597,
+              0.0249999221414,
+              0.249744579196,
+              0.249970301986,
+              0.249999463558,
+              1.0
+            ],
+            "q01": [
+              -0.0199920064583,
+              -0.0241541273519,
+              -0.0229417580552,
+              -0.110855305791,
+              -0.120245720372,
+              -0.133147702068,
+              0.0
+            ],
+            "q50": [
+              0.000211752238101,
+              0.000105492319562,
+              -0.000405874976423,
+              0.0,
+              -0.00462093902752,
+              0.0,
+              0.0
+            ],
+            "q99": [
+              0.0228862310573,
+              0.0223588389345,
+              0.0241008967534,
+              0.123701144904,
+              0.113233116344,
+              0.184747496396,
+              1.0
+            ]
+          }
+        },
+        "delivered": {
+          "observation.state": {
+            "rows": 358234,
+            "mean": [
+              0.424057704339,
+              -0.0139130263997,
+              0.376709946467,
+              -1.20085417636,
+              -0.0477696885985,
+              -0.359177865165,
+              0.0,
+              0.0490497231782
+            ],
+            "std": [
+              0.104679396095,
+              0.12742564432,
+              0.111643094545,
+              2.45999037504,
+              0.388692068736,
+              1.21136400924,
+              0.0,
+              0.031795478204
+            ],
+            "min": [
+              0.16438177228,
+              -0.341940075159,
+              0.0855940431356,
+              -3.14159059525,
+              -1.56077754498,
+              -3.14143848419,
+              0.0,
+              -0.000539123313501
+            ],
+            "max": [
+              0.779434382915,
+              0.358785420656,
+              0.638763964176,
+              3.14159178734,
+              1.50842559338,
+              3.14154624939,
+              0.0,
+              0.0811397060752
+            ],
+            "q01": [
+              0.20681494385,
+              -0.273981341124,
+              0.13177164942,
+              -3.1320993948,
+              -0.749593662024,
+              -3.02680127144,
+              0.0,
+              1.3133333141e-06
+            ],
+            "q50": [
+              0.418291598558,
+              -0.000459700313513,
+              0.391656428576,
+              -2.60516929626,
+              -0.0944734662771,
+              -0.104043204337,
+              0.0,
+              0.0490030944347
+            ],
+            "q99": [
+              0.699712120891,
+              0.224096658379,
+              0.590507249832,
+              3.13366723061,
+              0.767983116508,
+              2.79921736717,
+              0.0,
+              0.0810064002872
+            ]
+          },
+          "action": {
+            "rows": 358234,
+            "mean": [
+              0.000779001514811,
+              0.000137079189415,
+              -0.000254861144028,
+              0.0012903351993,
+              -0.00475175555353,
+              0.00269289233464,
+              0.488552175394
+            ],
+            "std": [
+              0.00802301630472,
+              0.00913223105384,
+              0.00957515190408,
+              0.0412261996987,
+              0.0384325592755,
+              0.0460741097423,
+              0.499868930132
+            ],
+            "min": [
+              -0.0249990448356,
+              -0.0249997004867,
+              -0.0249992981553,
+              -0.249932259321,
+              -0.249966606498,
+              -0.249993249774,
+              0.0
+            ],
+            "max": [
+              0.0249985456467,
+              0.0249990336597,
+              0.0249999221414,
+              0.249744579196,
+              0.249970301986,
+              0.249999463558,
+              1.0
+            ],
+            "q01": [
+              -0.0199920064583,
+              -0.0241541273519,
+              -0.0229417580552,
+              -0.110855305791,
+              -0.120245720372,
+              -0.133147702068,
+              0.0
+            ],
+            "q50": [
+              0.000211752238101,
+              0.000105492319562,
+              -0.000405874976423,
+              0.0,
+              -0.00462093902752,
+              0.0,
+              0.0
+            ],
+            "q99": [
+              0.0228862310573,
+              0.0223588389345,
+              0.0241008967534,
+              0.123701144904,
+              0.113233116344,
+              0.184747496396,
+              1.0
+            ]
+          }
+        }
+      },
+      "shared": {
+        "rebuilt": {
+          "observation.state": {
+            "rows": 358234,
+            "mean": [
+              0.424057704339,
+              -0.0139130263997,
+              0.376709946467,
+              -1.20085417636,
+              -0.0477696885985,
+              -0.359177865165,
+              0.0,
+              0.0490497231782
+            ],
+            "std": [
+              0.104679396095,
+              0.12742564432,
+              0.111643094545,
+              2.45999037504,
+              0.388692068736,
+              1.21136400924,
+              0.0,
+              0.031795478204
+            ],
+            "min": [
+              0.16438177228,
+              -0.341940075159,
+              0.0855940431356,
+              -3.14159059525,
+              -1.56077754498,
+              -3.14143848419,
+              0.0,
+              -0.000539123313501
+            ],
+            "max": [
+              0.779434382915,
+              0.358785420656,
+              0.638763964176,
+              3.14159178734,
+              1.50842559338,
+              3.14154624939,
+              0.0,
+              0.0811397060752
+            ],
+            "q01": [
+              0.20681494385,
+              -0.273981341124,
+              0.13177164942,
+              -3.1320993948,
+              -0.749593662024,
+              -3.02680127144,
+              0.0,
+              1.3133333141e-06
+            ],
+            "q50": [
+              0.418291598558,
+              -0.000459700313513,
+              0.391656428576,
+              -2.60516929626,
+              -0.0944734662771,
+              -0.104043204337,
+              0.0,
+              0.0490030944347
+            ],
+            "q99": [
+              0.699712120891,
+              0.224096658379,
+              0.590507249832,
+              3.13366723061,
+              0.767983116508,
+              2.79921736717,
+              0.0,
+              0.0810064002872
+            ]
+          },
+          "action": {
+            "rows": 358234,
+            "mean": [
+              0.000779001514811,
+              0.000137079189415,
+              -0.000254861144028,
+              0.0012903351993,
+              -0.00475175555353,
+              0.00269289233464,
+              0.488552175394
+            ],
+            "std": [
+              0.00802301630472,
+              0.00913223105384,
+              0.00957515190408,
+              0.0412261996987,
+              0.0384325592755,
+              0.0460741097423,
+              0.499868930132
+            ],
+            "min": [
+              -0.0249990448356,
+              -0.0249997004867,
+              -0.0249992981553,
+              -0.249932259321,
+              -0.249966606498,
+              -0.249993249774,
+              0.0
+            ],
+            "max": [
+              0.0249985456467,
+              0.0249990336597,
+              0.0249999221414,
+              0.249744579196,
+              0.249970301986,
+              0.249999463558,
+              1.0
+            ],
+            "q01": [
+              -0.0199920064583,
+              -0.0241541273519,
+              -0.0229417580552,
+              -0.110855305791,
+              -0.120245720372,
+              -0.133147702068,
+              0.0
+            ],
+            "q50": [
+              0.000211752238101,
+              0.000105492319562,
+              -0.000405874976423,
+              0.0,
+              -0.00462093902752,
+              0.0,
+              0.0
+            ],
+            "q99": [
+              0.0228862310573,
+              0.0223588389345,
+              0.0241008967534,
+              0.123701144904,
+              0.113233116344,
+              0.184747496396,
+              1.0
+            ]
+          }
+        },
+        "delivered": {
+          "observation.state": {
+            "rows": 358234,
+            "mean": [
+              0.424057704339,
+              -0.0139130263997,
+              0.376709946467,
+              -1.20085417636,
+              -0.0477696885985,
+              -0.359177865165,
+              0.0,
+              0.0490497231782
+            ],
+            "std": [
+              0.104679396095,
+              0.12742564432,
+              0.111643094545,
+              2.45999037504,
+              0.388692068736,
+              1.21136400924,
+              0.0,
+              0.031795478204
+            ],
+            "min": [
+              0.16438177228,
+              -0.341940075159,
+              0.0855940431356,
+              -3.14159059525,
+              -1.56077754498,
+              -3.14143848419,
+              0.0,
+              -0.000539123313501
+            ],
+            "max": [
+              0.779434382915,
+              0.358785420656,
+              0.638763964176,
+              3.14159178734,
+              1.50842559338,
+              3.14154624939,
+              0.0,
+              0.0811397060752
+            ],
+            "q01": [
+              0.20681494385,
+              -0.273981341124,
+              0.13177164942,
+              -3.1320993948,
+              -0.749593662024,
+              -3.02680127144,
+              0.0,
+              1.3133333141e-06
+            ],
+            "q50": [
+              0.418291598558,
+              -0.000459700313513,
+              0.391656428576,
+              -2.60516929626,
+              -0.0944734662771,
+              -0.104043204337,
+              0.0,
+              0.0490030944347
+            ],
+            "q99": [
+              0.699712120891,
+              0.224096658379,
+              0.590507249832,
+              3.13366723061,
+              0.767983116508,
+              2.79921736717,
+              0.0,
+              0.0810064002872
+            ]
+          },
+          "action": {
+            "rows": 358234,
+            "mean": [
+              0.000779001514811,
+              0.000137079189415,
+              -0.000254861144028,
+              0.0012903351993,
+              -0.00475175555353,
+              0.00269289233464,
+              0.488552175394
+            ],
+            "std": [
+              0.00802301630472,
+              0.00913223105384,
+              0.00957515190408,
+              0.0412261996987,
+              0.0384325592755,
+              0.0460741097423,
+              0.499868930132
+            ],
+            "min": [
+              -0.0249990448356,
+              -0.0249997004867,
+              -0.0249992981553,
+              -0.249932259321,
+              -0.249966606498,
+              -0.249993249774,
+              0.0
+            ],
+            "max": [
+              0.0249985456467,
+              0.0249990336597,
+              0.0249999221414,
+              0.249744579196,
+              0.249970301986,
+              0.249999463558,
+              1.0
+            ],
+            "q01": [
+              -0.0199920064583,
+              -0.0241541273519,
+              -0.0229417580552,
+              -0.110855305791,
+              -0.120245720372,
+              -0.133147702068,
+              0.0
+            ],
+            "q50": [
+              0.000211752238101,
+              0.000105492319562,
+              -0.000405874976423,
+              0.0,
+              -0.00462093902752,
+              0.0,
+              0.0
+            ],
+            "q99": [
+              0.0228862310573,
+              0.0223588389345,
+              0.0241008967534,
+              0.123701144904,
+              0.113233116344,
+              0.184747496396,
+              1.0
+            ]
+          }
+        }
+      }
+    }
+  }
+}

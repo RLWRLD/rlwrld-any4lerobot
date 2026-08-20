@@ -1,6 +1,6 @@
 {
   "dataset": "austin_sirius_dataset_converted_externally_to_rlds",
-  "measured_at": "2026-08-20T05:54:32+00:00",
+  "measured_at": "2026-08-20T08:11:45+00:00",
   "rebuilt": "/scratch/out/austin_sirius_dataset_converted_externally_to_rlds",
   "delivered": "/scratch/delivered_tree/austin_sirius_dataset_converted_externally_to_rlds",
   "settings": {
@@ -2205,7 +2205,7 @@
       },
       "observation.images.wrist_image": {
         "files": 559,
-        "bytes": 141026814
+        "bytes": 141027064
       }
     },
     "delivered": {

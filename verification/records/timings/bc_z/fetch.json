@@ -1,0 +1,16 @@
+{
+  "bytes": 56278416013,
+  "created": [
+    "/scratch/raw/bc_z"
+  ],
+  "dataset": "bc_z",
+  "dest_uri": null,
+  "error": null,
+  "finished": "2026-08-20T08:41:16+00:00",
+  "profile": null,
+  "source_uri": "s3://rlwrld-foundry-data/external/bc_z/",
+  "spec_sha": null,
+  "started": "2026-08-20T08:39:04+00:00",
+  "status": "ok",
+  "step": "fetch"
+}

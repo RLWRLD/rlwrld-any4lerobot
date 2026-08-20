@@ -1,0 +1,16 @@
+{
+  "bytes": 9504076099,
+  "created": [
+    "/scratch/raw/berkeley_fanuc_manipulation"
+  ],
+  "dataset": "berkeley_fanuc_manipulation",
+  "dest_uri": null,
+  "error": null,
+  "finished": "2026-08-20T08:13:41+00:00",
+  "profile": null,
+  "source_uri": "s3://rlwrld-foundry-data/external/berkeley_fanuc_manipulation/",
+  "spec_sha": null,
+  "started": "2026-08-20T08:13:14+00:00",
+  "status": "ok",
+  "step": "fetch"
+}

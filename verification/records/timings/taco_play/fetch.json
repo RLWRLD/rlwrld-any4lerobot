@@ -1,0 +1,16 @@
+{
+  "bytes": 51289004384,
+  "created": [
+    "/scratch/raw/taco_play"
+  ],
+  "dataset": "taco_play",
+  "dest_uri": null,
+  "error": null,
+  "finished": "2026-08-20T08:30:01+00:00",
+  "profile": null,
+  "source_uri": "s3://rlwrld-foundry-data/external/taco_play/",
+  "spec_sha": null,
+  "started": "2026-08-20T08:27:58+00:00",
+  "status": "ok",
+  "step": "fetch"
+}

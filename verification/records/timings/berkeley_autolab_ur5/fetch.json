@@ -1,0 +1,16 @@
+{
+  "bytes": 82022972521,
+  "created": [
+    "/scratch/raw/berkeley_autolab_ur5"
+  ],
+  "dataset": "berkeley_autolab_ur5",
+  "dest_uri": null,
+  "error": null,
+  "finished": "2026-08-20T08:49:15+00:00",
+  "profile": null,
+  "source_uri": "s3://rlwrld-foundry-data/external/berkeley_autolab_ur5/",
+  "spec_sha": null,
+  "started": "2026-08-20T08:46:10+00:00",
+  "status": "ok",
+  "step": "fetch"
+}

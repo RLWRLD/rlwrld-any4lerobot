@@ -1,0 +1,14 @@
+{
+  "bytes": 489895909,
+  "created": [],
+  "dataset": "viola",
+  "dest_uri": "s3://rlwrld-foundry-data/lerobot/rldx1/viola/",
+  "error": null,
+  "finished": "2026-08-20T08:27:45+00:00",
+  "profile": null,
+  "source_uri": null,
+  "spec_sha": null,
+  "started": "2026-08-20T08:27:41+00:00",
+  "status": "ok",
+  "step": "publish"
+}

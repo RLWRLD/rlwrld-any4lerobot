@@ -1,0 +1,75 @@
+roboturk
+
+1  declaration    [FAIL]  everything under meta/ that needs no pairing
+     [ ok ] meta/info.json
+     every field both copies declare is the same on both sides
+     one-sided    8 field(s); only one copy declares them, so there is nothing to compare, and they are not judged here
+                  features.observation.images.front_rgb.info.is_depth_map False vs '(absent)'
+                  features.observation.images.front_rgb.info.video.crf 30 vs '(absent)'
+                  features.observation.images.front_rgb.info.video.extra_options {} vs '(absent)'
+                  features.observation.images.front_rgb.info.video.fast_decode 0 vs '(absent)'
+                  features.observation.images.front_rgb.info.video.g 2 vs '(absent)'
+                  features.observation.images.front_rgb.info.video.is_depth_map '(absent)' vs False
+                  features.observation.images.front_rgb.info.video.preset 12 vs '(absent)'
+                  features.observation.images.front_rgb.info.video.video_backend 'pyav' vs '(absent)'
+     [ ok ] meta/
+         1 set aside -- excluded from the comparison by decision
+           relative_stats.json                          'not compared' vs 'not compared'
+     [ ok ] meta/tasks.jsonl
+         3 set aside -- the index a task is given follows the order it was first seen, not the data
+           task_index 0                                 'layout laundry' vs 'create tower'
+           task_index 1                                 'object search' vs 'layout laundry'
+           task_index 2                                 'create tower' vs 'object search'
+     [ ok ] meta/modality.json
+     [FAIL] meta/stats.json
+       ! observation.images.front_rgb.std               'differs by 0.2551' vs 'allowed 0.05'
+         23 set aside -- ordering features follow the episode and task order; missing quantiles are the keys the v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream
+           episode_index.max                            'differs by 1771' vs 'allowed 1e-06'
+           episode_index.mean                           'differs by 882.8' vs 'allowed 1e-06'
+           episode_index.q01                            'differs by 882.8' vs 'allowed 1e-06'
+           episode_index.q10                            'differs by 882.8' vs 'allowed 1e-06'
+           episode_index.q50                            'differs by 882.8' vs 'allowed 1e-06'
+           episode_index.q90                            'differs by 882.8' vs 'allowed 1e-06'
+           episode_index.q99                            'differs by 882.8' vs 'allowed 1e-06'
+           episode_index.std                            'differs by 512.2' vs 'allowed 1e-06'
+           index.max                                    'differs by 1.655e+05' vs 'allowed 1e-06'
+           index.mean                                   'differs by 8.303e+04' vs 'allowed 1e-06'
+           index.q01                                    'differs by 8.303e+04' vs 'allowed 1e-06'
+           index.q10                                    'differs by 8.303e+04' vs 'allowed 1e-06'
+           ... and 11 more
+
+2  episodes       [ -- ]  counted, never failed -- which episodes a rebuild has is decided elsewhere
+     rebuilt        1796 episodes    168,423 rows
+     delivered      1796 episodes    168,423 rows
+     reproduced     1796  (1796 identical, 0 agreeing on their first 8 rows only)
+     unmatched         0 of the delivered episodes have no counterpart; 0 of the rebuild's do not either
+     reordered      1796 of 1796 paired episodes carry a different index
+
+3  sample         [FAIL]  the episodes that are there, compared in full
+     compared         64 of 1796 paired episodes, half from each end of the index range
+     identical        64
+     video observation.images.front_rgb   1796 files,     378,507B each against 1796 / 375,721B (1.01x)
+     prompts        1796 paired episodes checked; all agree
+     [FAIL] meta/episodes.jsonl + meta/episodes_stats.jsonl
+       ! episodes_stats.jsonl.observation.images.front_rgb.q99 '1 of 1796 pairs differ, worst 0.05495' vs 'allowed 0.05'
+       ! episodes_stats.jsonl.observation.images.front_rgb.std '1796 of 1796 pairs differ, worst 0.3671' vs 'the delivered copy records zero in every episode'
+         24 set aside -- ordering features follow the episode and task order, which the episode question already reports; absent quantiles are the five keys the v3.0 to v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream
+           episodes_stats.jsonl.episode_index.max       '1796 of 1796 pairs differ, worst 1791' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.mean      '1796 of 1796 pairs differ, worst 1791' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.min       '1796 of 1796 pairs differ, worst 1791' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q01       '1796 of 1796 pairs differ, worst 1791' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q10       '1796 of 1796 pairs differ, worst 1791' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q50       '1796 of 1796 pairs differ, worst 1791' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q90       '1796 of 1796 pairs differ, worst 1791' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q99       '1796 of 1796 pairs differ, worst 1791' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.max               '1796 of 1796 pairs differ, worst 1.678e+05' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.mean              '1796 of 1796 pairs differ, worst 1.678e+05' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.min               '1796 of 1796 pairs differ, worst 1.678e+05' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.q01               '1796 of 1796 pairs differ, worst 1.678e+05' vs 'allowed 1e-06'
+           ... and 12 more
+
+4  distributions  [ ok ]  max difference per column, as a fraction of its range
+     every episode        action 9.8e-15   observation.state 0.0e+00
+     the shared ones      action 9.8e-15   observation.state 0.0e+00
+
+verdict          [FAIL]  meta/stats.json differs; per-episode metadata differs

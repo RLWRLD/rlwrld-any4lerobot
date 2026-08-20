@@ -1,0 +1,16 @@
+{
+  "bytes": 201718049,
+  "created": [
+    "/scratch/out/iamlab_cmu_pickup_insert_converted_externally_to_rlds"
+  ],
+  "dataset": "iamlab_cmu_pickup_insert_converted_externally_to_rlds",
+  "dest_uri": null,
+  "error": null,
+  "finished": "2026-08-20T08:45:26+00:00",
+  "profile": "rldx1",
+  "source_uri": null,
+  "spec_sha": "d8b07f37d3102dcd",
+  "started": "2026-08-20T08:37:29+00:00",
+  "status": "ok",
+  "step": "build"
+}

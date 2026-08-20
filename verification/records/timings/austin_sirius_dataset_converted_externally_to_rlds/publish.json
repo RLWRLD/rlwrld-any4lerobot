@@ -1,0 +1,14 @@
+{
+  "bytes": 338453448,
+  "created": [],
+  "dataset": "austin_sirius_dataset_converted_externally_to_rlds",
+  "dest_uri": "s3://rlwrld-foundry-data/lerobot/rldx1/austin_sirius_dataset_converted_externally_to_rlds/",
+  "error": null,
+  "finished": "2026-08-20T08:11:58+00:00",
+  "profile": null,
+  "source_uri": null,
+  "spec_sha": null,
+  "started": "2026-08-20T08:11:46+00:00",
+  "status": "ok",
+  "step": "publish"
+}

@@ -1,0 +1,14 @@
+{
+  "bytes": 1529431250,
+  "created": [],
+  "dataset": "utaustin_mutex",
+  "dest_uri": "s3://rlwrld-foundry-data/lerobot/rldx1/utaustin_mutex/",
+  "error": null,
+  "finished": "2026-08-20T08:35:03+00:00",
+  "profile": null,
+  "source_uri": null,
+  "spec_sha": null,
+  "started": "2026-08-20T08:34:32+00:00",
+  "status": "ok",
+  "step": "publish"
+}

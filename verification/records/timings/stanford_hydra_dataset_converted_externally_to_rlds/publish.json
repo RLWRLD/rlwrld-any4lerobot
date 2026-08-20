@@ -1,0 +1,14 @@
+{
+  "bytes": 2502684736,
+  "created": [],
+  "dataset": "stanford_hydra_dataset_converted_externally_to_rlds",
+  "dest_uri": "s3://rlwrld-foundry-data/lerobot/rldx1/stanford_hydra_dataset_converted_externally_to_rlds/",
+  "error": null,
+  "finished": "2026-08-20T08:48:27+00:00",
+  "profile": null,
+  "source_uri": null,
+  "spec_sha": null,
+  "started": "2026-08-20T08:48:13+00:00",
+  "status": "ok",
+  "step": "publish"
+}

@@ -1,0 +1,16 @@
+{
+  "bytes": 1529431250,
+  "created": [
+    "/scratch/out/utaustin_mutex"
+  ],
+  "dataset": "utaustin_mutex",
+  "dest_uri": null,
+  "error": null,
+  "finished": "2026-08-20T08:30:42+00:00",
+  "profile": "rldx1",
+  "source_uri": null,
+  "spec_sha": "901574dd10b44de8",
+  "started": "2026-08-20T08:27:03+00:00",
+  "status": "ok",
+  "step": "build"
+}

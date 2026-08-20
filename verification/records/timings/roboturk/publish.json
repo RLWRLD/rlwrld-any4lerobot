@@ -1,0 +1,14 @@
+{
+  "bytes": 707918554,
+  "created": [],
+  "dataset": "roboturk",
+  "dest_uri": "s3://rlwrld-foundry-data/lerobot/rldx1/roboturk/",
+  "error": null,
+  "finished": "2026-08-20T08:28:42+00:00",
+  "profile": null,
+  "source_uri": null,
+  "spec_sha": null,
+  "started": "2026-08-20T08:28:20+00:00",
+  "status": "ok",
+  "step": "publish"
+}

@@ -1,0 +1,14 @@
+{
+  "bytes": 158427636,
+  "created": [],
+  "dataset": "nyu_franka_play_dataset_converted_externally_to_rlds",
+  "dest_uri": "s3://rlwrld-foundry-data/lerobot/rldx1/nyu_franka_play_dataset_converted_externally_to_rlds/",
+  "error": null,
+  "finished": "2026-08-20T08:10:12+00:00",
+  "profile": null,
+  "source_uri": null,
+  "spec_sha": null,
+  "started": "2026-08-20T08:10:05+00:00",
+  "status": "ok",
+  "step": "publish"
+}

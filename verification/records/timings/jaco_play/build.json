@@ -1,0 +1,16 @@
+{
+  "bytes": 415024385,
+  "created": [
+    "/scratch/out/jaco_play"
+  ],
+  "dataset": "jaco_play",
+  "dest_uri": null,
+  "error": null,
+  "finished": "2026-08-20T08:14:00+00:00",
+  "profile": "rldx1",
+  "source_uri": null,
+  "spec_sha": "2e5629ff18aea417",
+  "started": "2026-08-20T08:11:02+00:00",
+  "status": "ok",
+  "step": "build"
+}

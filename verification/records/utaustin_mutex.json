@@ -1,0 +1,4296 @@
+{
+  "dataset": "utaustin_mutex",
+  "measured_at": "2026-08-20T08:34:32+00:00",
+  "rebuilt": "/scratch/out/utaustin_mutex",
+  "delivered": "/scratch/delivered_tree/utaustin_mutex",
+  "settings": {
+    "sample_episodes": 64,
+    "row_tolerance": 2,
+    "video_checked": true,
+    "size_tolerance": 0.15,
+    "pixel_agreement": 0.98,
+    "pixel_frames": 6,
+    "distribution_tolerance": 1e-06,
+    "prefix_rows": 8,
+    "gop_probe_frames": 320,
+    "distribution_stats": [
+      "mean",
+      "std",
+      "min",
+      "max",
+      "q01",
+      "q50",
+      "q99"
+    ],
+    "count_fields": [
+      "total_episodes",
+      "total_frames",
+      "total_videos",
+      "total_chunks",
+      "splits"
+    ]
+  },
+  "verdict": {
+    "overall": false,
+    "declaration": false,
+    "sample": false,
+    "distributions": true,
+    "reasons": [
+      "meta/tasks.jsonl differs",
+      "meta/stats.json differs",
+      "per-episode metadata differs",
+      "sampled episodes differ"
+    ]
+  },
+  "declaration": {
+    "missing": [],
+    "differences": {},
+    "counts": {},
+    "one_sided": {
+      "features.absolute_action.dtype": [
+        "(absent)",
+        "float32"
+      ],
+      "features.absolute_action.names.motors": [
+        "(absent)",
+        [
+          "x",
+          "y",
+          "z",
+          "roll",
+          "pitch",
+          "yaw",
+          "gripper"
+        ]
+      ],
+      "features.absolute_action.shape": [
+        "(absent)",
+        [
+          7
+        ]
+      ],
+      "features.observation.images.image.info.is_depth_map": [
+        false,
+        "(absent)"
+      ],
+      "features.observation.images.image.info.video.crf": [
+        30,
+        "(absent)"
+      ],
+      "features.observation.images.image.info.video.extra_options": [
+        {},
+        "(absent)"
+      ],
+      "features.observation.images.image.info.video.fast_decode": [
+        0,
+        "(absent)"
+      ],
+      "features.observation.images.image.info.video.g": [
+        2,
+        "(absent)"
+      ],
+      "features.observation.images.image.info.video.is_depth_map": [
+        "(absent)",
+        false
+      ],
+      "features.observation.images.image.info.video.preset": [
+        12,
+        "(absent)"
+      ],
+      "features.observation.images.image.info.video.video_backend": [
+        "pyav",
+        "(absent)"
+      ],
+      "features.observation.images.wrist_image.info.is_depth_map": [
+        false,
+        "(absent)"
+      ],
+      "features.observation.images.wrist_image.info.video.crf": [
+        30,
+        "(absent)"
+      ],
+      "features.observation.images.wrist_image.info.video.extra_options": [
+        {},
+        "(absent)"
+      ],
+      "features.observation.images.wrist_image.info.video.fast_decode": [
+        0,
+        "(absent)"
+      ],
+      "features.observation.images.wrist_image.info.video.g": [
+        2,
+        "(absent)"
+      ],
+      "features.observation.images.wrist_image.info.video.is_depth_map": [
+        "(absent)",
+        false
+      ],
+      "features.observation.images.wrist_image.info.video.preset": [
+        12,
+        "(absent)"
+      ],
+      "features.observation.images.wrist_image.info.video.video_backend": [
+        "pyav",
+        "(absent)"
+      ]
+    }
+  },
+  "meta": [
+    {
+      "subject": "meta/",
+      "agree": true,
+      "absent": [],
+      "reason": "excluded from the comparison by decision",
+      "differences": {},
+      "set_aside": {
+        "relative_stats.json": [
+          "not compared",
+          "not compared"
+        ]
+      }
+    },
+    {
+      "subject": "meta/tasks.jsonl",
+      "agree": false,
+      "absent": [],
+      "reason": "the index a task is given follows the order it was first seen, not the data",
+      "differences": {
+        "\nAim the gripper at the oven handle and steadily take hold of the handle.\nCarefully extract the tray from the oven.\nPosition the gripper over the red cup and softly grip it, being sure of a safe hold.\nPlace the red cup on the tray with the utmost care.": [
+          "present",
+          "(absent)"
+        ],
+        "\nBring your hand's grasp to the bread.\nHold the bread tenderly using the grip of your hand.\nCarefully pick up the bread and hover it over the white plate.\nPolitely place it atop the plate.": [
+          "present",
+          "(absent)"
+        ],
+        "\nCarefully approach the cobalt cup with your gripper.\nMake sure to hold the cobalt cup delicately with your gripper.\nCarefully elevate the cobalt cup, moving it off the surface.\nPosition the cobalt cup to hover above the alabaster dining ware.\nGently lower the cobalt cup onto the alabaster dining ware.\nGradually release your hold on the cobalt cup.": [
+          "present",
+          "(absent)"
+        ],
+        "\nCarefully direct your gripping tool toward the mac and cheese carton.\nClutch the mac and cheese carton gently but firmly in your gripping tool.\nSlide your gripping tool, with the carton in hand, above the container.\nLoosen your grip, letting the carton of mac and cheese effortlessly fall into the container.": [
+          "present",
+          "(absent)"
+        ],
+        "\nCarefully navigate your gripper to the air fryer's handle.\nConfidently seize the handle using your gripper.\nGradually bring the handle toward yourself to access the air fryer.": [
+          "present",
+          "(absent)"
+        ],
+        "\nCarefully stretch the hand toward the upper drawer's knob.\nGrasp the knob with conviction using the gripping tool.\nClose the drawer by pushing it.\nDisengage from the upper drawer knob.\nProceed to extend the hand to the lower drawer's knob.\nUse the gripping tool to effectively hold the knob.\nOpen the lower drawer by guiding the hand further outward.\nFinally, liberate the lower drawer knob.": [
+          "present",
+          "(absent)"
+        ],
+        "\nCaressingly guide your clamp towards the toast.\nCompassionately possess the toast with your clamp.\nGradually tag the toast up from the worktable.\nComplaisantly, cruise the held-toasty-pillow to your white crockery.\nLast but notably, liberate the toast onto the shiny white tableware.": [
+          "present",
+          "(absent)"
+        ],
+        "\nCompassionately, move the pinch receptors towards pink recepticle.\nEmbrace the recepticle delicately and rise accordingly.\nProgress forward guided by applied tension and move towards the highest section of the storage unit.\nPlace the recepticle delicately and shut the storage unit.": [
+          "present",
+          "(absent)"
+        ],
+        "\nDiscover the targeted book and set your gripper to the appropriate amplitude.\nSmoothly guide your gripper in the direction of the book and snatch it firmly.\nSearch for the back section of the caddy.\nMove the held book towards the back section and lightly deposit it inside.": [
+          "present",
+          "(absent)"
+        ],
+        "\nDraw close to the oven tray handle and pull it smoothly until the tray is entirely removed.\nFind the blue cup before you and put it gently onto the wide-open tray.": [
+          "present",
+          "(absent)"
+        ],
+        "\nFind the cornflower hued bowl that lies before your eyes.\nExtend your limb whilst freeing your grasp instrument.\nSteer it towards the box with interest and hold the cup.\nUplift and rotate till the further part of the holder comes in sight.\nDecently toss the cup into caddie's back pocket whilst freeing your hand.": [
+          "present",
+          "(absent)"
+        ],
+        "\nGently grip the air fryer handle with your gripper and kindly pull it open by sliding your gripper away from the base.\nGradually bring your gripper in line with the blue bowl and gently capture it, without tightening your grip too much.\nSecurely place the blue bowl inside the opened air fryer with a steady position.\nLiberate your robot's gripper, and withdraw your gripper from the proximity of the air fryer.": [
+          "present",
+          "(absent)"
+        ],
+        "\nGently maneuver your gripper in the book's direction.\nConfidently hold the book by angling your gripper properly.\nRelocate the book to the caddy.\nPinpoint the back pocket of the caddy and set the book down inside it.": [
+          "present",
+          "(absent)"
+        ],
+        "\nGently stretch your hand towards the oven tray's handle, obtaining a firm grip, and draw it cautiously out of the oven.\nTransition your grip to the hot dog bowl, gingerly seizing the edge, and elevate it from the surface.\nHover the bowl over the tray, delicately lower it, and temper your grip, establishing the bowl's equilibrium.": [
+          "present",
+          "(absent)"
+        ],
+        "\nKindly direct your grabber toward the cereal bar.\nDelicately grip the cereal bar using your grabber.\nTransport the clutched cereal bar to the rear part of the organizer.\nSet the cereal bar down and place it in the rear section of the organizer.": [
+          "present",
+          "(absent)"
+        ],
+        "\nKindly employ your clamp to softly take hold of the bread.\nDelicately rest it on the oven pan, verifying that it is even on the surface.\nUsing your clamp and attentiveness, smoothly glide the pan into the oven and along the appropriate brackets, securing it in position.": [
+          "present",
+          "(absent)"
+        ],
+        "\nKindly get your arm to the topmost drawer handle.\nGet a good grip on it, then softly pull to open it.": [
+          "present",
+          "(absent)"
+        ],
+        "\nKindly guide your pinchers towards the book laid out on the table.\nEnsure a firm grip on the book using your pinchers.\nNow, move both the pinchers and the book to the foremost compartment of the rack.\nThen, gently free the book into the leading segment of the rack.": [
+          "present",
+          "(absent)"
+        ],
+        "\nKindly move the gripper close to the hot dog bowl.\nGrip the bowl lightly with the gripper, taking care not to crush the hot dogs.\nElevate the bowl a little, ensuring it remains flat to stop hot dogs from tumbling.\nTransport the gripper and bowl to the white plate, then lower it down cautiously.\nRelinquish the gripper, letting the bowl rest on the plate.": [
+          "present",
+          "(absent)"
+        ],
+        "\nKindly spot and seek the red cup placed ahead of you.\nCautiously adjust your gripper towards the red cup, gripping it gently.\nFind the after-storage area of the caddy.\nRelocate the red cup in your grip over the rear portion and softly release it into the compartment.": [
+          "present",
+          "(absent)"
+        ],
+        "\nLocate and clasp the grip of the topmost drawer.\nSteadily and circumspectly yank the drawer open.\nDiscover and seize the nutrition bar using your clamp.\nDeposit the nutrition bar in the accessible drawer.\nUnclench the nutrition bar.": [
+          "present",
+          "(absent)"
+        ],
+        "\nMeticulously direct the gripper system near the nourishment stick.\nGrapple the nourishment stick firmly with the gripper system.\nProgress with the gripper system grasping the stick toward the storage box.\nTenderly permit the nourishment stick to descend into the box.": [
+          "present",
+          "(absent)"
+        ],
+        "\nMove your gripper in the direction of the red bowl and clutch it softly.\nCautiously raise the red bowl up from the surface.\nHover the red bowl above the basket and gently bring it down inside.\nLet go of the gripper's grasp when the red bowl is within the basket.": [
+          "present",
+          "(absent)"
+        ],
+        "\nNotice the yellow vessel located before you.\nBring your fastener close to the yellow vessel and smoothly hold it.\nTransfer the yellow vessel above the white plating and let go of your hold on it, then set the vessel on the plating.": [
+          "present",
+          "(absent)"
+        ],
+        "\nObserve the blue drinking vessel close to you.\nPoint your gripping mechanism towards the blue drinking vessel.\nSoftly grip the blue drinking vessel using your gripping mechanism.\nMove your gripping mechanism and the blue drinking vessel above the receptacle.\nLet go of the blue drinking vessel into the receptacle.": [
+          "present",
+          "(absent)"
+        ],
+        "\nPlease adjust your gripper to match the height of the lower drawer handle.\nProgress your gripper onward until it happens to touch the drawer handle.\nNow, firmly take hold of it with your gripper, then steadily retract it to swing the drawer wide open.": [
+          "present",
+          "(absent)"
+        ],
+        "\nPlease find the red cup among the items before you.\nCarefully move your gripper towards it and gently hold it.\nLocate the front section of the organizer in front of you.\nTransfer the red cup above the front section and let go, placing it within that section.": [
+          "present",
+          "(absent)"
+        ],
+        "\nPlease focus on the pink mug and carefully direct your gripper towards it.\nGently take hold of the pink mug using your grasping instrument.\nExercise caution as you elevate the pink mug off the tabletop.\nShift the pink mug so it is above the white platter.\nWith precision, slowly place the pink mug onto the white platter.": [
+          "present",
+          "(absent)"
+        ],
+        "\nPlease go towards the air fryer and gently seize its handle using your gripper.\nSlowly reveal the interior of the air fryer by pulling the handle outward.\nHead to the bowl filled with hot dogs and firmly but gently grasp it.\nCarefully place it inside the now-open air fryer.": [
+          "present",
+          "(absent)"
+        ],
+        "\nPlease guide your gripper toward the loaf.\nCarefully hold the bread using your gripper.\nPosition the gripper over the white dish.\nGently place the bread on the white dish.": [
+          "present",
+          "(absent)"
+        ],
+        "\nPlease locate the crimson dish within your space.\nMove your hand towards it gently.\nTenderly hold the bowl carefully using your fingers and raise it.\nWith caution, shift it towards the basket.\nKindly let loose of the dish to drop it in the basket.": [
+          "present",
+          "(absent)"
+        ],
+        "\nPlease move the gripper into proximity with the fryer handle.\nOnce close enough, gingerly grasp the handle and gently tug the fryer basket open in your direction.": [
+          "present",
+          "(absent)"
+        ],
+        "\nPlease reach out your grabber to the yellow dish.\nTenderly grip the yellow dish using your grabber.\nSet the yellow dish on the baking sheet.\nPosit your grabber on the rim of the baking sheet carrying the yellow dish.\nMindfully slide the baking sheet with the yellow dish into the oven.\nLet go of your grabber's hold on the baking sheet's edge when it is entirely in the oven.": [
+          "present",
+          "(absent)"
+        ],
+        "\nPlease shift your gripper toward the book.\nCarefully hold the book with your gripper.\nGently transport the book using your gripper to the caddy's front section.\nSafely let the book go into the caddy's front area.": [
+          "present",
+          "(absent)"
+        ],
+        "\nPlease spot the blue cup positioned before you and pinpoint its location.\nCarefully open your gripper and guide it in the direction of the cup.\nSecure a firm hold on the blue cup using your gripper, ensuring not to crush or let it slip from your grasp.\nWith caution, shift the gripper carrying the cup above the baking sheet.\nTenderly set the cup down on the baking sheet, and unclasp your gripper to release the cup.": [
+          "present",
+          "(absent)"
+        ],
+        "\nPosition your gripper near the granola bar, please.\nLightly grip the granola bar with your gripping tool.\nRelocate your gripper along with the granola bar toward the leading division of the caddy with caution.\nGently release the granola bar into the leading division of the caddy.": [
+          "present",
+          "(absent)"
+        ],
+        "\nPosition your gripper near the tray handle while precisely lining it up.\nFirmly yet gently grip the handle, ensuring a strong hold.\nSlide the tray into the oven in a steady manner until it's entirely inside.\nRelinquish the handle as it sits within the oven and extract your gripper with care.": [
+          "present",
+          "(absent)"
+        ],
+        "\nPropose to navigate your clamp on the clench of the first drawer.\nUse gentle force to register to the cabinet.\nSend posterior your swing mandate till over it lurks, a cup of pink essence.\nFortify your grip after aiming concentric with the pink cup\u2019s periphery.\nManoeuvre the pink towards the cabinet's top.\nDrop your compression till the cup is resting inside.": [
+          "present",
+          "(absent)"
+        ],
+        "\nShift your gripper thoughtfully near the cereal snack bar.\nTenderly grip the snack bar with your precision device.\nCarefully hover the precision device above the first drawer installation and invite the snack bar to descend into the first drawer installation.": [
+          "present",
+          "(absent)"
+        ],
+        "\nTransport the gripper mindfully toward the orange-red bowl and clasp it to elevate with ease.\nEnsure your robot's arm aligns efficiently with the top drawer's opening.\nCarefully slide the orange-red bowl into the designated spot with precision.\nAfter confirmation, withdraw the gripper gently.\nClose the drawer smoothly by transitioning the gripper to its handle.": [
+          "present",
+          "(absent)"
+        ],
+        "\nWith care, position your gripper close to the oven tray handle.\nMake sure to grip the handle tightly.\nDelicately and attentively pull the tray out from the oven.": [
+          "present",
+          "(absent)"
+        ],
+        "\nWith caution, bring your gripper towards the upper drawer's hold.\nGrasp the drawer hold tightly with your gripper tool.\nPull the drawer in your direction to reveal the contents of the top drawer.": [
+          "present",
+          "(absent)"
+        ],
+        "Aim the gripper at the oven handle and steadily take hold of the handle.\nCarefully extract the tray from the oven.\nPosition the gripper over the red cup and softly grip it, being sure of a safe hold.\nPlace the red cup on the tray with the utmost care.": [
+          "(absent)",
+          "present"
+        ],
+        "Bring your hand's grasp to the bread.\nHold the bread tenderly using the grip of your hand.\nCarefully pick up the bread and hover it over the white plate.\nPolitely place it atop the plate.": [
+          "(absent)",
+          "present"
+        ],
+        "Carefully approach the cobalt cup with your gripper.\nMake sure to hold the cobalt cup delicately with your gripper.\nCarefully elevate the cobalt cup, moving it off the surface.\nPosition the cobalt cup to hover above the alabaster dining ware.\nGently lower the cobalt cup onto the alabaster dining ware.\nGradually release your hold on the cobalt cup.": [
+          "(absent)",
+          "present"
+        ],
+        "Carefully direct your gripping tool toward the mac and cheese carton.\nClutch the mac and cheese carton gently but firmly in your gripping tool.\nSlide your gripping tool, with the carton in hand, above the container.\nLoosen your grip, letting the carton of mac and cheese effortlessly fall into the container.": [
+          "(absent)",
+          "present"
+        ],
+        "Carefully navigate your gripper to the air fryer's handle.\nConfidently seize the handle using your gripper.\nGradually bring the handle toward yourself to access the air fryer.": [
+          "(absent)",
+          "present"
+        ],
+        "Carefully stretch the hand toward the upper drawer's knob.\nGrasp the knob with conviction using the gripping tool.\nClose the drawer by pushing it.\nDisengage from the upper drawer knob.\nProceed to extend the hand to the lower drawer's knob.\nUse the gripping tool to effectively hold the knob.\nOpen the lower drawer by guiding the hand further outward.\nFinally, liberate the lower drawer knob.": [
+          "(absent)",
+          "present"
+        ],
+        "Caressingly guide your clamp towards the toast.\nCompassionately possess the toast with your clamp.\nGradually tag the toast up from the worktable.\nComplaisantly, cruise the held-toasty-pillow to your white crockery.\nLast but notably, liberate the toast onto the shiny white tableware.": [
+          "(absent)",
+          "present"
+        ],
+        "Compassionately, move the pinch receptors towards pink recepticle.\nEmbrace the recepticle delicately and rise accordingly.\nProgress forward guided by applied tension and move towards the highest section of the storage unit.\nPlace the recepticle delicately and shut the storage unit.": [
+          "(absent)",
+          "present"
+        ],
+        "Discover the targeted book and set your gripper to the appropriate amplitude.\nSmoothly guide your gripper in the direction of the book and snatch it firmly.\nSearch for the back section of the caddy.\nMove the held book towards the back section and lightly deposit it inside.": [
+          "(absent)",
+          "present"
+        ],
+        "Draw close to the oven tray handle and pull it smoothly until the tray is entirely removed.\nFind the blue cup before you and put it gently onto the wide-open tray.": [
+          "(absent)",
+          "present"
+        ],
+        "Find the cornflower hued bowl that lies before your eyes.\nExtend your limb whilst freeing your grasp instrument.\nSteer it towards the box with interest and hold the cup.\nUplift and rotate till the further part of the holder comes in sight.\nDecently toss the cup into caddie's back pocket whilst freeing your hand.": [
+          "(absent)",
+          "present"
+        ],
+        "Gently grip the air fryer handle with your gripper and kindly pull it open by sliding your gripper away from the base.\nGradually bring your gripper in line with the blue bowl and gently capture it, without tightening your grip too much.\nSecurely place the blue bowl inside the opened air fryer with a steady position.\nLiberate your robot's gripper, and withdraw your gripper from the proximity of the air fryer.": [
+          "(absent)",
+          "present"
+        ],
+        "Gently maneuver your gripper in the book's direction.\nConfidently hold the book by angling your gripper properly.\nRelocate the book to the caddy.\nPinpoint the back pocket of the caddy and set the book down inside it.": [
+          "(absent)",
+          "present"
+        ],
+        "Gently stretch your hand towards the oven tray's handle, obtaining a firm grip, and draw it cautiously out of the oven.\nTransition your grip to the hot dog bowl, gingerly seizing the edge, and elevate it from the surface.\nHover the bowl over the tray, delicately lower it, and temper your grip, establishing the bowl's equilibrium.": [
+          "(absent)",
+          "present"
+        ],
+        "Kindly direct your grabber toward the cereal bar.\nDelicately grip the cereal bar using your grabber.\nTransport the clutched cereal bar to the rear part of the organizer.\nSet the cereal bar down and place it in the rear section of the organizer.": [
+          "(absent)",
+          "present"
+        ],
+        "Kindly employ your clamp to softly take hold of the bread.\nDelicately rest it on the oven pan, verifying that it is even on the surface.\nUsing your clamp and attentiveness, smoothly glide the pan into the oven and along the appropriate brackets, securing it in position.": [
+          "(absent)",
+          "present"
+        ],
+        "Kindly get your arm to the topmost drawer handle.\nGet a good grip on it, then softly pull to open it.": [
+          "(absent)",
+          "present"
+        ],
+        "Kindly guide your pinchers towards the book laid out on the table.\nEnsure a firm grip on the book using your pinchers.\nNow, move both the pinchers and the book to the foremost compartment of the rack.\nThen, gently free the book into the leading segment of the rack.": [
+          "(absent)",
+          "present"
+        ],
+        "Kindly move the gripper close to the hot dog bowl.\nGrip the bowl lightly with the gripper, taking care not to crush the hot dogs.\nElevate the bowl a little, ensuring it remains flat to stop hot dogs from tumbling.\nTransport the gripper and bowl to the white plate, then lower it down cautiously.\nRelinquish the gripper, letting the bowl rest on the plate.": [
+          "(absent)",
+          "present"
+        ],
+        "Kindly spot and seek the red cup placed ahead of you.\nCautiously adjust your gripper towards the red cup, gripping it gently.\nFind the after-storage area of the caddy.\nRelocate the red cup in your grip over the rear portion and softly release it into the compartment.": [
+          "(absent)",
+          "present"
+        ],
+        "Locate and clasp the grip of the topmost drawer.\nSteadily and circumspectly yank the drawer open.\nDiscover and seize the nutrition bar using your clamp.\nDeposit the nutrition bar in the accessible drawer.\nUnclench the nutrition bar.": [
+          "(absent)",
+          "present"
+        ],
+        "Meticulously direct the gripper system near the nourishment stick.\nGrapple the nourishment stick firmly with the gripper system.\nProgress with the gripper system grasping the stick toward the storage box.\nTenderly permit the nourishment stick to descend into the box.": [
+          "(absent)",
+          "present"
+        ],
+        "Move your gripper in the direction of the red bowl and clutch it softly.\nCautiously raise the red bowl up from the surface.\nHover the red bowl above the basket and gently bring it down inside.\nLet go of the gripper's grasp when the red bowl is within the basket.": [
+          "(absent)",
+          "present"
+        ],
+        "Notice the yellow vessel located before you.\nBring your fastener close to the yellow vessel and smoothly hold it.\nTransfer the yellow vessel above the white plating and let go of your hold on it, then set the vessel on the plating.": [
+          "(absent)",
+          "present"
+        ],
+        "Observe the blue drinking vessel close to you.\nPoint your gripping mechanism towards the blue drinking vessel.\nSoftly grip the blue drinking vessel using your gripping mechanism.\nMove your gripping mechanism and the blue drinking vessel above the receptacle.\nLet go of the blue drinking vessel into the receptacle.": [
+          "(absent)",
+          "present"
+        ],
+        "Please adjust your gripper to match the height of the lower drawer handle.\nProgress your gripper onward until it happens to touch the drawer handle.\nNow, firmly take hold of it with your gripper, then steadily retract it to swing the drawer wide open.": [
+          "(absent)",
+          "present"
+        ],
+        "Please find the red cup among the items before you.\nCarefully move your gripper towards it and gently hold it.\nLocate the front section of the organizer in front of you.\nTransfer the red cup above the front section and let go, placing it within that section.": [
+          "(absent)",
+          "present"
+        ],
+        "Please focus on the pink mug and carefully direct your gripper towards it.\nGently take hold of the pink mug using your grasping instrument.\nExercise caution as you elevate the pink mug off the tabletop.\nShift the pink mug so it is above the white platter.\nWith precision, slowly place the pink mug onto the white platter.": [
+          "(absent)",
+          "present"
+        ],
+        "Please go towards the air fryer and gently seize its handle using your gripper.\nSlowly reveal the interior of the air fryer by pulling the handle outward.\nHead to the bowl filled with hot dogs and firmly but gently grasp it.\nCarefully place it inside the now-open air fryer.": [
+          "(absent)",
+          "present"
+        ],
+        "Please guide your gripper toward the loaf.\nCarefully hold the bread using your gripper.\nPosition the gripper over the white dish.\nGently place the bread on the white dish.": [
+          "(absent)",
+          "present"
+        ],
+        "Please locate the crimson dish within your space.\nMove your hand towards it gently.\nTenderly hold the bowl carefully using your fingers and raise it.\nWith caution, shift it towards the basket.\nKindly let loose of the dish to drop it in the basket.": [
+          "(absent)",
+          "present"
+        ],
+        "Please move the gripper into proximity with the fryer handle.\nOnce close enough, gingerly grasp the handle and gently tug the fryer basket open in your direction.": [
+          "(absent)",
+          "present"
+        ],
+        "Please reach out your grabber to the yellow dish.\nTenderly grip the yellow dish using your grabber.\nSet the yellow dish on the baking sheet.\nPosit your grabber on the rim of the baking sheet carrying the yellow dish.\nMindfully slide the baking sheet with the yellow dish into the oven.\nLet go of your grabber's hold on the baking sheet's edge when it is entirely in the oven.": [
+          "(absent)",
+          "present"
+        ],
+        "Please shift your gripper toward the book.\nCarefully hold the book with your gripper.\nGently transport the book using your gripper to the caddy's front section.\nSafely let the book go into the caddy's front area.": [
+          "(absent)",
+          "present"
+        ],
+        "Please spot the blue cup positioned before you and pinpoint its location.\nCarefully open your gripper and guide it in the direction of the cup.\nSecure a firm hold on the blue cup using your gripper, ensuring not to crush or let it slip from your grasp.\nWith caution, shift the gripper carrying the cup above the baking sheet.\nTenderly set the cup down on the baking sheet, and unclasp your gripper to release the cup.": [
+          "(absent)",
+          "present"
+        ],
+        "Position your gripper near the granola bar, please.\nLightly grip the granola bar with your gripping tool.\nRelocate your gripper along with the granola bar toward the leading division of the caddy with caution.\nGently release the granola bar into the leading division of the caddy.": [
+          "(absent)",
+          "present"
+        ],
+        "Position your gripper near the tray handle while precisely lining it up.\nFirmly yet gently grip the handle, ensuring a strong hold.\nSlide the tray into the oven in a steady manner until it's entirely inside.\nRelinquish the handle as it sits within the oven and extract your gripper with care.": [
+          "(absent)",
+          "present"
+        ],
+        "Propose to navigate your clamp on the clench of the first drawer.\nUse gentle force to register to the cabinet.\nSend posterior your swing mandate till over it lurks, a cup of pink essence.\nFortify your grip after aiming concentric with the pink cup\u2019s periphery.\nManoeuvre the pink towards the cabinet's top.\nDrop your compression till the cup is resting inside.": [
+          "(absent)",
+          "present"
+        ],
+        "Shift your gripper thoughtfully near the cereal snack bar.\nTenderly grip the snack bar with your precision device.\nCarefully hover the precision device above the first drawer installation and invite the snack bar to descend into the first drawer installation.": [
+          "(absent)",
+          "present"
+        ],
+        "Transport the gripper mindfully toward the orange-red bowl and clasp it to elevate with ease.\nEnsure your robot's arm aligns efficiently with the top drawer's opening.\nCarefully slide the orange-red bowl into the designated spot with precision.\nAfter confirmation, withdraw the gripper gently.\nClose the drawer smoothly by transitioning the gripper to its handle.": [
+          "(absent)",
+          "present"
+        ],
+        "With care, position your gripper close to the oven tray handle.\nMake sure to grip the handle tightly.\nDelicately and attentively pull the tray out from the oven.": [
+          "(absent)",
+          "present"
+        ],
+        "With caution, bring your gripper towards the upper drawer's hold.\nGrasp the drawer hold tightly with your gripper tool.\nPull the drawer in your direction to reveal the contents of the top drawer.": [
+          "(absent)",
+          "present"
+        ]
+      },
+      "set_aside": {
+        "task_index 0": [
+          "\nKindly spot and seek the red cup placed ahead of you.\nCautiously adjust your gripper towards the red cup, gripping it gently.\nFind the after-storage area of the caddy.\nRelocate the red cup in your grip over the rear portion and softly release it into the compartment.",
+          "Aim the gripper at the oven handle and steadily take hold of the handle.\nCarefully extract the tray from the oven.\nPosition the gripper over the red cup and softly grip it, being sure of a safe hold.\nPlace the red cup on the tray with the utmost care."
+        ],
+        "task_index 1": [
+          "\nPlease move the gripper into proximity with the fryer handle.\nOnce close enough, gingerly grasp the handle and gently tug the fryer basket open in your direction.",
+          "Bring your hand's grasp to the bread.\nHold the bread tenderly using the grip of your hand.\nCarefully pick up the bread and hover it over the white plate.\nPolitely place it atop the plate."
+        ],
+        "task_index 10": [
+          "\nObserve the blue drinking vessel close to you.\nPoint your gripping mechanism towards the blue drinking vessel.\nSoftly grip the blue drinking vessel using your gripping mechanism.\nMove your gripping mechanism and the blue drinking vessel above the receptacle.\nLet go of the blue drinking vessel into the receptacle.",
+          "Extend the gripper towards the air fryer handle.\nGrasp the air fryer handle and pull it to open the air fryer.\nRelease the air fryer handle and move the gripper to the bread.\nGrasp the bread with the gripper and move it to the air fryer basket.\nRelease the bread inside the air fryer and retract the gripper."
+        ],
+        "task_index 11": [
+          "\nFind the cornflower hued bowl that lies before your eyes.\nExtend your limb whilst freeing your grasp instrument.\nSteer it towards the box with interest and hold the cup.\nUplift and rotate till the further part of the holder comes in sight.\nDecently toss the cup into caddie's back pocket whilst freeing your hand.",
+          "Extend the gripper towards the oven tray handle.\nGrasp the handle and carefully pull the tray out of the oven.\nMove the gripper above the red bowl.\nGrab the red bowl gently.\nLift the bowl and place it onto the oven tray."
+        ],
+        "task_index 12": [
+          "Move your gripper towards the pink mug and hold it gently.\nLift the pink mug from the surface.\nPosition it above the basket, lowering it gently until it is placed inside.\nRelease the grip on the pink mug, completing the task.",
+          "Find the cornflower hued bowl that lies before your eyes.\nExtend your limb whilst freeing your grasp instrument.\nSteer it towards the box with interest and hold the cup.\nUplift and rotate till the further part of the holder comes in sight.\nDecently toss the cup into caddie's back pocket whilst freeing your hand."
+        ],
+        "task_index 13": [
+          "\nPlease spot the blue cup positioned before you and pinpoint its location.\nCarefully open your gripper and guide it in the direction of the cup.\nSecure a firm hold on the blue cup using your gripper, ensuring not to crush or let it slip from your grasp.\nWith caution, shift the gripper carrying the cup above the baking sheet.\nTenderly set the cup down on the baking sheet, and unclasp your gripper to release the cup.",
+          "Gently grip the air fryer handle with your gripper and kindly pull it open by sliding your gripper away from the base.\nGradually bring your gripper in line with the blue bowl and gently capture it, without tightening your grip too much.\nSecurely place the blue bowl inside the opened air fryer with a steady position.\nLiberate your robot's gripper, and withdraw your gripper from the proximity of the air fryer."
+        ],
+        "task_index 14": [
+          "\nWith caution, bring your gripper towards the upper drawer's hold.\nGrasp the drawer hold tightly with your gripper tool.\nPull the drawer in your direction to reveal the contents of the top drawer.",
+          "Gently maneuver your gripper in the book's direction.\nConfidently hold the book by angling your gripper properly.\nRelocate the book to the caddy.\nPinpoint the back pocket of the caddy and set the book down inside it."
+        ],
+        "task_index 15": [
+          "\nGently stretch your hand towards the oven tray's handle, obtaining a firm grip, and draw it cautiously out of the oven.\nTransition your grip to the hot dog bowl, gingerly seizing the edge, and elevate it from the surface.\nHover the bowl over the tray, delicately lower it, and temper your grip, establishing the bowl's equilibrium.",
+          "Gently stretch your hand towards the oven tray's handle, obtaining a firm grip, and draw it cautiously out of the oven.\nTransition your grip to the hot dog bowl, gingerly seizing the edge, and elevate it from the surface.\nHover the bowl over the tray, delicately lower it, and temper your grip, establishing the bowl's equilibrium."
+        ],
+        "task_index 16": [
+          "\nKindly get your arm to the topmost drawer handle.\nGet a good grip on it, then softly pull to open it.",
+          "Kindly direct your grabber toward the cereal bar.\nDelicately grip the cereal bar using your grabber.\nTransport the clutched cereal bar to the rear part of the organizer.\nSet the cereal bar down and place it in the rear section of the organizer."
+        ],
+        "task_index 17": [
+          "Move your gripper towards the bottom drawer handle.\nGrasp the handle gently with your gripper.\nApply gentle outward force to slide the bottom drawer open.",
+          "Kindly employ your clamp to softly take hold of the bread.\nDelicately rest it on the oven pan, verifying that it is even on the surface.\nUsing your clamp and attentiveness, smoothly glide the pan into the oven and along the appropriate brackets, securing it in position."
+        ],
+        "task_index 18": [
+          "Look closely at the bright blue vase near you.\nGently move your arm towards it, carefully releasing your grip to hold the vase delicately.\nLift it slightly and place it securely on a sturdy surface, making sure it is balanced perfectly.\nWithdraw your supporting hand, leaving the vase in its stable position.",
+          "Kindly get your arm to the topmost drawer handle.\nGet a good grip on it, then softly pull to open it."
+        ],
+        "task_index 19": [
+          "\nPlease reach out your grabber to the yellow dish.\nTenderly grip the yellow dish using your grabber.\nSet the yellow dish on the baking sheet.\nPosit your grabber on the rim of the baking sheet carrying the yellow dish.\nMindfully slide the baking sheet with the yellow dish into the oven.\nLet go of your grabber's hold on the baking sheet's edge when it is entirely in the oven.",
+          "Kindly guide your pinchers towards the book laid out on the table.\nEnsure a firm grip on the book using your pinchers.\nNow, move both the pinchers and the book to the foremost compartment of the rack.\nThen, gently free the book into the leading segment of the rack."
+        ],
+        "task_index 2": [
+          "\nCaressingly guide your clamp towards the toast.\nCompassionately possess the toast with your clamp.\nGradually tag the toast up from the worktable.\nComplaisantly, cruise the held-toasty-pillow to your white crockery.\nLast but notably, liberate the toast onto the shiny white tableware.",
+          "Carefully approach the cobalt cup with your gripper.\nMake sure to hold the cobalt cup delicately with your gripper.\nCarefully elevate the cobalt cup, moving it off the surface.\nPosition the cobalt cup to hover above the alabaster dining ware.\nGently lower the cobalt cup onto the alabaster dining ware.\nGradually release your hold on the cobalt cup."
+        ],
+        "task_index 20": [
+          "\nCarefully navigate your gripper to the air fryer's handle.\nConfidently seize the handle using your gripper.\nGradually bring the handle toward yourself to access the air fryer.",
+          "Kindly move the gripper close to the hot dog bowl.\nGrip the bowl lightly with the gripper, taking care not to crush the hot dogs.\nElevate the bowl a little, ensuring it remains flat to stop hot dogs from tumbling.\nTransport the gripper and bowl to the white plate, then lower it down cautiously.\nRelinquish the gripper, letting the bowl rest on the plate."
+        ],
+        "task_index 21": [
+          "\nNotice the yellow vessel located before you.\nBring your fastener close to the yellow vessel and smoothly hold it.\nTransfer the yellow vessel above the white plating and let go of your hold on it, then set the vessel on the plating.",
+          "Kindly move your gripper toward the top drawer's handle.\nWith caution, hold the handle robustly using your gripper and pull open the top drawer.\nLet the handle go.\nRelocate your gripper to the bowl placed in the background.\nGently hold the bowl using your gripper.\nBring the gripper and the bowl to the ajar drawer.\nSoftly release the bowl into it."
+        ],
+        "task_index 22": [
+          "\nPlease focus on the pink mug and carefully direct your gripper towards it.\nGently take hold of the pink mug using your grasping instrument.\nExercise caution as you elevate the pink mug off the tabletop.\nShift the pink mug so it is above the white platter.\nWith precision, slowly place the pink mug onto the white platter.",
+          "Kindly position your hand close to the oven tray's handle.\nSoftly yet firmly grasp the handle using your hand.\nSlowly and with caution, draw the tray out until it is fully stretched out."
+        ],
+        "task_index 23": [
+          "Kindly move your gripper toward the top drawer's handle.\nWith caution, hold the handle robustly using your gripper and pull open the top drawer.\nLet the handle go.\nRelocate your gripper to the bowl placed in the background.\nGently hold the bowl using your gripper.\nBring the gripper and the bowl to the ajar drawer.\nSoftly release the bowl into it.",
+          "Kindly spot and seek the red cup placed ahead of you.\nCautiously adjust your gripper towards the red cup, gripping it gently.\nFind the after-storage area of the caddy.\nRelocate the red cup in your grip over the rear portion and softly release it into the compartment."
+        ],
+        "task_index 24": [
+          "\nCarefully direct your gripping tool toward the mac and cheese carton.\nClutch the mac and cheese carton gently but firmly in your gripping tool.\nSlide your gripping tool, with the carton in hand, above the container.\nLoosen your grip, letting the carton of mac and cheese effortlessly fall into the container.",
+          "Locate and clasp the grip of the topmost drawer.\nSteadily and circumspectly yank the drawer open.\nDiscover and seize the nutrition bar using your clamp.\nDeposit the nutrition bar in the accessible drawer.\nUnclench the nutrition bar."
+        ],
+        "task_index 25": [
+          "\nPosition your gripper near the tray handle while precisely lining it up.\nFirmly yet gently grip the handle, ensuring a strong hold.\nSlide the tray into the oven in a steady manner until it's entirely inside.\nRelinquish the handle as it sits within the oven and extract your gripper with care.",
+          "Look closely at the bright blue vase near you.\nGently move your arm towards it, carefully releasing your grip to hold the vase delicately.\nLift it slightly and place it securely on a sturdy surface, making sure it is balanced perfectly.\nWithdraw your supporting hand, leaving the vase in its stable position."
+        ],
+        "task_index 26": [
+          "\nPlease go towards the air fryer and gently seize its handle using your gripper.\nSlowly reveal the interior of the air fryer by pulling the handle outward.\nHead to the bowl filled with hot dogs and firmly but gently grasp it.\nCarefully place it inside the now-open air fryer.",
+          "Meticulously direct the gripper system near the nourishment stick.\nGrapple the nourishment stick firmly with the gripper system.\nProgress with the gripper system grasping the stick toward the storage box.\nTenderly permit the nourishment stick to descend into the box."
+        ],
+        "task_index 27": [
+          "\nPlease shift your gripper toward the book.\nCarefully hold the book with your gripper.\nGently transport the book using your gripper to the caddy's front section.\nSafely let the book go into the caddy's front area.",
+          "Move your gripper in the direction of the red bowl and clutch it softly.\nCautiously raise the red bowl up from the surface.\nHover the red bowl above the basket and gently bring it down inside.\nLet go of the gripper's grasp when the red bowl is within the basket."
+        ],
+        "task_index 28": [
+          "\nShift your gripper thoughtfully near the cereal snack bar.\nTenderly grip the snack bar with your precision device.\nCarefully hover the precision device above the first drawer installation and invite the snack bar to descend into the first drawer installation.",
+          "Move your gripper towards the bottom drawer handle.\nGrasp the handle gently with your gripper.\nApply gentle outward force to slide the bottom drawer open."
+        ],
+        "task_index 29": [
+          "\nDraw close to the oven tray handle and pull it smoothly until the tray is entirely removed.\nFind the blue cup before you and put it gently onto the wide-open tray.",
+          "Move your gripper towards the pink mug and hold it gently.\nLift the pink mug from the surface.\nPosition it above the basket, lowering it gently until it is placed inside.\nRelease the grip on the pink mug, completing the task."
+        ],
+        "task_index 3": [
+          "\nWith care, position your gripper close to the oven tray handle.\nMake sure to grip the handle tightly.\nDelicately and attentively pull the tray out from the oven.",
+          "Carefully direct your gripping tool toward the mac and cheese carton.\nClutch the mac and cheese carton gently but firmly in your gripping tool.\nSlide your gripping tool, with the carton in hand, above the container.\nLoosen your grip, letting the carton of mac and cheese effortlessly fall into the container."
+        ],
+        "task_index 30": [
+          "\nBring your hand's grasp to the bread.\nHold the bread tenderly using the grip of your hand.\nCarefully pick up the bread and hover it over the white plate.\nPolitely place it atop the plate.",
+          "Notice the yellow vessel located before you.\nBring your fastener close to the yellow vessel and smoothly hold it.\nTransfer the yellow vessel above the white plating and let go of your hold on it, then set the vessel on the plating."
+        ],
+        "task_index 31": [
+          "\nPlease guide your gripper toward the loaf.\nCarefully hold the bread using your gripper.\nPosition the gripper over the white dish.\nGently place the bread on the white dish.",
+          "Observe the blue drinking vessel close to you.\nPoint your gripping mechanism towards the blue drinking vessel.\nSoftly grip the blue drinking vessel using your gripping mechanism.\nMove your gripping mechanism and the blue drinking vessel above the receptacle.\nLet go of the blue drinking vessel into the receptacle."
+        ],
+        "task_index 32": [
+          "\nCarefully approach the cobalt cup with your gripper.\nMake sure to hold the cobalt cup delicately with your gripper.\nCarefully elevate the cobalt cup, moving it off the surface.\nPosition the cobalt cup to hover above the alabaster dining ware.\nGently lower the cobalt cup onto the alabaster dining ware.\nGradually release your hold on the cobalt cup.",
+          "Please adjust your gripper to match the height of the lower drawer handle.\nProgress your gripper onward until it happens to touch the drawer handle.\nNow, firmly take hold of it with your gripper, then steadily retract it to swing the drawer wide open."
+        ],
+        "task_index 33": [
+          "Kindly position your hand close to the oven tray's handle.\nSoftly yet firmly grasp the handle using your hand.\nSlowly and with caution, draw the tray out until it is fully stretched out.",
+          "Please find the red cup among the items before you.\nCarefully move your gripper towards it and gently hold it.\nLocate the front section of the organizer in front of you.\nTransfer the red cup above the front section and let go, placing it within that section."
+        ],
+        "task_index 34": [
+          "\nLocate and clasp the grip of the topmost drawer.\nSteadily and circumspectly yank the drawer open.\nDiscover and seize the nutrition bar using your clamp.\nDeposit the nutrition bar in the accessible drawer.\nUnclench the nutrition bar.",
+          "Please focus on the pink mug and carefully direct your gripper towards it.\nGently take hold of the pink mug using your grasping instrument.\nExercise caution as you elevate the pink mug off the tabletop.\nShift the pink mug so it is above the white platter.\nWith precision, slowly place the pink mug onto the white platter."
+        ],
+        "task_index 35": [
+          "\nKindly employ your clamp to softly take hold of the bread.\nDelicately rest it on the oven pan, verifying that it is even on the surface.\nUsing your clamp and attentiveness, smoothly glide the pan into the oven and along the appropriate brackets, securing it in position.",
+          "Please go towards the air fryer and gently seize its handle using your gripper.\nSlowly reveal the interior of the air fryer by pulling the handle outward.\nHead to the bowl filled with hot dogs and firmly but gently grasp it.\nCarefully place it inside the now-open air fryer."
+        ],
+        "task_index 36": [
+          "Smooth extension of your directing tool towards the grip of the higher drawer.\nLook into correctly lingering your directing tool with drawer's hand grip device.\nSurge the slider out using handgrip.\nGuide your directing tool towards the blue container.\nGrab onto the dazzling blue cup tenderly and hover over the higher drawer.\nSmoothly release downward led cup halfway inclined into a triangular sloping cart tray.",
+          "Please guide your gripper toward the loaf.\nCarefully hold the bread using your gripper.\nPosition the gripper over the white dish.\nGently place the bread on the white dish."
+        ],
+        "task_index 37": [
+          "\nPlease adjust your gripper to match the height of the lower drawer handle.\nProgress your gripper onward until it happens to touch the drawer handle.\nNow, firmly take hold of it with your gripper, then steadily retract it to swing the drawer wide open.",
+          "Please locate the crimson dish within your space.\nMove your hand towards it gently.\nTenderly hold the bowl carefully using your fingers and raise it.\nWith caution, shift it towards the basket.\nKindly let loose of the dish to drop it in the basket."
+        ],
+        "task_index 38": [
+          "\nTransport the gripper mindfully toward the orange-red bowl and clasp it to elevate with ease.\nEnsure your robot's arm aligns efficiently with the top drawer's opening.\nCarefully slide the orange-red bowl into the designated spot with precision.\nAfter confirmation, withdraw the gripper gently.\nClose the drawer smoothly by transitioning the gripper to its handle.",
+          "Please move the gripper into proximity with the fryer handle.\nOnce close enough, gingerly grasp the handle and gently tug the fryer basket open in your direction."
+        ],
+        "task_index 39": [
+          "\nPropose to navigate your clamp on the clench of the first drawer.\nUse gentle force to register to the cabinet.\nSend posterior your swing mandate till over it lurks, a cup of pink essence.\nFortify your grip after aiming concentric with the pink cup\u2019s periphery.\nManoeuvre the pink towards the cabinet's top.\nDrop your compression till the cup is resting inside.",
+          "Please reach out your grabber to the yellow dish.\nTenderly grip the yellow dish using your grabber.\nSet the yellow dish on the baking sheet.\nPosit your grabber on the rim of the baking sheet carrying the yellow dish.\nMindfully slide the baking sheet with the yellow dish into the oven.\nLet go of your grabber's hold on the baking sheet's edge when it is entirely in the oven."
+        ],
+        "task_index 4": [
+          "\nGently maneuver your gripper in the book's direction.\nConfidently hold the book by angling your gripper properly.\nRelocate the book to the caddy.\nPinpoint the back pocket of the caddy and set the book down inside it.",
+          "Carefully navigate your gripper to the air fryer's handle.\nConfidently seize the handle using your gripper.\nGradually bring the handle toward yourself to access the air fryer."
+        ],
+        "task_index 40": [
+          "\nMove your gripper in the direction of the red bowl and clutch it softly.\nCautiously raise the red bowl up from the surface.\nHover the red bowl above the basket and gently bring it down inside.\nLet go of the gripper's grasp when the red bowl is within the basket.",
+          "Please shift your gripper toward the book.\nCarefully hold the book with your gripper.\nGently transport the book using your gripper to the caddy's front section.\nSafely let the book go into the caddy's front area."
+        ],
+        "task_index 41": [
+          "Extend the gripper towards the air fryer handle.\nGrasp the air fryer handle and pull it to open the air fryer.\nRelease the air fryer handle and move the gripper to the bread.\nGrasp the bread with the gripper and move it to the air fryer basket.\nRelease the bread inside the air fryer and retract the gripper.",
+          "Please spot the blue cup positioned before you and pinpoint its location.\nCarefully open your gripper and guide it in the direction of the cup.\nSecure a firm hold on the blue cup using your gripper, ensuring not to crush or let it slip from your grasp.\nWith caution, shift the gripper carrying the cup above the baking sheet.\nTenderly set the cup down on the baking sheet, and unclasp your gripper to release the cup."
+        ],
+        "task_index 42": [
+          "\nPlease find the red cup among the items before you.\nCarefully move your gripper towards it and gently hold it.\nLocate the front section of the organizer in front of you.\nTransfer the red cup above the front section and let go, placing it within that section.",
+          "Position your gripper near the granola bar, please.\nLightly grip the granola bar with your gripping tool.\nRelocate your gripper along with the granola bar toward the leading division of the caddy with caution.\nGently release the granola bar into the leading division of the caddy."
+        ],
+        "task_index 43": [
+          "\nCarefully stretch the hand toward the upper drawer's knob.\nGrasp the knob with conviction using the gripping tool.\nClose the drawer by pushing it.\nDisengage from the upper drawer knob.\nProceed to extend the hand to the lower drawer's knob.\nUse the gripping tool to effectively hold the knob.\nOpen the lower drawer by guiding the hand further outward.\nFinally, liberate the lower drawer knob.",
+          "Position your gripper near the tray handle while precisely lining it up.\nFirmly yet gently grip the handle, ensuring a strong hold.\nSlide the tray into the oven in a steady manner until it's entirely inside.\nRelinquish the handle as it sits within the oven and extract your gripper with care."
+        ],
+        "task_index 44": [
+          "\nAim the gripper at the oven handle and steadily take hold of the handle.\nCarefully extract the tray from the oven.\nPosition the gripper over the red cup and softly grip it, being sure of a safe hold.\nPlace the red cup on the tray with the utmost care.",
+          "Propose to navigate your clamp on the clench of the first drawer.\nUse gentle force to register to the cabinet.\nSend posterior your swing mandate till over it lurks, a cup of pink essence.\nFortify your grip after aiming concentric with the pink cup\u2019s periphery.\nManoeuvre the pink towards the cabinet's top.\nDrop your compression till the cup is resting inside."
+        ],
+        "task_index 45": [
+          "\nKindly direct your grabber toward the cereal bar.\nDelicately grip the cereal bar using your grabber.\nTransport the clutched cereal bar to the rear part of the organizer.\nSet the cereal bar down and place it in the rear section of the organizer.",
+          "Shift your gripper thoughtfully near the cereal snack bar.\nTenderly grip the snack bar with your precision device.\nCarefully hover the precision device above the first drawer installation and invite the snack bar to descend into the first drawer installation."
+        ],
+        "task_index 46": [
+          "\nPosition your gripper near the granola bar, please.\nLightly grip the granola bar with your gripping tool.\nRelocate your gripper along with the granola bar toward the leading division of the caddy with caution.\nGently release the granola bar into the leading division of the caddy.",
+          "Smooth extension of your directing tool towards the grip of the higher drawer.\nLook into correctly lingering your directing tool with drawer's hand grip device.\nSurge the slider out using handgrip.\nGuide your directing tool towards the blue container.\nGrab onto the dazzling blue cup tenderly and hover over the higher drawer.\nSmoothly release downward led cup halfway inclined into a triangular sloping cart tray."
+        ],
+        "task_index 47": [
+          "\nMeticulously direct the gripper system near the nourishment stick.\nGrapple the nourishment stick firmly with the gripper system.\nProgress with the gripper system grasping the stick toward the storage box.\nTenderly permit the nourishment stick to descend into the box.",
+          "Transport the gripper mindfully toward the orange-red bowl and clasp it to elevate with ease.\nEnsure your robot's arm aligns efficiently with the top drawer's opening.\nCarefully slide the orange-red bowl into the designated spot with precision.\nAfter confirmation, withdraw the gripper gently.\nClose the drawer smoothly by transitioning the gripper to its handle."
+        ],
+        "task_index 48": [
+          "\nPlease locate the crimson dish within your space.\nMove your hand towards it gently.\nTenderly hold the bowl carefully using your fingers and raise it.\nWith caution, shift it towards the basket.\nKindly let loose of the dish to drop it in the basket.",
+          "With care, position your gripper close to the oven tray handle.\nMake sure to grip the handle tightly.\nDelicately and attentively pull the tray out from the oven."
+        ],
+        "task_index 49": [
+          "\nCompassionately, move the pinch receptors towards pink recepticle.\nEmbrace the recepticle delicately and rise accordingly.\nProgress forward guided by applied tension and move towards the highest section of the storage unit.\nPlace the recepticle delicately and shut the storage unit.",
+          "With caution, bring your gripper towards the upper drawer's hold.\nGrasp the drawer hold tightly with your gripper tool.\nPull the drawer in your direction to reveal the contents of the top drawer."
+        ],
+        "task_index 5": [
+          "\nKindly guide your pinchers towards the book laid out on the table.\nEnsure a firm grip on the book using your pinchers.\nNow, move both the pinchers and the book to the foremost compartment of the rack.\nThen, gently free the book into the leading segment of the rack.",
+          "Carefully stretch the hand toward the upper drawer's knob.\nGrasp the knob with conviction using the gripping tool.\nClose the drawer by pushing it.\nDisengage from the upper drawer knob.\nProceed to extend the hand to the lower drawer's knob.\nUse the gripping tool to effectively hold the knob.\nOpen the lower drawer by guiding the hand further outward.\nFinally, liberate the lower drawer knob."
+        ],
+        "task_index 6": [
+          "Extend the gripper towards the oven tray handle.\nGrasp the handle and carefully pull the tray out of the oven.\nMove the gripper above the red bowl.\nGrab the red bowl gently.\nLift the bowl and place it onto the oven tray.",
+          "Caressingly guide your clamp towards the toast.\nCompassionately possess the toast with your clamp.\nGradually tag the toast up from the worktable.\nComplaisantly, cruise the held-toasty-pillow to your white crockery.\nLast but notably, liberate the toast onto the shiny white tableware."
+        ],
+        "task_index 7": [
+          "\nDiscover the targeted book and set your gripper to the appropriate amplitude.\nSmoothly guide your gripper in the direction of the book and snatch it firmly.\nSearch for the back section of the caddy.\nMove the held book towards the back section and lightly deposit it inside.",
+          "Compassionately, move the pinch receptors towards pink recepticle.\nEmbrace the recepticle delicately and rise accordingly.\nProgress forward guided by applied tension and move towards the highest section of the storage unit.\nPlace the recepticle delicately and shut the storage unit."
+        ],
+        "task_index 8": [
+          "\nKindly move the gripper close to the hot dog bowl.\nGrip the bowl lightly with the gripper, taking care not to crush the hot dogs.\nElevate the bowl a little, ensuring it remains flat to stop hot dogs from tumbling.\nTransport the gripper and bowl to the white plate, then lower it down cautiously.\nRelinquish the gripper, letting the bowl rest on the plate.",
+          "Discover the targeted book and set your gripper to the appropriate amplitude.\nSmoothly guide your gripper in the direction of the book and snatch it firmly.\nSearch for the back section of the caddy.\nMove the held book towards the back section and lightly deposit it inside."
+        ],
+        "task_index 9": [
+          "\nGently grip the air fryer handle with your gripper and kindly pull it open by sliding your gripper away from the base.\nGradually bring your gripper in line with the blue bowl and gently capture it, without tightening your grip too much.\nSecurely place the blue bowl inside the opened air fryer with a steady position.\nLiberate your robot's gripper, and withdraw your gripper from the proximity of the air fryer.",
+          "Draw close to the oven tray handle and pull it smoothly until the tray is entirely removed.\nFind the blue cup before you and put it gently onto the wide-open tray."
+        ]
+      }
+    },
+    {
+      "subject": "meta/modality.json",
+      "agree": true,
+      "absent": [],
+      "reason": "",
+      "differences": {},
+      "set_aside": {}
+    },
+    {
+      "subject": "meta/stats.json",
+      "agree": false,
+      "absent": [],
+      "reason": "ordering features follow the episode and task order; missing quantiles are the keys the v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream",
+      "differences": {
+        "absolute_action": [
+          "(absent)",
+          "present"
+        ],
+        "observation.images.image.std": [
+          "differs by 0.1974",
+          "allowed 0.05"
+        ],
+        "observation.images.wrist_image.std": [
+          "differs by 0.1785",
+          "allowed 0.05"
+        ]
+      },
+      "set_aside": {
+        "episode_index.max": [
+          "differs by 1475",
+          "allowed 1e-06"
+        ],
+        "episode_index.mean": [
+          "differs by 747.1",
+          "allowed 1e-06"
+        ],
+        "episode_index.q01": [
+          "differs by 747.1",
+          "allowed 1e-06"
+        ],
+        "episode_index.q10": [
+          "differs by 747.1",
+          "allowed 1e-06"
+        ],
+        "episode_index.q50": [
+          "differs by 747.1",
+          "allowed 1e-06"
+        ],
+        "episode_index.q90": [
+          "differs by 747.1",
+          "allowed 1e-06"
+        ],
+        "episode_index.q99": [
+          "differs by 747.1",
+          "allowed 1e-06"
+        ],
+        "episode_index.std": [
+          "differs by 425.9",
+          "allowed 1e-06"
+        ],
+        "index.max": [
+          "differs by 3.546e+05",
+          "allowed 1e-06"
+        ],
+        "index.mean": [
+          "differs by 1.779e+05",
+          "allowed 1e-06"
+        ],
+        "index.q01": [
+          "differs by 1.779e+05",
+          "allowed 1e-06"
+        ],
+        "index.q10": [
+          "differs by 1.779e+05",
+          "allowed 1e-06"
+        ],
+        "index.q50": [
+          "differs by 1.779e+05",
+          "allowed 1e-06"
+        ],
+        "index.q90": [
+          "differs by 1.779e+05",
+          "allowed 1e-06"
+        ],
+        "index.q99": [
+          "differs by 1.779e+05",
+          "allowed 1e-06"
+        ],
+        "index.std": [
+          "differs by 1.027e+05",
+          "allowed 1e-06"
+        ],
+        "task_index.max": [
+          "differs by 28",
+          "allowed 1e-06"
+        ],
+        "task_index.mean": [
+          "differs by 16.1",
+          "allowed 1e-06"
+        ],
+        "task_index.q01": [
+          "differs by 16.1",
+          "allowed 1e-06"
+        ],
+        "task_index.q10": [
+          "differs by 16.1",
+          "allowed 1e-06"
+        ],
+        "task_index.q50": [
+          "differs by 16.1",
+          "allowed 1e-06"
+        ],
+        "task_index.q90": [
+          "differs by 16.1",
+          "allowed 1e-06"
+        ],
+        "task_index.q99": [
+          "differs by 16.1",
+          "allowed 1e-06"
+        ],
+        "task_index.std": [
+          "differs by 8.688",
+          "allowed 1e-06"
+        ]
+      }
+    },
+    {
+      "subject": "meta/episodes.jsonl + meta/episodes_stats.jsonl",
+      "agree": false,
+      "absent": [],
+      "reason": "ordering features follow the episode and task order, which the episode question already reports; absent quantiles are the five keys the v3.0 to v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream",
+      "differences": {
+        "episodes_stats.jsonl.absolute_action": [
+          "(absent)",
+          "present"
+        ],
+        "episodes_stats.jsonl.observation.images.image.std": [
+          "1500 of 1500 pairs differ, worst 0.2853",
+          "the delivered copy records zero in every episode"
+        ],
+        "episodes_stats.jsonl.observation.images.wrist_image.q99": [
+          "3 of 1500 pairs differ, worst 0.05887",
+          "allowed 0.05"
+        ],
+        "episodes_stats.jsonl.observation.images.wrist_image.std": [
+          "1500 of 1500 pairs differ, worst 0.2998",
+          "the delivered copy records zero in every episode"
+        ]
+      },
+      "set_aside": {
+        "episodes_stats.jsonl.episode_index.max": [
+          "1499 of 1500 pairs differ, worst 1495",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.episode_index.mean": [
+          "1499 of 1500 pairs differ, worst 1495",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.episode_index.min": [
+          "1499 of 1500 pairs differ, worst 1495",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.episode_index.q01": [
+          "1499 of 1500 pairs differ, worst 1495",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.episode_index.q10": [
+          "1499 of 1500 pairs differ, worst 1495",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.episode_index.q50": [
+          "1499 of 1500 pairs differ, worst 1495",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.episode_index.q90": [
+          "1499 of 1500 pairs differ, worst 1495",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.episode_index.q99": [
+          "1499 of 1500 pairs differ, worst 1495",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.index.max": [
+          "1500 of 1500 pairs differ, worst 3.611e+05",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.index.mean": [
+          "1500 of 1500 pairs differ, worst 3.611e+05",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.index.min": [
+          "1500 of 1500 pairs differ, worst 3.611e+05",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.index.q01": [
+          "1500 of 1500 pairs differ, worst 3.611e+05",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.index.q10": [
+          "1500 of 1500 pairs differ, worst 3.611e+05",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.index.q50": [
+          "1500 of 1500 pairs differ, worst 3.611e+05",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.index.q90": [
+          "1500 of 1500 pairs differ, worst 3.611e+05",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.index.q99": [
+          "1500 of 1500 pairs differ, worst 3.611e+05",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.task_index.max": [
+          "1478 of 1500 pairs differ, worst 49",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.task_index.mean": [
+          "1478 of 1500 pairs differ, worst 49",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.task_index.min": [
+          "1478 of 1500 pairs differ, worst 49",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.task_index.q01": [
+          "1478 of 1500 pairs differ, worst 49",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.task_index.q10": [
+          "1478 of 1500 pairs differ, worst 49",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.task_index.q50": [
+          "1478 of 1500 pairs differ, worst 49",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.task_index.q90": [
+          "1478 of 1500 pairs differ, worst 49",
+          "allowed 1e-06"
+        ],
+        "episodes_stats.jsonl.task_index.q99": [
+          "1478 of 1500 pairs differ, worst 49",
+          "allowed 1e-06"
+        ]
+      }
+    }
+  ],
+  "episodes": {
+    "rebuilt_total": 1500,
+    "delivered_total": 1500,
+    "rebuilt_rows": 361883,
+    "delivered_rows": 361883,
+    "exact": 1500,
+    "prefix_only": 0,
+    "same_length_but_differing": [],
+    "reordered": 1498,
+    "worst_row_delta": 0,
+    "pairs": {
+      "0": 1036,
+      "1": 997,
+      "2": 1308,
+      "3": 1096,
+      "4": 563,
+      "5": 369,
+      "6": 69,
+      "7": 1197,
+      "8": 884,
+      "9": 1195,
+      "10": 742,
+      "11": 1263,
+      "12": 312,
+      "13": 666,
+      "14": 338,
+      "15": 668,
+      "16": 298,
+      "17": 1012,
+      "18": 254,
+      "19": 105,
+      "20": 1398,
+      "21": 537,
+      "22": 1010,
+      "23": 1087,
+      "24": 1151,
+      "25": 207,
+      "26": 394,
+      "27": 634,
+      "28": 36,
+      "29": 575,
+      "30": 1123,
+      "31": 508,
+      "32": 497,
+      "33": 84,
+      "34": 635,
+      "35": 468,
+      "36": 442,
+      "37": 1365,
+      "38": 1252,
+      "39": 17,
+      "40": 100,
+      "41": 1032,
+      "42": 1191,
+      "43": 1206,
+      "44": 1156,
+      "45": 538,
+      "46": 1477,
+      "47": 287,
+      "48": 650,
+      "49": 688,
+      "50": 78,
+      "51": 1112,
+      "52": 852,
+      "53": 928,
+      "54": 762,
+      "55": 32,
+      "56": 1089,
+      "57": 1344,
+      "58": 659,
+      "59": 355,
+      "60": 1109,
+      "61": 1121,
+      "62": 480,
+      "63": 1257,
+      "64": 44,
+      "65": 452,
+      "66": 1083,
+      "67": 220,
+      "68": 1249,
+      "69": 770,
+      "70": 1241,
+      "71": 596,
+      "72": 1183,
+      "73": 693,
+      "74": 699,
+      "75": 1436,
+      "76": 506,
+      "77": 356,
+      "78": 544,
+      "79": 360,
+      "80": 1488,
+      "81": 53,
+      "82": 820,
+      "83": 1201,
+      "84": 720,
+      "85": 1275,
+      "86": 1015,
+      "87": 492,
+      "88": 698,
+      "89": 1248,
+      "90": 51,
+      "91": 217,
+      "92": 1298,
+      "93": 1435,
+      "94": 391,
+      "95": 794,
+      "96": 1394,
+      "97": 882,
+      "98": 1057,
+      "99": 1068,
+      "100": 1141,
+      "101": 595,
+      "102": 744,
+      "103": 823,
+      "104": 315,
+      "105": 142,
+      "106": 850,
+      "107": 1028,
+      "108": 1152,
+      "109": 1110,
+      "110": 246,
+      "111": 1158,
+      "112": 1182,
+      "113": 1070,
+      "114": 244,
+      "115": 1214,
+      "116": 944,
+      "117": 964,
+      "118": 1196,
+      "119": 855,
+      "120": 722,
+      "121": 779,
+      "122": 76,
+      "123": 604,
+      "124": 322,
+      "125": 1284,
+      "126": 1261,
+      "127": 733,
+      "128": 536,
+      "129": 863,
+      "130": 1215,
+      "131": 334,
+      "132": 1144,
+      "133": 1092,
+      "134": 679,
+      "135": 267,
+      "136": 943,
+      "137": 463,
+      "138": 549,
+      "139": 1222,
+      "140": 1486,
+      "141": 213,
+      "142": 602,
+      "143": 34,
+      "144": 1414,
+      "145": 189,
+      "146": 339,
+      "147": 81,
+      "148": 1319,
+      "149": 1443,
+      "150": 39,
+      "151": 935,
+      "152": 174,
+      "153": 705,
+      "154": 662,
+      "155": 994,
+      "156": 1016,
+      "157": 866,
+      "158": 680,
+      "159": 1437,
+      "160": 685,
+      "161": 931,
+      "162": 586,
+      "163": 148,
+      "164": 609,
+      "165": 751,
+      "166": 1046,
+      "167": 570,
+      "168": 474,
+      "169": 1071,
+      "170": 488,
+      "171": 781,
+      "172": 358,
+      "173": 529,
+      "174": 1120,
+      "175": 318,
+      "176": 364,
+      "177": 227,
+      "178": 963,
+      "179": 268,
+      "180": 1101,
+      "181": 486,
+      "182": 731,
+      "183": 354,
+      "184": 1000,
+      "185": 340,
+      "186": 1217,
+      "187": 215,
+      "188": 316,
+      "189": 1330,
+      "190": 1318,
+      "191": 115,
+      "192": 470,
+      "193": 1162,
+      "194": 613,
+      "195": 1014,
+      "196": 988,
+      "197": 1006,
+      "198": 412,
+      "199": 1250,
+      "200": 42,
+      "201": 94,
+      "202": 1017,
+      "203": 995,
+      "204": 305,
+      "205": 232,
+      "206": 173,
+      "207": 1466,
+      "208": 540,
+      "209": 324,
+      "210": 240,
+      "211": 1393,
+      "212": 543,
+      "213": 484,
+      "214": 1406,
+      "215": 166,
+      "216": 130,
+      "217": 766,
+      "218": 1381,
+      "219": 984,
+      "220": 1446,
+      "221": 689,
+      "222": 1273,
+      "223": 845,
+      "224": 1268,
+      "225": 1333,
+      "226": 630,
+      "227": 446,
+      "228": 1029,
+      "229": 278,
+      "230": 12,
+      "231": 684,
+      "232": 165,
+      "233": 631,
+      "234": 906,
+      "235": 399,
+      "236": 208,
+      "237": 285,
+      "238": 1184,
+      "239": 431,
+      "240": 91,
+      "241": 746,
+      "242": 1002,
+      "243": 261,
+      "244": 1464,
+      "245": 691,
+      "246": 1072,
+      "247": 260,
+      "248": 789,
+      "249": 1301,
+      "250": 557,
+      "251": 1309,
+      "252": 1065,
+      "253": 43,
+      "254": 658,
+      "255": 353,
+      "256": 418,
+      "257": 887,
+      "258": 749,
+      "259": 1457,
+      "260": 457,
+      "261": 273,
+      "262": 216,
+      "263": 838,
+      "264": 1216,
+      "265": 390,
+      "266": 7,
+      "267": 592,
+      "268": 1212,
+      "269": 822,
+      "270": 1239,
+      "271": 700,
+      "272": 1086,
+      "273": 1282,
+      "274": 1426,
+      "275": 1045,
+      "276": 925,
+      "277": 487,
+      "278": 715,
+      "279": 459,
+      "280": 1450,
+      "281": 1042,
+      "282": 274,
+      "283": 1226,
+      "284": 1049,
+      "285": 856,
+      "286": 424,
+      "287": 1062,
+      "288": 960,
+      "289": 41,
+      "290": 52,
+      "291": 1188,
+      "292": 1230,
+      "293": 110,
+      "294": 86,
+      "295": 945,
+      "296": 605,
+      "297": 568,
+      "298": 922,
+      "299": 545,
+      "300": 301,
+      "301": 686,
+      "302": 437,
+      "303": 1384,
+      "304": 1084,
+      "305": 388,
+      "306": 643,
+      "307": 14,
+      "308": 1400,
+      "309": 1237,
+      "310": 1409,
+      "311": 300,
+      "312": 490,
+      "313": 904,
+      "314": 801,
+      "315": 1137,
+      "316": 65,
+      "317": 896,
+      "318": 1465,
+      "319": 1419,
+      "320": 1387,
+      "321": 1484,
+      "322": 1463,
+      "323": 941,
+      "324": 1209,
+      "325": 797,
+      "326": 154,
+      "327": 1185,
+      "328": 678,
+      "329": 790,
+      "330": 768,
+      "331": 965,
+      "332": 1133,
+      "333": 186,
+      "334": 160,
+      "335": 683,
+      "336": 1038,
+      "337": 1270,
+      "338": 799,
+      "339": 769,
+      "340": 1164,
+      "341": 1210,
+      "342": 1355,
+      "343": 805,
+      "344": 796,
+      "345": 603,
+      "346": 1391,
+      "347": 625,
+      "348": 1034,
+      "349": 970,
+      "350": 675,
+      "351": 1345,
+      "352": 1008,
+      "353": 1213,
+      "354": 257,
+      "355": 1385,
+      "356": 692,
+      "357": 168,
+      "358": 674,
+      "359": 1280,
+      "360": 1186,
+      "361": 482,
+      "362": 1113,
+      "363": 827,
+      "364": 161,
+      "365": 393,
+      "366": 1256,
+      "367": 1149,
+      "368": 1305,
+      "369": 546,
+      "370": 359,
+      "371": 1440,
+      "372": 526,
+      "373": 1476,
+      "374": 752,
+      "375": 1418,
+      "376": 1177,
+      "377": 1286,
+      "378": 672,
+      "379": 54,
+      "380": 326,
+      "381": 933,
+      "382": 992,
+      "383": 1377,
+      "384": 1431,
+      "385": 895,
+      "386": 4,
+      "387": 348,
+      "388": 184,
+      "389": 1432,
+      "390": 597,
+      "391": 861,
+      "392": 175,
+      "393": 428,
+      "394": 953,
+      "395": 1462,
+      "396": 483,
+      "397": 1332,
+      "398": 425,
+      "399": 948,
+      "400": 1421,
+      "401": 813,
+      "402": 858,
+      "403": 840,
+      "404": 892,
+      "405": 1194,
+      "406": 879,
+      "407": 839,
+      "408": 1299,
+      "409": 1297,
+      "410": 201,
+      "411": 842,
+      "412": 673,
+      "413": 153,
+      "414": 1294,
+      "415": 1448,
+      "416": 327,
+      "417": 314,
+      "418": 1037,
+      "419": 255,
+      "420": 377,
+      "421": 481,
+      "422": 1346,
+      "423": 1408,
+      "424": 451,
+      "425": 656,
+      "426": 1392,
+      "427": 121,
+      "428": 706,
+      "429": 795,
+      "430": 116,
+      "431": 1157,
+      "432": 346,
+      "433": 266,
+      "434": 1302,
+      "435": 1088,
+      "436": 564,
+      "437": 1366,
+      "438": 640,
+      "439": 665,
+      "440": 1255,
+      "441": 449,
+      "442": 676,
+      "443": 1093,
+      "444": 15,
+      "445": 559,
+      "446": 25,
+      "447": 420,
+      "448": 1339,
+      "449": 1311,
+      "450": 1225,
+      "451": 826,
+      "452": 226,
+      "453": 236,
+      "454": 761,
+      "455": 830,
+      "456": 409,
+      "457": 1491,
+      "458": 756,
+      "459": 1238,
+      "460": 709,
+      "461": 471,
+      "462": 583,
+      "463": 98,
+      "464": 865,
+      "465": 1439,
+      "466": 1026,
+      "467": 885,
+      "468": 477,
+      "469": 745,
+      "470": 1316,
+      "471": 376,
+      "472": 225,
+      "473": 172,
+      "474": 1031,
+      "475": 562,
+      "476": 875,
+      "477": 1052,
+      "478": 120,
+      "479": 868,
+      "480": 1095,
+      "481": 859,
+      "482": 307,
+      "483": 968,
+      "484": 589,
+      "485": 256,
+      "486": 1145,
+      "487": 149,
+      "488": 436,
+      "489": 622,
+      "490": 476,
+      "491": 466,
+      "492": 1363,
+      "493": 764,
+      "494": 552,
+      "495": 281,
+      "496": 374,
+      "497": 9,
+      "498": 979,
+      "499": 1,
+      "500": 828,
+      "501": 1264,
+      "502": 373,
+      "503": 1050,
+      "504": 92,
+      "505": 1337,
+      "506": 1090,
+      "507": 974,
+      "508": 455,
+      "509": 502,
+      "510": 987,
+      "511": 16,
+      "512": 505,
+      "513": 1447,
+      "514": 253,
+      "515": 532,
+      "516": 694,
+      "517": 1143,
+      "518": 1380,
+      "519": 1386,
+      "520": 901,
+      "521": 1403,
+      "522": 456,
+      "523": 169,
+      "524": 636,
+      "525": 1404,
+      "526": 1371,
+      "527": 279,
+      "528": 599,
+      "529": 179,
+      "530": 134,
+      "531": 1079,
+      "532": 496,
+      "533": 1441,
+      "534": 1461,
+      "535": 1136,
+      "536": 1173,
+      "537": 800,
+      "538": 263,
+      "539": 180,
+      "540": 1423,
+      "541": 989,
+      "542": 19,
+      "543": 565,
+      "544": 1135,
+      "545": 834,
+      "546": 3,
+      "547": 1243,
+      "548": 319,
+      "549": 283,
+      "550": 773,
+      "551": 932,
+      "552": 479,
+      "553": 1098,
+      "554": 578,
+      "555": 982,
+      "556": 535,
+      "557": 812,
+      "558": 385,
+      "559": 491,
+      "560": 558,
+      "561": 1342,
+      "562": 739,
+      "563": 890,
+      "564": 433,
+      "565": 524,
+      "566": 1276,
+      "567": 1331,
+      "568": 444,
+      "569": 1115,
+      "570": 1223,
+      "571": 917,
+      "572": 697,
+      "573": 550,
+      "574": 880,
+      "575": 383,
+      "576": 593,
+      "577": 1138,
+      "578": 617,
+      "579": 644,
+      "580": 1430,
+      "581": 833,
+      "582": 1474,
+      "583": 657,
+      "584": 380,
+      "585": 88,
+      "586": 119,
+      "587": 70,
+      "588": 1388,
+      "589": 954,
+      "590": 1082,
+      "591": 1055,
+      "592": 1499,
+      "593": 140,
+      "594": 567,
+      "595": 977,
+      "596": 77,
+      "597": 983,
+      "598": 1300,
+      "599": 495,
+      "600": 519,
+      "601": 951,
+      "602": 1416,
+      "603": 533,
+      "604": 1176,
+      "605": 1359,
+      "606": 1361,
+      "607": 1481,
+      "608": 1390,
+      "609": 590,
+      "610": 1459,
+      "611": 930,
+      "612": 690,
+      "613": 269,
+      "614": 518,
+      "615": 648,
+      "616": 646,
+      "617": 352,
+      "618": 447,
+      "619": 1076,
+      "620": 239,
+      "621": 1287,
+      "622": 1175,
+      "623": 170,
+      "624": 594,
+      "625": 50,
+      "626": 577,
+      "627": 1312,
+      "628": 26,
+      "629": 707,
+      "630": 163,
+      "631": 1193,
+      "632": 618,
+      "633": 900,
+      "634": 876,
+      "635": 782,
+      "636": 22,
+      "637": 1159,
+      "638": 725,
+      "639": 669,
+      "640": 1020,
+      "641": 1108,
+      "642": 1279,
+      "643": 1285,
+      "644": 199,
+      "645": 1211,
+      "646": 264,
+      "647": 1180,
+      "648": 938,
+      "649": 1235,
+      "650": 1349,
+      "651": 717,
+      "652": 1061,
+      "653": 1189,
+      "654": 45,
+      "655": 831,
+      "656": 1103,
+      "657": 66,
+      "658": 877,
+      "659": 85,
+      "660": 106,
+      "661": 123,
+      "662": 1317,
+      "663": 178,
+      "664": 448,
+      "665": 1340,
+      "666": 841,
+      "667": 83,
+      "668": 407,
+      "669": 1064,
+      "670": 1128,
+      "671": 808,
+      "672": 122,
+      "673": 878,
+      "674": 230,
+      "675": 361,
+      "676": 89,
+      "677": 1224,
+      "678": 475,
+      "679": 620,
+      "680": 541,
+      "681": 233,
+      "682": 708,
+      "683": 445,
+      "684": 11,
+      "685": 143,
+      "686": 738,
+      "687": 118,
+      "688": 956,
+      "689": 772,
+      "690": 396,
+      "691": 311,
+      "692": 601,
+      "693": 528,
+      "694": 1134,
+      "695": 1178,
+      "696": 351,
+      "697": 1094,
+      "698": 837,
+      "699": 767,
+      "700": 1449,
+      "701": 132,
+      "702": 1245,
+      "703": 1475,
+      "704": 1126,
+      "705": 1306,
+      "706": 461,
+      "707": 1229,
+      "708": 624,
+      "709": 576,
+      "710": 561,
+      "711": 927,
+      "712": 1420,
+      "713": 363,
+      "714": 551,
+      "715": 1007,
+      "716": 336,
+      "717": 566,
+      "718": 13,
+      "719": 35,
+      "720": 1127,
+      "721": 1452,
+      "722": 818,
+      "723": 203,
+      "724": 893,
+      "725": 1104,
+      "726": 1179,
+      "727": 654,
+      "728": 500,
+      "729": 1410,
+      "730": 1444,
+      "731": 719,
+      "732": 765,
+      "733": 357,
+      "734": 815,
+      "735": 986,
+      "736": 553,
+      "737": 619,
+      "738": 1438,
+      "739": 1327,
+      "740": 1220,
+      "741": 1130,
+      "742": 737,
+      "743": 151,
+      "744": 1341,
+      "745": 1360,
+      "746": 1067,
+      "747": 196,
+      "748": 1168,
+      "749": 588,
+      "750": 1451,
+      "751": 58,
+      "752": 978,
+      "753": 966,
+      "754": 1269,
+      "755": 1051,
+      "756": 758,
+      "757": 1174,
+      "758": 914,
+      "759": 27,
+      "760": 616,
+      "761": 871,
+      "762": 501,
+      "763": 1232,
+      "764": 584,
+      "765": 660,
+      "766": 525,
+      "767": 234,
+      "768": 205,
+      "769": 332,
+      "770": 1160,
+      "771": 517,
+      "772": 405,
+      "773": 814,
+      "774": 1364,
+      "775": 741,
+      "776": 1493,
+      "777": 99,
+      "778": 1200,
+      "779": 387,
+      "780": 1428,
+      "781": 621,
+      "782": 1155,
+      "783": 46,
+      "784": 1338,
+      "785": 864,
+      "786": 889,
+      "787": 1192,
+      "788": 1124,
+      "789": 1009,
+      "790": 1054,
+      "791": 614,
+      "792": 342,
+      "793": 1442,
+      "794": 869,
+      "795": 1081,
+      "796": 1492,
+      "797": 1372,
+      "798": 214,
+      "799": 851,
+      "800": 403,
+      "801": 1288,
+      "802": 1053,
+      "803": 844,
+      "804": 242,
+      "805": 379,
+      "806": 197,
+      "807": 82,
+      "808": 329,
+      "809": 718,
+      "810": 1116,
+      "811": 1106,
+      "812": 509,
+      "813": 310,
+      "814": 947,
+      "815": 150,
+      "816": 6,
+      "817": 1326,
+      "818": 443,
+      "819": 1161,
+      "820": 157,
+      "821": 337,
+      "822": 415,
+      "823": 1497,
+      "824": 1322,
+      "825": 753,
+      "826": 1056,
+      "827": 1114,
+      "828": 493,
+      "829": 1379,
+      "830": 1271,
+      "831": 1097,
+      "832": 598,
+      "833": 413,
+      "834": 1427,
+      "835": 651,
+      "836": 993,
+      "837": 2,
+      "838": 1429,
+      "839": 1495,
+      "840": 1292,
+      "841": 1246,
+      "842": 1148,
+      "843": 181,
+      "844": 419,
+      "845": 511,
+      "846": 74,
+      "847": 222,
+      "848": 454,
+      "849": 439,
+      "850": 1048,
+      "851": 10,
+      "852": 382,
+      "853": 333,
+      "854": 1219,
+      "855": 1290,
+      "856": 817,
+      "857": 1139,
+      "858": 1483,
+      "859": 103,
+      "860": 276,
+      "861": 574,
+      "862": 1066,
+      "863": 1107,
+      "864": 349,
+      "865": 924,
+      "866": 251,
+      "867": 1472,
+      "868": 1163,
+      "869": 959,
+      "870": 723,
+      "871": 639,
+      "872": 1336,
+      "873": 473,
+      "874": 1458,
+      "875": 1407,
+      "876": 804,
+      "877": 133,
+      "878": 289,
+      "879": 90,
+      "880": 819,
+      "881": 97,
+      "882": 555,
+      "883": 883,
+      "884": 940,
+      "885": 1069,
+      "886": 323,
+      "887": 1254,
+      "888": 952,
+      "889": 991,
+      "890": 1019,
+      "891": 335,
+      "892": 1304,
+      "893": 843,
+      "894": 641,
+      "895": 23,
+      "896": 1147,
+      "897": 1131,
+      "898": 729,
+      "899": 554,
+      "900": 962,
+      "901": 386,
+      "902": 275,
+      "903": 663,
+      "904": 915,
+      "905": 162,
+      "906": 33,
+      "907": 854,
+      "908": 632,
+      "909": 1041,
+      "910": 1487,
+      "911": 126,
+      "912": 1296,
+      "913": 204,
+      "914": 297,
+      "915": 404,
+      "916": 736,
+      "917": 687,
+      "918": 637,
+      "919": 28,
+      "920": 219,
+      "921": 1154,
+      "922": 258,
+      "923": 976,
+      "924": 1047,
+      "925": 587,
+      "926": 1146,
+      "927": 1190,
+      "928": 967,
+      "929": 237,
+      "930": 713,
+      "931": 1335,
+      "932": 534,
+      "933": 1489,
+      "934": 231,
+      "935": 1198,
+      "936": 194,
+      "937": 1063,
+      "938": 975,
+      "939": 489,
+      "940": 330,
+      "941": 1199,
+      "942": 450,
+      "943": 430,
+      "944": 701,
+      "945": 1059,
+      "946": 1024,
+      "947": 128,
+      "948": 1314,
+      "949": 972,
+      "950": 1283,
+      "951": 894,
+      "952": 1170,
+      "953": 75,
+      "954": 1378,
+      "955": 1353,
+      "956": 1468,
+      "957": 38,
+      "958": 585,
+      "959": 62,
+      "960": 747,
+      "961": 87,
+      "962": 1352,
+      "963": 435,
+      "964": 633,
+      "965": 1295,
+      "966": 835,
+      "967": 193,
+      "968": 408,
+      "969": 521,
+      "970": 921,
+      "971": 793,
+      "972": 1078,
+      "973": 295,
+      "974": 798,
+      "975": 416,
+      "976": 539,
+      "977": 1383,
+      "978": 135,
+      "979": 271,
+      "980": 29,
+      "981": 1307,
+      "982": 158,
+      "983": 1100,
+      "984": 368,
+      "985": 780,
+      "986": 129,
+      "987": 547,
+      "988": 732,
+      "989": 1091,
+      "990": 288,
+      "991": 40,
+      "992": 224,
+      "993": 187,
+      "994": 1343,
+      "995": 809,
+      "996": 998,
+      "997": 969,
+      "998": 936,
+      "999": 778,
+      "1000": 1119,
+      "1001": 990,
+      "1002": 1281,
+      "1003": 862,
+      "1004": 1456,
+      "1005": 721,
+      "1006": 247,
+      "1007": 245,
+      "1008": 397,
+      "1009": 1075,
+      "1010": 124,
+      "1011": 999,
+      "1012": 829,
+      "1013": 284,
+      "1014": 867,
+      "1015": 1445,
+      "1016": 1455,
+      "1017": 760,
+      "1018": 806,
+      "1019": 1105,
+      "1020": 670,
+      "1021": 638,
+      "1022": 1043,
+      "1023": 1023,
+      "1024": 112,
+      "1025": 530,
+      "1026": 775,
+      "1027": 1025,
+      "1028": 434,
+      "1029": 556,
+      "1030": 18,
+      "1031": 711,
+      "1032": 259,
+      "1033": 1303,
+      "1034": 681,
+      "1035": 167,
+      "1036": 464,
+      "1037": 1480,
+      "1038": 182,
+      "1039": 1030,
+      "1040": 1085,
+      "1041": 1473,
+      "1042": 696,
+      "1043": 1411,
+      "1044": 1397,
+      "1045": 293,
+      "1046": 985,
+      "1047": 1242,
+      "1048": 1125,
+      "1049": 1132,
+      "1050": 750,
+      "1051": 1001,
+      "1052": 417,
+      "1053": 113,
+      "1054": 569,
+      "1055": 785,
+      "1056": 1021,
+      "1057": 939,
+      "1058": 682,
+      "1059": 949,
+      "1060": 1412,
+      "1061": 1227,
+      "1062": 1035,
+      "1063": 462,
+      "1064": 510,
+      "1065": 612,
+      "1066": 313,
+      "1067": 1207,
+      "1068": 309,
+      "1069": 1073,
+      "1070": 202,
+      "1071": 250,
+      "1072": 365,
+      "1073": 606,
+      "1074": 64,
+      "1075": 306,
+      "1076": 302,
+      "1077": 677,
+      "1078": 824,
+      "1079": 642,
+      "1080": 429,
+      "1081": 1422,
+      "1082": 139,
+      "1083": 381,
+      "1084": 515,
+      "1085": 1274,
+      "1086": 1203,
+      "1087": 460,
+      "1088": 280,
+      "1089": 291,
+      "1090": 1354,
+      "1091": 1153,
+      "1092": 30,
+      "1093": 221,
+      "1094": 695,
+      "1095": 286,
+      "1096": 825,
+      "1097": 188,
+      "1098": 791,
+      "1099": 410,
+      "1100": 571,
+      "1101": 1425,
+      "1102": 155,
+      "1103": 109,
+      "1104": 1324,
+      "1105": 478,
+      "1106": 375,
+      "1107": 759,
+      "1108": 299,
+      "1109": 438,
+      "1110": 777,
+      "1111": 649,
+      "1112": 1208,
+      "1113": 47,
+      "1114": 57,
+      "1115": 211,
+      "1116": 807,
+      "1117": 1259,
+      "1118": 366,
+      "1119": 1347,
+      "1120": 350,
+      "1121": 652,
+      "1122": 1374,
+      "1123": 763,
+      "1124": 1496,
+      "1125": 548,
+      "1126": 1231,
+      "1127": 1267,
+      "1128": 1240,
+      "1129": 1172,
+      "1130": 591,
+      "1131": 1460,
+      "1132": 610,
+      "1133": 857,
+      "1134": 903,
+      "1135": 1323,
+      "1136": 206,
+      "1137": 1368,
+      "1138": 48,
+      "1139": 111,
+      "1140": 465,
+      "1141": 872,
+      "1142": 961,
+      "1143": 400,
+      "1144": 627,
+      "1145": 1362,
+      "1146": 902,
+      "1147": 1469,
+      "1148": 881,
+      "1149": 870,
+      "1150": 860,
+      "1151": 1011,
+      "1152": 645,
+      "1153": 1022,
+      "1154": 1478,
+      "1155": 655,
+      "1156": 788,
+      "1157": 95,
+      "1158": 131,
+      "1159": 513,
+      "1160": 848,
+      "1161": 1228,
+      "1162": 702,
+      "1163": 485,
+      "1164": 265,
+      "1165": 611,
+      "1166": 909,
+      "1167": 1325,
+      "1168": 1033,
+      "1169": 229,
+      "1170": 1005,
+      "1171": 710,
+      "1172": 252,
+      "1173": 712,
+      "1174": 572,
+      "1175": 653,
+      "1176": 183,
+      "1177": 934,
+      "1178": 63,
+      "1179": 913,
+      "1180": 1356,
+      "1181": 1074,
+      "1182": 1166,
+      "1183": 776,
+      "1184": 249,
+      "1185": 107,
+      "1186": 1313,
+      "1187": 919,
+      "1188": 114,
+      "1189": 343,
+      "1190": 664,
+      "1191": 728,
+      "1192": 414,
+      "1193": 787,
+      "1194": 542,
+      "1195": 1140,
+      "1196": 1277,
+      "1197": 171,
+      "1198": 1003,
+      "1199": 453,
+      "1200": 321,
+      "1201": 937,
+      "1202": 560,
+      "1203": 1205,
+      "1204": 127,
+      "1205": 1167,
+      "1206": 740,
+      "1207": 185,
+      "1208": 223,
+      "1209": 138,
+      "1210": 195,
+      "1211": 1433,
+      "1212": 494,
+      "1213": 411,
+      "1214": 1454,
+      "1215": 209,
+      "1216": 916,
+      "1217": 516,
+      "1218": 628,
+      "1219": 504,
+      "1220": 218,
+      "1221": 248,
+      "1222": 1490,
+      "1223": 238,
+      "1224": 527,
+      "1225": 503,
+      "1226": 1293,
+      "1227": 1405,
+      "1228": 498,
+      "1229": 308,
+      "1230": 104,
+      "1231": 1402,
+      "1232": 164,
+      "1233": 401,
+      "1234": 1181,
+      "1235": 303,
+      "1236": 1272,
+      "1237": 1389,
+      "1238": 469,
+      "1239": 241,
+      "1240": 730,
+      "1241": 344,
+      "1242": 72,
+      "1243": 1482,
+      "1244": 71,
+      "1245": 347,
+      "1246": 1150,
+      "1247": 1244,
+      "1248": 1102,
+      "1249": 512,
+      "1250": 320,
+      "1251": 1236,
+      "1252": 1399,
+      "1253": 392,
+      "1254": 907,
+      "1255": 440,
+      "1256": 1129,
+      "1257": 811,
+      "1258": 950,
+      "1259": 1099,
+      "1260": 580,
+      "1261": 1376,
+      "1262": 1258,
+      "1263": 1142,
+      "1264": 1004,
+      "1265": 49,
+      "1266": 911,
+      "1267": 873,
+      "1268": 727,
+      "1269": 734,
+      "1270": 190,
+      "1271": 905,
+      "1272": 141,
+      "1273": 1291,
+      "1274": 786,
+      "1275": 1266,
+      "1276": 191,
+      "1277": 1122,
+      "1278": 384,
+      "1279": 1013,
+      "1280": 957,
+      "1281": 1370,
+      "1282": 304,
+      "1283": 1247,
+      "1284": 262,
+      "1285": 726,
+      "1286": 1467,
+      "1287": 600,
+      "1288": 847,
+      "1289": 159,
+      "1290": 1328,
+      "1291": 177,
+      "1292": 671,
+      "1293": 771,
+      "1294": 748,
+      "1295": 1367,
+      "1296": 623,
+      "1297": 647,
+      "1298": 1396,
+      "1299": 886,
+      "1300": 1117,
+      "1301": 1039,
+      "1302": 1253,
+      "1303": 156,
+      "1304": 1118,
+      "1305": 1077,
+      "1306": 79,
+      "1307": 1018,
+      "1308": 923,
+      "1309": 371,
+      "1310": 981,
+      "1311": 210,
+      "1312": 60,
+      "1313": 73,
+      "1314": 61,
+      "1315": 783,
+      "1316": 973,
+      "1317": 1453,
+      "1318": 499,
+      "1319": 282,
+      "1320": 920,
+      "1321": 102,
+      "1322": 31,
+      "1323": 754,
+      "1324": 1027,
+      "1325": 1382,
+      "1326": 929,
+      "1327": 270,
+      "1328": 910,
+      "1329": 573,
+      "1330": 520,
+      "1331": 1415,
+      "1332": 101,
+      "1333": 757,
+      "1334": 145,
+      "1335": 1375,
+      "1336": 971,
+      "1337": 1479,
+      "1338": 1494,
+      "1339": 1470,
+      "1340": 898,
+      "1341": 980,
+      "1342": 398,
+      "1343": 724,
+      "1344": 704,
+      "1345": 228,
+      "1346": 21,
+      "1347": 792,
+      "1348": 370,
+      "1349": 294,
+      "1350": 629,
+      "1351": 198,
+      "1352": 1265,
+      "1353": 1498,
+      "1354": 1434,
+      "1355": 345,
+      "1356": 96,
+      "1357": 1413,
+      "1358": 341,
+      "1359": 1171,
+      "1360": 108,
+      "1361": 821,
+      "1362": 608,
+      "1363": 93,
+      "1364": 325,
+      "1365": 292,
+      "1366": 531,
+      "1367": 1401,
+      "1368": 996,
+      "1369": 137,
+      "1370": 1040,
+      "1371": 362,
+      "1372": 908,
+      "1373": 955,
+      "1374": 714,
+      "1375": 918,
+      "1376": 441,
+      "1377": 836,
+      "1378": 523,
+      "1379": 1080,
+      "1380": 1315,
+      "1381": 958,
+      "1382": 784,
+      "1383": 1357,
+      "1384": 1348,
+      "1385": 147,
+      "1386": 1369,
+      "1387": 80,
+      "1388": 277,
+      "1389": 1234,
+      "1390": 1204,
+      "1391": 1169,
+      "1392": 1373,
+      "1393": 1320,
+      "1394": 212,
+      "1395": 8,
+      "1396": 1358,
+      "1397": 317,
+      "1398": 1111,
+      "1399": 743,
+      "1400": 1202,
+      "1401": 774,
+      "1402": 472,
+      "1403": 378,
+      "1404": 24,
+      "1405": 389,
+      "1406": 522,
+      "1407": 1417,
+      "1408": 272,
+      "1409": 874,
+      "1410": 581,
+      "1411": 816,
+      "1412": 946,
+      "1413": 432,
+      "1414": 55,
+      "1415": 1395,
+      "1416": 1329,
+      "1417": 853,
+      "1418": 1044,
+      "1419": 703,
+      "1420": 1187,
+      "1421": 235,
+      "1422": 67,
+      "1423": 200,
+      "1424": 846,
+      "1425": 136,
+      "1426": 1321,
+      "1427": 507,
+      "1428": 296,
+      "1429": 402,
+      "1430": 832,
+      "1431": 1233,
+      "1432": 1350,
+      "1433": 458,
+      "1434": 1289,
+      "1435": 146,
+      "1436": 1251,
+      "1437": 626,
+      "1438": 467,
+      "1439": 1471,
+      "1440": 406,
+      "1441": 1165,
+      "1442": 395,
+      "1443": 810,
+      "1444": 735,
+      "1445": 579,
+      "1446": 243,
+      "1447": 1221,
+      "1448": 1424,
+      "1449": 942,
+      "1450": 582,
+      "1451": 514,
+      "1452": 1058,
+      "1453": 56,
+      "1454": 117,
+      "1455": 888,
+      "1456": 0,
+      "1457": 331,
+      "1458": 372,
+      "1459": 144,
+      "1460": 367,
+      "1461": 849,
+      "1462": 59,
+      "1463": 1060,
+      "1464": 290,
+      "1465": 1260,
+      "1466": 1485,
+      "1467": 607,
+      "1468": 661,
+      "1469": 912,
+      "1470": 192,
+      "1471": 1278,
+      "1472": 68,
+      "1473": 328,
+      "1474": 667,
+      "1475": 1351,
+      "1476": 716,
+      "1477": 899,
+      "1478": 20,
+      "1479": 615,
+      "1480": 891,
+      "1481": 427,
+      "1482": 421,
+      "1483": 152,
+      "1484": 897,
+      "1485": 755,
+      "1486": 423,
+      "1487": 926,
+      "1488": 1262,
+      "1489": 1310,
+      "1490": 1334,
+      "1491": 176,
+      "1492": 802,
+      "1493": 37,
+      "1494": 5,
+      "1495": 1218,
+      "1496": 125,
+      "1497": 426,
+      "1498": 803,
+      "1499": 422
+    },
+    "row_deltas": {},
+    "rebuilt_only": [],
+    "delivered_only": []
+  },
+  "sample": {
+    "chosen": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      1468,
+      1469,
+      1470,
+      1471,
+      1472,
+      1473,
+      1474,
+      1475,
+      1476,
+      1477,
+      1478,
+      1479,
+      1480,
+      1481,
+      1482,
+      1483,
+      1484,
+      1485,
+      1486,
+      1487,
+      1488,
+      1489,
+      1490,
+      1491,
+      1492,
+      1493,
+      1494,
+      1495,
+      1496,
+      1497,
+      1498,
+      1499
+    ],
+    "reports": [
+      {
+        "index": 0,
+        "delivered_index": 1036,
+        "rows_rebuilt": 169,
+        "rows_delivered": 169,
+        "compared_rows": 169,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (169, 8)",
+          "action": "identical (169, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 169f av1/GOP2 560107B vs 560573B (1.00x) px 0.996 ok",
+          "observation.images.wrist_image": "128x128 169f av1/GOP2 128722B vs 126364B (1.02x) px 0.997 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1,
+        "delivered_index": 997,
+        "rows_rebuilt": 207,
+        "rows_delivered": 207,
+        "compared_rows": 207,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (207, 8)",
+          "action": "identical (207, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 207f av1/GOP2 625443B vs 632010B (0.99x) px 0.997 ok",
+          "observation.images.wrist_image": "128x128 207f av1/GOP2 138879B vs 138291B (1.00x) px 0.993 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 2,
+        "delivered_index": 1308,
+        "rows_rebuilt": 152,
+        "rows_delivered": 152,
+        "compared_rows": 152,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (152, 8)",
+          "action": "identical (152, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 152f av1/GOP2 453231B vs 458181B (0.99x) px 0.994 ok",
+          "observation.images.wrist_image": "128x128 152f av1/GOP2 135072B vs 130869B (1.03x) px 0.989 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 3,
+        "delivered_index": 1096,
+        "rows_rebuilt": 212,
+        "rows_delivered": 212,
+        "compared_rows": 212,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (212, 8)",
+          "action": "identical (212, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 212f av1/GOP2 679298B vs 676820B (1.00x) px 0.997 ok",
+          "observation.images.wrist_image": "128x128 212f av1/GOP2 308205B vs 311319B (0.99x) px 0.993 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 4,
+        "delivered_index": 563,
+        "rows_rebuilt": 160,
+        "rows_delivered": 160,
+        "compared_rows": 160,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (160, 8)",
+          "action": "identical (160, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 160f av1/GOP2 496925B vs 500503B (0.99x) px 0.995 ok",
+          "observation.images.wrist_image": "128x128 160f av1/GOP2 109583B vs 125244B (0.87x) px 0.994 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 5,
+        "delivered_index": 369,
+        "rows_rebuilt": 200,
+        "rows_delivered": 200,
+        "compared_rows": 200,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (200, 8)",
+          "action": "identical (200, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 200f av1/GOP2 588610B vs 592324B (0.99x) px 0.997 ok",
+          "observation.images.wrist_image": "128x128 200f av1/GOP2 120563B vs 140059B (0.86x) px 0.995 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 6,
+        "delivered_index": 69,
+        "rows_rebuilt": 419,
+        "rows_delivered": 419,
+        "compared_rows": 419,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (419, 8)",
+          "action": "identical (419, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 419f av1/GOP2 1503067B vs 1484039B (1.01x) px 0.991 ok",
+          "observation.images.wrist_image": "128x128 419f av1/GOP2 454714B vs 455972B (1.00x) px 0.997 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 7,
+        "delivered_index": 1197,
+        "rows_rebuilt": 202,
+        "rows_delivered": 202,
+        "compared_rows": 202,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (202, 8)",
+          "action": "identical (202, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 202f av1/GOP2 596923B vs 603393B (0.99x) px 0.997 ok",
+          "observation.images.wrist_image": "128x128 202f av1/GOP2 70766B vs 71529B (0.99x) px 0.996 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 8,
+        "delivered_index": 884,
+        "rows_rebuilt": 148,
+        "rows_delivered": 148,
+        "compared_rows": 148,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (148, 8)",
+          "action": "identical (148, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 148f av1/GOP2 441414B vs 442541B (1.00x) px 0.995 ok",
+          "observation.images.wrist_image": "128x128 148f av1/GOP2 130791B vs 128922B (1.01x) px 0.992 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 9,
+        "delivered_index": 1195,
+        "rows_rebuilt": 416,
+        "rows_delivered": 416,
+        "compared_rows": 416,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (416, 8)",
+          "action": "identical (416, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 416f av1/GOP2 1249018B vs 1253734B (1.00x) px 0.997 ok",
+          "observation.images.wrist_image": "128x128 416f av1/GOP2 341811B vs 339564B (1.01x) px 0.991 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 10,
+        "delivered_index": 742,
+        "rows_rebuilt": 160,
+        "rows_delivered": 160,
+        "compared_rows": 160,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (160, 8)",
+          "action": "identical (160, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 160f av1/GOP2 581131B vs 574323B (1.01x) px 0.991 ok",
+          "observation.images.wrist_image": "128x128 160f av1/GOP2 130454B vs 128907B (1.01x) px 0.993 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 11,
+        "delivered_index": 1263,
+        "rows_rebuilt": 148,
+        "rows_delivered": 148,
+        "compared_rows": 148,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (148, 8)",
+          "action": "identical (148, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 148f av1/GOP2 443497B vs 450983B (0.98x) px 0.996 ok",
+          "observation.images.wrist_image": "128x128 148f av1/GOP2 132660B vs 131034B (1.01x) px 0.997 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 12,
+        "delivered_index": 312,
+        "rows_rebuilt": 155,
+        "rows_delivered": 155,
+        "compared_rows": 155,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (155, 8)",
+          "action": "identical (155, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 155f av1/GOP2 508270B vs 510709B (1.00x) px 0.996 ok",
+          "observation.images.wrist_image": "128x128 155f av1/GOP2 126527B vs 123014B (1.03x) px 0.997 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 13,
+        "delivered_index": 666,
+        "rows_rebuilt": 185,
+        "rows_delivered": 185,
+        "compared_rows": 185,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (185, 8)",
+          "action": "identical (185, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 185f av1/GOP2 636494B vs 631719B (1.01x) px 0.992 ok",
+          "observation.images.wrist_image": "128x128 185f av1/GOP2 142821B vs 138267B (1.03x) px 0.994 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 14,
+        "delivered_index": 338,
+        "rows_rebuilt": 165,
+        "rows_delivered": 165,
+        "compared_rows": 165,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (165, 8)",
+          "action": "identical (165, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 165f av1/GOP2 527877B vs 526321B (1.00x) px 0.993 ok",
+          "observation.images.wrist_image": "128x128 165f av1/GOP2 106156B vs 105216B (1.01x) px 0.995 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 15,
+        "delivered_index": 668,
+        "rows_rebuilt": 207,
+        "rows_delivered": 207,
+        "compared_rows": 207,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (207, 8)",
+          "action": "identical (207, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 207f av1/GOP2 637313B vs 639247B (1.00x) px 0.997 ok",
+          "observation.images.wrist_image": "128x128 207f av1/GOP2 226494B vs 224842B (1.01x) px 0.993 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 16,
+        "delivered_index": 298,
+        "rows_rebuilt": 362,
+        "rows_delivered": 362,
+        "compared_rows": 362,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (362, 8)",
+          "action": "identical (362, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 362f av1/GOP2 1108917B vs 1116861B (0.99x) px 0.997 ok",
+          "observation.images.wrist_image": "128x128 362f av1/GOP2 239121B vs 243252B (0.98x) px 0.974 PIXELS"
+        },
+        "problems": [
+          "video observation.images.wrist_image: frames agree 0.974 against delivered, below 0.98 -- the same size encoded from a different picture"
+        ]
+      },
+      {
+        "index": 17,
+        "delivered_index": 1012,
+        "rows_rebuilt": 445,
+        "rows_delivered": 445,
+        "compared_rows": 445,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (445, 8)",
+          "action": "identical (445, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 445f av1/GOP2 1396086B vs 1398004B (1.00x) px 0.995 ok",
+          "observation.images.wrist_image": "128x128 445f av1/GOP2 511342B vs 511807B (1.00x) px 0.995 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 18,
+        "delivered_index": 254,
+        "rows_rebuilt": 484,
+        "rows_delivered": 484,
+        "compared_rows": 484,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (484, 8)",
+          "action": "identical (484, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 484f av1/GOP2 1541829B vs 1550516B (0.99x) px 0.996 ok",
+          "observation.images.wrist_image": "128x128 484f av1/GOP2 569549B vs 569854B (1.00x) px 0.995 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 19,
+        "delivered_index": 105,
+        "rows_rebuilt": 176,
+        "rows_delivered": 176,
+        "compared_rows": 176,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (176, 8)",
+          "action": "identical (176, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 176f av1/GOP2 532355B vs 532669B (1.00x) px 0.994 ok",
+          "observation.images.wrist_image": "128x128 176f av1/GOP2 137757B vs 136759B (1.01x) px 0.993 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 20,
+        "delivered_index": 1398,
+        "rows_rebuilt": 353,
+        "rows_delivered": 353,
+        "compared_rows": 353,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (353, 8)",
+          "action": "identical (353, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 353f av1/GOP2 1287939B vs 1266688B (1.02x) px 0.992 ok",
+          "observation.images.wrist_image": "128x128 353f av1/GOP2 374759B vs 375563B (1.00x) px 0.997 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 21,
+        "delivered_index": 537,
+        "rows_rebuilt": 156,
+        "rows_delivered": 156,
+        "compared_rows": 156,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (156, 8)",
+          "action": "identical (156, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 156f av1/GOP2 486710B vs 487676B (1.00x) px 0.993 ok",
+          "observation.images.wrist_image": "128x128 156f av1/GOP2 107689B vs 106893B (1.01x) px 0.995 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 22,
+        "delivered_index": 1010,
+        "rows_rebuilt": 176,
+        "rows_delivered": 176,
+        "compared_rows": 176,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (176, 8)",
+          "action": "identical (176, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 176f av1/GOP2 515304B vs 517888B (1.00x) px 0.994 ok",
+          "observation.images.wrist_image": "128x128 176f av1/GOP2 184998B vs 183750B (1.01x) px 0.990 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 23,
+        "delivered_index": 1087,
+        "rows_rebuilt": 161,
+        "rows_delivered": 161,
+        "compared_rows": 161,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (161, 8)",
+          "action": "identical (161, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 161f av1/GOP2 518403B vs 519070B (1.00x) px 0.994 ok",
+          "observation.images.wrist_image": "128x128 161f av1/GOP2 103056B vs 103313B (1.00x) px 0.995 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 24,
+        "delivered_index": 1151,
+        "rows_rebuilt": 158,
+        "rows_delivered": 158,
+        "compared_rows": 158,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (158, 8)",
+          "action": "identical (158, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 158f av1/GOP2 488599B vs 490099B (1.00x) px 0.996 ok",
+          "observation.images.wrist_image": "128x128 158f av1/GOP2 166231B vs 165732B (1.00x) px 0.994 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 25,
+        "delivered_index": 207,
+        "rows_rebuilt": 171,
+        "rows_delivered": 171,
+        "compared_rows": 171,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (171, 8)",
+          "action": "identical (171, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 171f av1/GOP2 591004B vs 582455B (1.01x) px 0.995 ok",
+          "observation.images.wrist_image": "128x128 171f av1/GOP2 194326B vs 189526B (1.03x) px 0.996 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 26,
+        "delivered_index": 394,
+        "rows_rebuilt": 157,
+        "rows_delivered": 157,
+        "compared_rows": 157,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (157, 8)",
+          "action": "identical (157, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 157f av1/GOP2 471572B vs 477720B (0.99x) px 0.991 ok",
+          "observation.images.wrist_image": "128x128 157f av1/GOP2 97948B vs 96849B (1.01x) px 0.995 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 27,
+        "delivered_index": 634,
+        "rows_rebuilt": 154,
+        "rows_delivered": 154,
+        "compared_rows": 154,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (154, 8)",
+          "action": "identical (154, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 154f av1/GOP2 456602B vs 462073B (0.99x) px 0.993 ok",
+          "observation.images.wrist_image": "128x128 154f av1/GOP2 119003B vs 116598B (1.02x) px 0.990 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 28,
+        "delivered_index": 36,
+        "rows_rebuilt": 180,
+        "rows_delivered": 180,
+        "compared_rows": 180,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (180, 8)",
+          "action": "identical (180, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 180f av1/GOP2 568384B vs 572158B (0.99x) px 0.996 ok",
+          "observation.images.wrist_image": "128x128 180f av1/GOP2 197802B vs 196958B (1.00x) px 0.986 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 29,
+        "delivered_index": 575,
+        "rows_rebuilt": 407,
+        "rows_delivered": 407,
+        "compared_rows": 407,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (407, 8)",
+          "action": "identical (407, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 407f av1/GOP2 1294662B vs 1299474B (1.00x) px 0.993 ok",
+          "observation.images.wrist_image": "128x128 407f av1/GOP2 523988B vs 520543B (1.01x) px 0.994 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 30,
+        "delivered_index": 1123,
+        "rows_rebuilt": 166,
+        "rows_delivered": 166,
+        "compared_rows": 166,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (166, 8)",
+          "action": "identical (166, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 166f av1/GOP2 517533B vs 519837B (1.00x) px 0.997 ok",
+          "observation.images.wrist_image": "128x128 166f av1/GOP2 100193B vs 114311B (0.88x) px 0.993 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 31,
+        "delivered_index": 508,
+        "rows_rebuilt": 194,
+        "rows_delivered": 194,
+        "compared_rows": 194,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (194, 8)",
+          "action": "identical (194, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 194f av1/GOP2 590406B vs 594629B (0.99x) px 0.995 ok",
+          "observation.images.wrist_image": "128x128 194f av1/GOP2 138896B vs 138057B (1.01x) px 0.993 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1468,
+        "delivered_index": 661,
+        "rows_rebuilt": 165,
+        "rows_delivered": 165,
+        "compared_rows": 165,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (165, 8)",
+          "action": "identical (165, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 165f av1/GOP2 602798B vs 592720B (1.02x) px 0.991 ok",
+          "observation.images.wrist_image": "128x128 165f av1/GOP2 221323B vs 223010B (0.99x) px 0.992 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1469,
+        "delivered_index": 912,
+        "rows_rebuilt": 400,
+        "rows_delivered": 400,
+        "compared_rows": 400,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (400, 8)",
+          "action": "identical (400, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 400f av1/GOP2 1217338B vs 1223012B (1.00x) px 0.994 ok",
+          "observation.images.wrist_image": "128x128 400f av1/GOP2 299005B vs 293606B (1.02x) px 0.993 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1470,
+        "delivered_index": 192,
+        "rows_rebuilt": 172,
+        "rows_delivered": 172,
+        "compared_rows": 172,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (172, 8)",
+          "action": "identical (172, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 172f av1/GOP2 533198B vs 535517B (1.00x) px 0.997 ok",
+          "observation.images.wrist_image": "128x128 172f av1/GOP2 188419B vs 187535B (1.00x) px 0.990 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1471,
+        "delivered_index": 1278,
+        "rows_rebuilt": 383,
+        "rows_delivered": 383,
+        "compared_rows": 383,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (383, 8)",
+          "action": "identical (383, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 383f av1/GOP2 1207663B vs 1206333B (1.00x) px 0.993 ok",
+          "observation.images.wrist_image": "128x128 383f av1/GOP2 513293B vs 505790B (1.01x) px 0.995 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1472,
+        "delivered_index": 68,
+        "rows_rebuilt": 206,
+        "rows_delivered": 206,
+        "compared_rows": 206,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (206, 8)",
+          "action": "identical (206, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 206f av1/GOP2 607213B vs 610132B (1.00x) px 0.997 ok",
+          "observation.images.wrist_image": "128x128 206f av1/GOP2 143669B vs 145706B (0.99x) px 0.996 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1473,
+        "delivered_index": 328,
+        "rows_rebuilt": 369,
+        "rows_delivered": 369,
+        "compared_rows": 369,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (369, 8)",
+          "action": "identical (369, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 369f av1/GOP2 1132602B vs 1140608B (0.99x) px 0.996 ok",
+          "observation.images.wrist_image": "128x128 369f av1/GOP2 320069B vs 316958B (1.01x) px 0.995 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1474,
+        "delivered_index": 667,
+        "rows_rebuilt": 172,
+        "rows_delivered": 172,
+        "compared_rows": 172,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (172, 8)",
+          "action": "identical (172, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 172f av1/GOP2 542879B vs 542517B (1.00x) px 0.992 ok",
+          "observation.images.wrist_image": "128x128 172f av1/GOP2 165359B vs 158124B (1.05x) px 0.992 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1475,
+        "delivered_index": 1351,
+        "rows_rebuilt": 174,
+        "rows_delivered": 174,
+        "compared_rows": 174,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (174, 8)",
+          "action": "identical (174, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 174f av1/GOP2 633621B vs 626343B (1.01x) px 0.992 ok",
+          "observation.images.wrist_image": "128x128 174f av1/GOP2 183587B vs 179024B (1.03x) px 0.995 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1476,
+        "delivered_index": 716,
+        "rows_rebuilt": 342,
+        "rows_delivered": 342,
+        "compared_rows": 342,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (342, 8)",
+          "action": "identical (342, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 342f av1/GOP2 1182438B vs 1165756B (1.01x) px 0.994 ok",
+          "observation.images.wrist_image": "128x128 342f av1/GOP2 326014B vs 325253B (1.00x) px 0.992 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1477,
+        "delivered_index": 899,
+        "rows_rebuilt": 164,
+        "rows_delivered": 164,
+        "compared_rows": 164,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (164, 8)",
+          "action": "identical (164, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 164f av1/GOP2 486178B vs 486498B (1.00x) px 0.995 ok",
+          "observation.images.wrist_image": "128x128 164f av1/GOP2 101881B vs 100851B (1.01x) px 0.991 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1478,
+        "delivered_index": 20,
+        "rows_rebuilt": 147,
+        "rows_delivered": 147,
+        "compared_rows": 147,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (147, 8)",
+          "action": "identical (147, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 147f av1/GOP2 439437B vs 446848B (0.98x) px 0.997 ok",
+          "observation.images.wrist_image": "128x128 147f av1/GOP2 117150B vs 115494B (1.01x) px 0.997 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1479,
+        "delivered_index": 615,
+        "rows_rebuilt": 155,
+        "rows_delivered": 155,
+        "compared_rows": 155,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (155, 8)",
+          "action": "identical (155, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 155f av1/GOP2 458872B vs 461286B (0.99x) px 0.994 ok",
+          "observation.images.wrist_image": "128x128 155f av1/GOP2 160522B vs 158300B (1.01x) px 0.989 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1480,
+        "delivered_index": 891,
+        "rows_rebuilt": 397,
+        "rows_delivered": 397,
+        "compared_rows": 397,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (397, 8)",
+          "action": "identical (397, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 397f av1/GOP2 1231723B vs 1234908B (1.00x) px 0.997 ok",
+          "observation.images.wrist_image": "128x128 397f av1/GOP2 257781B vs 263277B (0.98x) px 0.995 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1481,
+        "delivered_index": 427,
+        "rows_rebuilt": 408,
+        "rows_delivered": 408,
+        "compared_rows": 408,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (408, 8)",
+          "action": "identical (408, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 408f av1/GOP2 1388358B vs 1368091B (1.01x) px 0.994 ok",
+          "observation.images.wrist_image": "128x128 408f av1/GOP2 435159B vs 431526B (1.01x) px 0.989 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1482,
+        "delivered_index": 421,
+        "rows_rebuilt": 155,
+        "rows_delivered": 155,
+        "compared_rows": 155,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (155, 8)",
+          "action": "identical (155, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 155f av1/GOP2 548757B vs 543063B (1.01x) px 0.993 ok",
+          "observation.images.wrist_image": "128x128 155f av1/GOP2 114516B vs 112391B (1.02x) px 0.994 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1483,
+        "delivered_index": 152,
+        "rows_rebuilt": 129,
+        "rows_delivered": 129,
+        "compared_rows": 129,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (129, 8)",
+          "action": "identical (129, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 129f av1/GOP2 459794B vs 456189B (1.01x) px 0.993 ok",
+          "observation.images.wrist_image": "128x128 129f av1/GOP2 110471B vs 105448B (1.05x) px 0.993 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1484,
+        "delivered_index": 897,
+        "rows_rebuilt": 424,
+        "rows_delivered": 424,
+        "compared_rows": 424,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (424, 8)",
+          "action": "identical (424, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 424f av1/GOP2 1324745B vs 1334056B (0.99x) px 0.996 ok",
+          "observation.images.wrist_image": "128x128 424f av1/GOP2 398687B vs 395320B (1.01x) px 0.995 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1485,
+        "delivered_index": 755,
+        "rows_rebuilt": 186,
+        "rows_delivered": 186,
+        "compared_rows": 186,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (186, 8)",
+          "action": "identical (186, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 186f av1/GOP2 579982B vs 584872B (0.99x) px 0.995 ok",
+          "observation.images.wrist_image": "128x128 186f av1/GOP2 136387B vs 146681B (0.93x) px 0.991 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1486,
+        "delivered_index": 423,
+        "rows_rebuilt": 147,
+        "rows_delivered": 147,
+        "compared_rows": 147,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (147, 8)",
+          "action": "identical (147, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 147f av1/GOP2 457476B vs 458579B (1.00x) px 0.994 ok",
+          "observation.images.wrist_image": "128x128 147f av1/GOP2 108401B vs 106885B (1.01x) px 0.995 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1487,
+        "delivered_index": 926,
+        "rows_rebuilt": 195,
+        "rows_delivered": 195,
+        "compared_rows": 195,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (195, 8)",
+          "action": "identical (195, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 195f av1/GOP2 618954B vs 623570B (0.99x) px 0.997 ok",
+          "observation.images.wrist_image": "128x128 195f av1/GOP2 217774B vs 216506B (1.01x) px 0.992 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1488,
+        "delivered_index": 1262,
+        "rows_rebuilt": 403,
+        "rows_delivered": 403,
+        "compared_rows": 403,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (403, 8)",
+          "action": "identical (403, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 403f av1/GOP2 1191805B vs 1207724B (0.99x) px 0.993 ok",
+          "observation.images.wrist_image": "128x128 403f av1/GOP2 366938B vs 366216B (1.00x) px 0.992 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1489,
+        "delivered_index": 1310,
+        "rows_rebuilt": 175,
+        "rows_delivered": 175,
+        "compared_rows": 175,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (175, 8)",
+          "action": "identical (175, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 175f av1/GOP2 530266B vs 535680B (0.99x) px 0.993 ok",
+          "observation.images.wrist_image": "128x128 175f av1/GOP2 143269B vs 141573B (1.01x) px 0.992 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1490,
+        "delivered_index": 1334,
+        "rows_rebuilt": 164,
+        "rows_delivered": 164,
+        "compared_rows": 164,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (164, 8)",
+          "action": "identical (164, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 164f av1/GOP2 500425B vs 500345B (1.00x) px 0.994 ok",
+          "observation.images.wrist_image": "128x128 164f av1/GOP2 131979B vs 126138B (1.05x) px 0.990 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1491,
+        "delivered_index": 176,
+        "rows_rebuilt": 151,
+        "rows_delivered": 151,
+        "compared_rows": 151,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (151, 8)",
+          "action": "identical (151, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 151f av1/GOP2 469212B vs 469388B (1.00x) px 0.996 ok",
+          "observation.images.wrist_image": "128x128 151f av1/GOP2 132548B vs 128013B (1.04x) px 0.992 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1492,
+        "delivered_index": 802,
+        "rows_rebuilt": 190,
+        "rows_delivered": 190,
+        "compared_rows": 190,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (190, 8)",
+          "action": "identical (190, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 190f av1/GOP2 571027B vs 572285B (1.00x) px 0.996 ok",
+          "observation.images.wrist_image": "128x128 190f av1/GOP2 105692B vs 104685B (1.01x) px 0.995 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1493,
+        "delivered_index": 37,
+        "rows_rebuilt": 152,
+        "rows_delivered": 152,
+        "compared_rows": 152,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (152, 8)",
+          "action": "identical (152, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 152f av1/GOP2 482224B vs 480749B (1.00x) px 0.992 ok",
+          "observation.images.wrist_image": "128x128 152f av1/GOP2 139399B vs 135040B (1.03x) px 0.994 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1494,
+        "delivered_index": 5,
+        "rows_rebuilt": 174,
+        "rows_delivered": 174,
+        "compared_rows": 174,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (174, 8)",
+          "action": "identical (174, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 174f av1/GOP2 527908B vs 528073B (1.00x) px 0.995 ok",
+          "observation.images.wrist_image": "128x128 174f av1/GOP2 191179B vs 189138B (1.01x) px 0.990 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1495,
+        "delivered_index": 1218,
+        "rows_rebuilt": 181,
+        "rows_delivered": 181,
+        "compared_rows": 181,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (181, 8)",
+          "action": "identical (181, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 181f av1/GOP2 571549B vs 572330B (1.00x) px 0.997 ok",
+          "observation.images.wrist_image": "128x128 181f av1/GOP2 215467B vs 213966B (1.01x) px 0.992 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1496,
+        "delivered_index": 125,
+        "rows_rebuilt": 389,
+        "rows_delivered": 389,
+        "compared_rows": 389,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (389, 8)",
+          "action": "identical (389, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 389f av1/GOP2 1306557B vs 1282649B (1.02x) px 0.993 ok",
+          "observation.images.wrist_image": "128x128 389f av1/GOP2 359364B vs 359886B (1.00x) px 0.993 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1497,
+        "delivered_index": 426,
+        "rows_rebuilt": 154,
+        "rows_delivered": 154,
+        "compared_rows": 154,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (154, 8)",
+          "action": "identical (154, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 154f av1/GOP2 463305B vs 467318B (0.99x) px 0.997 ok",
+          "observation.images.wrist_image": "128x128 154f av1/GOP2 146498B vs 143779B (1.02x) px 0.998 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1498,
+        "delivered_index": 803,
+        "rows_rebuilt": 469,
+        "rows_delivered": 469,
+        "compared_rows": 469,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (469, 8)",
+          "action": "identical (469, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 469f av1/GOP2 1486242B vs 1476542B (1.01x) px 0.993 ok",
+          "observation.images.wrist_image": "128x128 469f av1/GOP2 574042B vs 568657B (1.01x) px 0.991 ok"
+        },
+        "problems": []
+      },
+      {
+        "index": 1499,
+        "delivered_index": 422,
+        "rows_rebuilt": 159,
+        "rows_delivered": 159,
+        "compared_rows": 159,
+        "first_divergence": null,
+        "prompt_matches": true,
+        "columns": {
+          "observation.state": "identical (159, 8)",
+          "action": "identical (159, 7)"
+        },
+        "video": {
+          "observation.images.image": "128x128 159f av1/GOP2 535731B vs 528768B (1.01x) px 0.993 ok",
+          "observation.images.wrist_image": "128x128 159f av1/GOP2 165473B vs 161174B (1.03x) px 0.995 ok"
+        },
+        "problems": []
+      }
+    ]
+  },
+  "video": {
+    "rebuilt": {
+      "observation.images.image": {
+        "files": 1500,
+        "bytes": 1153954263
+      },
+      "observation.images.wrist_image": {
+        "files": 1500,
+        "bytes": 332788301
+      }
+    },
+    "delivered": {
+      "observation.images.image": {
+        "files": 1500,
+        "bytes": 1152894207
+      },
+      "observation.images.wrist_image": {
+        "files": 1500,
+        "bytes": 331285047
+      }
+    },
+    "problems": []
+  },
+  "prompts": {
+    "pairs_checked": 1500,
+    "mismatched": {},
+    "rebuilt_only": {},
+    "delivered_only": {}
+  },
+  "distributions": {
+    "gap_overall": {
+      "action": 1.26010313295e-14,
+      "observation.state": 1.35231756836e-14
+    },
+    "gap_shared": {
+      "action": 1.26010313295e-14,
+      "observation.state": 1.35231756836e-14
+    },
+    "detail": {
+      "overall": {
+        "rebuilt": {
+          "observation.state": {
+            "rows": 361883,
+            "mean": [
+              -0.0975805006836,
+              0.0604949413076,
+              -0.00888001975532,
+              -2.34181262608,
+              -0.486105612883,
+              2.2386640706,
+              1.33503468331,
+              0.0462921353508
+            ],
+            "std": [
+              0.210804035907,
+              0.287912241928,
+              0.1790904906,
+              0.235811728124,
+              0.639014021446,
+              0.335393901339,
+              0.509437394576,
+              0.0307909579069
+            ],
+            "min": [
+              -0.699092745781,
+              -0.831127643585,
+              -0.532334327698,
+              -2.98618865013,
+              -2.06080985069,
+              0.826747477055,
+              0.0597204975784,
+              0.00026726332726
+            ],
+            "max": [
+              0.583167612553,
+              0.802409768105,
+              1.35008251667,
+              -1.11457479,
+              0.534565448761,
+              3.21085238457,
+              2.87558436394,
+              0.0756946206093
+            ],
+            "q01": [
+              -0.532959406376,
+              -0.507523775101,
+              -0.343833327293,
+              -2.78492604256,
+              -1.86855805397,
+              1.39671945095,
+              0.515009653568,
+              0.0019378233701
+            ],
+            "q50": [
+              -0.0767742693424,
+              0.0292217470706,
+              -0.0206850990653,
+              -2.38600945473,
+              -0.157490700483,
+              2.27297782898,
+              1.26921570301,
+              0.0559394620359
+            ],
+            "q99": [
+              0.360581327081,
+              0.634027991295,
+              0.588072398901,
+              -1.61057970285,
+              0.278806593418,
+              2.89028865337,
+              2.83695179462,
+              0.0756519436836
+            ]
+          },
+          "action": {
+            "rows": 361883,
+            "mean": [
+              0.0617638456126,
+              -0.00500547733312,
+              0.102167756661,
+              -0.0331410704641,
+              0.0138951391593,
+              -0.0113175825248,
+              0.503897668583
+            ],
+            "std": [
+              0.187458230168,
+              0.446892188888,
+              0.379270034215,
+              0.141066873129,
+              0.0645131880136,
+              0.117646860541,
+              0.499984807947
+            ],
+            "min": [
+              -1.0,
+              -1.0,
+              -1.0,
+              -0.375,
+              -0.375,
+              -0.375,
+              0.0
+            ],
+            "max": [
+              1.0,
+              1.0,
+              1.0,
+              0.375,
+              0.375,
+              0.375,
+              1.0
+            ],
+            "q01": [
+              -0.428571432829,
+              -0.980000019073,
+              -0.557142853737,
+              -0.375,
+              -0.156428575516,
+              -0.335357129574,
+              0.0
+            ],
+            "q50": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "q99": [
+              0.5914285779,
+              0.971428573132,
+              1.0,
+              0.327857136726,
+              0.207857146859,
+              0.256071418524,
+              1.0
+            ]
+          }
+        },
+        "delivered": {
+          "observation.state": {
+            "rows": 361883,
+            "mean": [
+              -0.0975805006836,
+              0.0604949413076,
+              -0.00888001975532,
+              -2.34181262608,
+              -0.486105612883,
+              2.2386640706,
+              1.33503468331,
+              0.0462921353508
+            ],
+            "std": [
+              0.210804035907,
+              0.287912241928,
+              0.1790904906,
+              0.235811728124,
+              0.639014021446,
+              0.335393901339,
+              0.509437394576,
+              0.0307909579069
+            ],
+            "min": [
+              -0.699092745781,
+              -0.831127643585,
+              -0.532334327698,
+              -2.98618865013,
+              -2.06080985069,
+              0.826747477055,
+              0.0597204975784,
+              0.00026726332726
+            ],
+            "max": [
+              0.583167612553,
+              0.802409768105,
+              1.35008251667,
+              -1.11457479,
+              0.534565448761,
+              3.21085238457,
+              2.87558436394,
+              0.0756946206093
+            ],
+            "q01": [
+              -0.532959406376,
+              -0.507523775101,
+              -0.343833327293,
+              -2.78492604256,
+              -1.86855805397,
+              1.39671945095,
+              0.515009653568,
+              0.0019378233701
+            ],
+            "q50": [
+              -0.0767742693424,
+              0.0292217470706,
+              -0.0206850990653,
+              -2.38600945473,
+              -0.157490700483,
+              2.27297782898,
+              1.26921570301,
+              0.0559394620359
+            ],
+            "q99": [
+              0.360581327081,
+              0.634027991295,
+              0.588072398901,
+              -1.61057970285,
+              0.278806593418,
+              2.89028865337,
+              2.83695179462,
+              0.0756519436836
+            ]
+          },
+          "action": {
+            "rows": 361883,
+            "mean": [
+              0.0617638456126,
+              -0.00500547733312,
+              0.102167756661,
+              -0.0331410704641,
+              0.0138951391593,
+              -0.0113175825248,
+              0.503897668583
+            ],
+            "std": [
+              0.187458230167,
+              0.446892188888,
+              0.379270034215,
+              0.141066873129,
+              0.0645131880137,
+              0.117646860541,
+              0.499984807947
+            ],
+            "min": [
+              -1.0,
+              -1.0,
+              -1.0,
+              -0.375,
+              -0.375,
+              -0.375,
+              0.0
+            ],
+            "max": [
+              1.0,
+              1.0,
+              1.0,
+              0.375,
+              0.375,
+              0.375,
+              1.0
+            ],
+            "q01": [
+              -0.428571432829,
+              -0.980000019073,
+              -0.557142853737,
+              -0.375,
+              -0.156428575516,
+              -0.335357129574,
+              0.0
+            ],
+            "q50": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "q99": [
+              0.5914285779,
+              0.971428573132,
+              1.0,
+              0.327857136726,
+              0.207857146859,
+              0.256071418524,
+              1.0
+            ]
+          }
+        }
+      },
+      "shared": {
+        "rebuilt": {
+          "observation.state": {
+            "rows": 361883,
+            "mean": [
+              -0.0975805006836,
+              0.0604949413076,
+              -0.00888001975532,
+              -2.34181262608,
+              -0.486105612883,
+              2.2386640706,
+              1.33503468331,
+              0.0462921353508
+            ],
+            "std": [
+              0.210804035907,
+              0.287912241928,
+              0.1790904906,
+              0.235811728124,
+              0.639014021446,
+              0.335393901339,
+              0.509437394576,
+              0.0307909579069
+            ],
+            "min": [
+              -0.699092745781,
+              -0.831127643585,
+              -0.532334327698,
+              -2.98618865013,
+              -2.06080985069,
+              0.826747477055,
+              0.0597204975784,
+              0.00026726332726
+            ],
+            "max": [
+              0.583167612553,
+              0.802409768105,
+              1.35008251667,
+              -1.11457479,
+              0.534565448761,
+              3.21085238457,
+              2.87558436394,
+              0.0756946206093
+            ],
+            "q01": [
+              -0.532959406376,
+              -0.507523775101,
+              -0.343833327293,
+              -2.78492604256,
+              -1.86855805397,
+              1.39671945095,
+              0.515009653568,
+              0.0019378233701
+            ],
+            "q50": [
+              -0.0767742693424,
+              0.0292217470706,
+              -0.0206850990653,
+              -2.38600945473,
+              -0.157490700483,
+              2.27297782898,
+              1.26921570301,
+              0.0559394620359
+            ],
+            "q99": [
+              0.360581327081,
+              0.634027991295,
+              0.588072398901,
+              -1.61057970285,
+              0.278806593418,
+              2.89028865337,
+              2.83695179462,
+              0.0756519436836
+            ]
+          },
+          "action": {
+            "rows": 361883,
+            "mean": [
+              0.0617638456126,
+              -0.00500547733312,
+              0.102167756661,
+              -0.0331410704641,
+              0.0138951391593,
+              -0.0113175825248,
+              0.503897668583
+            ],
+            "std": [
+              0.187458230168,
+              0.446892188888,
+              0.379270034215,
+              0.141066873129,
+              0.0645131880136,
+              0.117646860541,
+              0.499984807947
+            ],
+            "min": [
+              -1.0,
+              -1.0,
+              -1.0,
+              -0.375,
+              -0.375,
+              -0.375,
+              0.0
+            ],
+            "max": [
+              1.0,
+              1.0,
+              1.0,
+              0.375,
+              0.375,
+              0.375,
+              1.0
+            ],
+            "q01": [
+              -0.428571432829,
+              -0.980000019073,
+              -0.557142853737,
+              -0.375,
+              -0.156428575516,
+              -0.335357129574,
+              0.0
+            ],
+            "q50": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "q99": [
+              0.5914285779,
+              0.971428573132,
+              1.0,
+              0.327857136726,
+              0.207857146859,
+              0.256071418524,
+              1.0
+            ]
+          }
+        },
+        "delivered": {
+          "observation.state": {
+            "rows": 361883,
+            "mean": [
+              -0.0975805006836,
+              0.0604949413076,
+              -0.00888001975532,
+              -2.34181262608,
+              -0.486105612883,
+              2.2386640706,
+              1.33503468331,
+              0.0462921353508
+            ],
+            "std": [
+              0.210804035907,
+              0.287912241928,
+              0.1790904906,
+              0.235811728124,
+              0.639014021446,
+              0.335393901339,
+              0.509437394576,
+              0.0307909579069
+            ],
+            "min": [
+              -0.699092745781,
+              -0.831127643585,
+              -0.532334327698,
+              -2.98618865013,
+              -2.06080985069,
+              0.826747477055,
+              0.0597204975784,
+              0.00026726332726
+            ],
+            "max": [
+              0.583167612553,
+              0.802409768105,
+              1.35008251667,
+              -1.11457479,
+              0.534565448761,
+              3.21085238457,
+              2.87558436394,
+              0.0756946206093
+            ],
+            "q01": [
+              -0.532959406376,
+              -0.507523775101,
+              -0.343833327293,
+              -2.78492604256,
+              -1.86855805397,
+              1.39671945095,
+              0.515009653568,
+              0.0019378233701
+            ],
+            "q50": [
+              -0.0767742693424,
+              0.0292217470706,
+              -0.0206850990653,
+              -2.38600945473,
+              -0.157490700483,
+              2.27297782898,
+              1.26921570301,
+              0.0559394620359
+            ],
+            "q99": [
+              0.360581327081,
+              0.634027991295,
+              0.588072398901,
+              -1.61057970285,
+              0.278806593418,
+              2.89028865337,
+              2.83695179462,
+              0.0756519436836
+            ]
+          },
+          "action": {
+            "rows": 361883,
+            "mean": [
+              0.0617638456126,
+              -0.00500547733312,
+              0.102167756661,
+              -0.0331410704641,
+              0.0138951391593,
+              -0.0113175825248,
+              0.503897668583
+            ],
+            "std": [
+              0.187458230167,
+              0.446892188888,
+              0.379270034215,
+              0.141066873129,
+              0.0645131880137,
+              0.117646860541,
+              0.499984807947
+            ],
+            "min": [
+              -1.0,
+              -1.0,
+              -1.0,
+              -0.375,
+              -0.375,
+              -0.375,
+              0.0
+            ],
+            "max": [
+              1.0,
+              1.0,
+              1.0,
+              0.375,
+              0.375,
+              0.375,
+              1.0
+            ],
+            "q01": [
+              -0.428571432829,
+              -0.980000019073,
+              -0.557142853737,
+              -0.375,
+              -0.156428575516,
+              -0.335357129574,
+              0.0
+            ],
+            "q50": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ],
+            "q99": [
+              0.5914285779,
+              0.971428573132,
+              1.0,
+              0.327857136726,
+              0.207857146859,
+              0.256071418524,
+              1.0
+            ]
+          }
+        }
+      }
+    }
+  }
+}

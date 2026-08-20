@@ -1,0 +1,14 @@
+{
+  "bytes": 3590872247,
+  "created": [],
+  "dataset": "dobbe",
+  "dest_uri": "s3://rlwrld-foundry-data/lerobot/rldx1/dobbe/",
+  "error": null,
+  "finished": "2026-08-20T09:09:56+00:00",
+  "profile": null,
+  "source_uri": null,
+  "spec_sha": null,
+  "started": "2026-08-20T09:08:50+00:00",
+  "status": "ok",
+  "step": "publish"
+}

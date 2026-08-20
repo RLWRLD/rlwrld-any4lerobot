@@ -1,0 +1,16 @@
+{
+  "bytes": 77828091275,
+  "created": [
+    "/scratch/raw/stanford_hydra_dataset_converted_externally_to_rlds"
+  ],
+  "dataset": "stanford_hydra_dataset_converted_externally_to_rlds",
+  "dest_uri": null,
+  "error": null,
+  "finished": "2026-08-20T08:32:23+00:00",
+  "profile": null,
+  "source_uri": "s3://rlwrld-foundry-data/external/stanford_hydra_dataset_converted_externally_to_rlds/",
+  "spec_sha": null,
+  "started": "2026-08-20T08:29:19+00:00",
+  "status": "ok",
+  "step": "fetch"
+}

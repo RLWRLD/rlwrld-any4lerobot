@@ -1,0 +1,97 @@
+jaco_play
+
+1  declaration    [FAIL]  everything under meta/ that needs no pairing
+     [ ok ] meta/info.json
+     every field both copies declare is the same on both sides
+     one-sided    16 field(s); only one copy declares them, so there is nothing to compare, and they are not judged here
+                  features.observation.images.image.info.is_depth_map False vs '(absent)'
+                  features.observation.images.image.info.video.crf 30 vs '(absent)'
+                  features.observation.images.image.info.video.extra_options {} vs '(absent)'
+                  features.observation.images.image.info.video.fast_decode 0 vs '(absent)'
+                  features.observation.images.image.info.video.g 2 vs '(absent)'
+                  features.observation.images.image.info.video.is_depth_map '(absent)' vs False
+                  features.observation.images.image.info.video.preset 12 vs '(absent)'
+                  features.observation.images.image.info.video.video_backend 'pyav' vs '(absent)'
+                  features.observation.images.image_wrist.info.is_depth_map False vs '(absent)'
+                  features.observation.images.image_wrist.info.video.crf 30 vs '(absent)'
+                  features.observation.images.image_wrist.info.video.extra_options {} vs '(absent)'
+                  features.observation.images.image_wrist.info.video.fast_decode 0 vs '(absent)'
+                  features.observation.images.image_wrist.info.video.g 2 vs '(absent)'
+                  features.observation.images.image_wrist.info.video.is_depth_map '(absent)' vs False
+                  features.observation.images.image_wrist.info.video.preset 12 vs '(absent)'
+                  features.observation.images.image_wrist.info.video.video_backend 'pyav' vs '(absent)'
+     [ ok ] meta/
+         1 set aside -- excluded from the comparison by decision
+           relative_stats.json                          'not compared' vs 'not compared'
+     [ ok ] meta/tasks.jsonl
+         87 set aside -- the index a task is given follows the order it was first seen, not the data
+           task_index 0                                 'pick up the butter dairy' vs 'pick up the apple fruit'
+           task_index 1                                 'place the gray bowl in the dish rack' vs 'pick up the black bowl'
+           task_index 10                                'pick up the black bowl' vs 'pick up the steak meat'
+           task_index 11                                'place the milk dairy in the white plate' vs 'pick up the yellow cup'
+           task_index 12                                'pick up the apple fruit' vs 'place the apple fruit in the black bowl'
+           task_index 13                                'place the long bread in the sink' vs 'place the apple fruit in the blue bowl'
+           task_index 14                                'pick up the long bread' vs 'place the apple fruit in the gray bowl'
+           task_index 15                                'place the burger meat in the oven' vs 'place the apple fruit in the gray plate'
+           task_index 16                                'place the green cup in the gray plate' vs 'place the apple fruit in the sink'
+           task_index 17                                'place the milk dairy in the table' vs 'place the apple fruit in the table'
+           task_index 18                                'place the burger meat in the black bowl' vs 'place the apple fruit in the white plate'
+           task_index 19                                'place the yellow cup in the dish rack' vs 'place the black bowl in the dish rack'
+           ... and 75 more
+     [ ok ] meta/modality.json
+     [FAIL] meta/stats.json
+       ! observation.images.image.std                   'differs by 0.2734' vs 'allowed 0.05'
+       ! observation.images.image_wrist.std             'differs by 0.187' vs 'allowed 0.05'
+         24 set aside -- ordering features follow the episode and task order; missing quantiles are the keys the v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream
+           episode_index.max                            'differs by 951' vs 'allowed 1e-06'
+           episode_index.mean                           'differs by 482.4' vs 'allowed 1e-06'
+           episode_index.q01                            'differs by 482.4' vs 'allowed 1e-06'
+           episode_index.q10                            'differs by 482.4' vs 'allowed 1e-06'
+           episode_index.q50                            'differs by 482.4' vs 'allowed 1e-06'
+           episode_index.q90                            'differs by 482.4' vs 'allowed 1e-06'
+           episode_index.q99                            'differs by 482.4' vs 'allowed 1e-06'
+           episode_index.std                            'differs by 274' vs 'allowed 1e-06'
+           index.max                                    'differs by 6.807e+04' vs 'allowed 1e-06'
+           index.mean                                   'differs by 3.416e+04' vs 'allowed 1e-06'
+           index.q01                                    'differs by 3.416e+04' vs 'allowed 1e-06'
+           index.q10                                    'differs by 3.416e+04' vs 'allowed 1e-06'
+           ... and 12 more
+
+2  episodes       [ -- ]  counted, never failed -- which episodes a rebuild has is decided elsewhere
+     rebuilt         976 episodes     70,127 rows
+     delivered       976 episodes     70,127 rows
+     reproduced      976  (976 identical, 0 agreeing on their first 8 rows only)
+     unmatched         0 of the delivered episodes have no counterpart; 0 of the rebuild's do not either
+     reordered       975 of 976 paired episodes carry a different index
+
+3  sample         [FAIL]  the episodes that are there, compared in full
+     compared         64 of 976 paired episodes, half from each end of the index range
+     identical        64
+     video observation.images.image    976 files,     277,002B each against 976 / 282,361B (0.98x)
+     video observation.images.image_wrist    976 files,     133,303B each against 976 / 133,050B (1.00x)
+     prompts         976 paired episodes checked; all agree
+     [FAIL] meta/episodes.jsonl + meta/episodes_stats.jsonl
+       ! episodes_stats.jsonl.observation.images.image.max '12 of 976 pairs differ, worst 0.1373' vs 'allowed 0.1'
+       ! episodes_stats.jsonl.observation.images.image.std '976 of 976 pairs differ, worst 0.3076' vs 'the delivered copy records zero in every episode'
+       ! episodes_stats.jsonl.observation.images.image_wrist.max '2 of 976 pairs differ, worst 0.102' vs 'allowed 0.1'
+       ! episodes_stats.jsonl.observation.images.image_wrist.std '976 of 976 pairs differ, worst 0.3732' vs 'the delivered copy records zero in every episode'
+         24 set aside -- ordering features follow the episode and task order, which the episode question already reports; absent quantiles are the five keys the v3.0 to v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream
+           episodes_stats.jsonl.episode_index.max       '976 of 976 pairs differ, worst 971' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.mean      '976 of 976 pairs differ, worst 971' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.min       '976 of 976 pairs differ, worst 971' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q01       '976 of 976 pairs differ, worst 971' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q10       '976 of 976 pairs differ, worst 971' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q50       '976 of 976 pairs differ, worst 971' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q90       '976 of 976 pairs differ, worst 971' vs 'allowed 1e-06'
+           episodes_stats.jsonl.episode_index.q99       '976 of 976 pairs differ, worst 971' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.max               '976 of 976 pairs differ, worst 6.961e+04' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.mean              '976 of 976 pairs differ, worst 6.961e+04' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.min               '976 of 976 pairs differ, worst 6.961e+04' vs 'allowed 1e-06'
+           episodes_stats.jsonl.index.q01               '976 of 976 pairs differ, worst 6.961e+04' vs 'allowed 1e-06'
+           ... and 12 more
+
+4  distributions  [ ok ]  max difference per column, as a fraction of its range
+     every episode        action 1.0e-14   observation.state 1.6e-15
+     the shared ones      action 1.0e-14   observation.state 1.6e-15
+
+verdict          [FAIL]  meta/stats.json differs; per-episode metadata differs
