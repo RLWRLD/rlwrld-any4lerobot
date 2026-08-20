@@ -114,3 +114,25 @@ were small enough not to reach it: 50, 104 and 150 episodes.
 Worker count does not affect what is being measured here -- it changes which worker
 encodes which episode, not the bytes any episode encodes to -- so capping it to 4 for
 the sweep is safe.
+
+## Verified on the built image
+
+Rebuilt and re-compared with `node:resize-sinc` -- the image carrying `filter: sinc`,
+nothing mounted over it, so what was measured is what a run would use.
+
+| dataset | video ratio, before | after | sampled identical, before | after |
+| --- | --: | --: | --: | --: |
+| `dlr_edan` 2.0x | 0.79x, **63 of 64 SIZE failures** | **0.96x, none** | 1 of 64 | **64 of 64** |
+| `ucsd_kitchen` 2.5x | 0.885x by totals | **0.99x** | -- | **64 of 64** |
+| `austin_buds` not resized | 0.99x / 0.97x | 0.99x / 0.97x | 50 of 50 | 50 of 50 |
+
+austin_buds is the control: it is 128x128 at the source, the resize composes to
+nothing, and its output is byte-identical to the bicubic build. A filter change that
+moved it would have meant the resize was running where it should not.
+
+dlr_edan's own record file went from 31,845 bytes to 6,694 -- the 63 failing episodes
+are simply gone from it.
+
+**All three now fail on one thing and it is not ours**: the delivered copy records image
+`std` as exactly zero in every episode. Nothing about video, geometry, encoding, state,
+action, prompts or distributions differs any more.

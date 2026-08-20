@@ -306,13 +306,17 @@ So a node that is going to compare passes `--keep`, or compares between `build` 
 |---|--:|---|---|---|
 | `cmu_stretch` | 135/135 | no | FAIL | delivered image `std` is zero in every episode |
 | `austin_buds_…_rlds` | 50/50 | no | FAIL | same, both cameras |
-| `dlr_edan_…_rlds` | 104/104 | **2.0x down** | FAIL | **our video is 0.79x the delivered size** |
+| `dlr_edan_…_rlds` | 104/104 | 2.0x down | FAIL | same — the video is fixed, see below |
+| `ucsd_kitchen_…_rlds` | 150/150 | 2.5x down | FAIL | same |
 
 All three reproduce their data exactly — every episode byte-identical on state and
 action, every sampled episode identical on state and action, prompts all agreeing,
 distributions to 1e-15. The first two fail only on what the *delivered* copy contains.
-dlr_edan is the first failure that is **ours**, and the `resized` column is why: it is
-the first dataset in the funnel whose source has to be downscaled at all.
+dlr_edan was the first failure that was **ours**, and the `resized` column is why: it
+was the first dataset in the funnel whose source has to be downscaled at all. It is
+fixed — the profile now names `sinc`, and dlr_edan's video went from 0.79x with 63
+of 64 sampled episodes failing to **0.96x with none**. Every remaining failure in
+the collection so far is the delivered copy's zero `std`.
 
 ### The delivered image `std` is zero
 

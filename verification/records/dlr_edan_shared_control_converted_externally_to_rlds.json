@@ -1,6 +1,6 @@
 {
   "dataset": "dlr_edan_shared_control_converted_externally_to_rlds",
-  "measured_at": "2026-08-20T03:03:42+00:00",
+  "measured_at": "2026-08-20T05:27:56+00:00",
   "rebuilt": "/scratch/out/dlr_edan_shared_control_converted_externally_to_rlds",
   "delivered": "/scratch/delivered_tree/dlr_edan_shared_control_converted_externally_to_rlds",
   "settings": {
@@ -37,9 +37,7 @@
     "distributions": true,
     "reasons": [
       "meta/stats.json differs",
-      "per-episode metadata differs",
-      "sampled episodes differ",
-      "the videos do not add up over all episodes"
+      "per-episode metadata differs"
     ]
   },
   "declaration": {
@@ -155,7 +153,7 @@
       "reason": "ordering features follow the episode and task order; missing quantiles are the keys the v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream",
       "differences": {
         "observation.images.image.std": [
-          "differs by 0.2693",
+          "differs by 0.2706",
           "allowed 0.05"
         ]
       },
@@ -265,7 +263,7 @@
       "reason": "ordering features follow the episode and task order, which the episode question already reports; absent quantiles are the five keys the v3.0 to v2.1 downgrade drops; a column its own info.json does not declare is read by nothing downstream",
       "differences": {
         "episodes_stats.jsonl.observation.images.image.std": [
-          "104 of 104 pairs differ, worst 0.3035",
+          "104 of 104 pairs differ, worst 0.3051",
           "the delivered copy records zero in every episode"
         ]
       },
@@ -570,11 +568,9 @@
           "action": "identical (97, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 97f av1/GOP2 407107B vs 517721B (0.79x) px 0.998 SIZE"
+          "observation.images.image": "320x192 97f av1/GOP2 486966B vs 517721B (0.94x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 407107 bytes against delivered 517721 (0.79x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 1,
@@ -589,11 +585,9 @@
           "action": "identical (117, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 117f av1/GOP2 528422B vs 666033B (0.79x) px 0.997 SIZE"
+          "observation.images.image": "320x192 117f av1/GOP2 634096B vs 666033B (0.95x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 528422 bytes against delivered 666033 (0.79x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 2,
@@ -608,11 +602,9 @@
           "action": "identical (55, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 55f av1/GOP2 302769B vs 363522B (0.83x) px 0.997 SIZE"
+          "observation.images.image": "320x192 55f av1/GOP2 353329B vs 363522B (0.97x) px 0.996 ok"
         },
-        "problems": [
-          "video observation.images.image: 302769 bytes against delivered 363522 (0.83x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 3,
@@ -627,11 +619,9 @@
           "action": "identical (64, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 64f av1/GOP2 337028B vs 410485B (0.82x) px 0.997 SIZE"
+          "observation.images.image": "320x192 64f av1/GOP2 396732B vs 410485B (0.97x) px 0.996 ok"
         },
-        "problems": [
-          "video observation.images.image: 337028 bytes against delivered 410485 (0.82x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 4,
@@ -646,11 +636,9 @@
           "action": "identical (61, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 61f av1/GOP2 284109B vs 355421B (0.80x) px 0.997 SIZE"
+          "observation.images.image": "320x192 61f av1/GOP2 337563B vs 355421B (0.95x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 284109 bytes against delivered 355421 (0.80x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 5,
@@ -665,11 +653,9 @@
           "action": "identical (95, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 95f av1/GOP2 403171B vs 516674B (0.78x) px 0.997 SIZE"
+          "observation.images.image": "320x192 95f av1/GOP2 479890B vs 516674B (0.93x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 403171 bytes against delivered 516674 (0.78x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 6,
@@ -684,11 +670,9 @@
           "action": "identical (62, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 62f av1/GOP2 336356B vs 400923B (0.84x) px 0.997 SIZE"
+          "observation.images.image": "320x192 62f av1/GOP2 389583B vs 400923B (0.97x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 336356 bytes against delivered 400923 (0.84x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 7,
@@ -703,11 +687,9 @@
           "action": "identical (91, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 91f av1/GOP2 403422B vs 500203B (0.81x) px 0.997 SIZE"
+          "observation.images.image": "320x192 91f av1/GOP2 479008B vs 500203B (0.96x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 403422 bytes against delivered 500203 (0.81x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 8,
@@ -722,11 +704,9 @@
           "action": "identical (97, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 97f av1/GOP2 533459B vs 638926B (0.83x) px 0.997 SIZE"
+          "observation.images.image": "320x192 97f av1/GOP2 622725B vs 638926B (0.97x) px 0.996 ok"
         },
-        "problems": [
-          "video observation.images.image: 533459 bytes against delivered 638926 (0.83x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 9,
@@ -741,11 +721,9 @@
           "action": "identical (82, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 82f av1/GOP2 431186B vs 517959B (0.83x) px 0.997 SIZE"
+          "observation.images.image": "320x192 82f av1/GOP2 504506B vs 517959B (0.97x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 431186 bytes against delivered 517959 (0.83x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 10,
@@ -760,11 +738,9 @@
           "action": "identical (79, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 79f av1/GOP2 355157B vs 449661B (0.79x) px 0.997 SIZE"
+          "observation.images.image": "320x192 79f av1/GOP2 425493B vs 449661B (0.95x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 355157 bytes against delivered 449661 (0.79x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 11,
@@ -779,11 +755,9 @@
           "action": "identical (59, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 59f av1/GOP2 268008B vs 343074B (0.78x) px 0.997 SIZE"
+          "observation.images.image": "320x192 59f av1/GOP2 319238B vs 343074B (0.93x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 268008 bytes against delivered 343074 (0.78x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 12,
@@ -798,11 +772,9 @@
           "action": "identical (179, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 179f av1/GOP2 774714B vs 965769B (0.80x) px 0.997 SIZE"
+          "observation.images.image": "320x192 179f av1/GOP2 924193B vs 965769B (0.96x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 774714 bytes against delivered 965769 (0.80x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 13,
@@ -817,11 +789,9 @@
           "action": "identical (163, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 163f av1/GOP2 693399B vs 866209B (0.80x) px 0.997 SIZE"
+          "observation.images.image": "320x192 163f av1/GOP2 828341B vs 866209B (0.96x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 693399 bytes against delivered 866209 (0.80x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 14,
@@ -836,11 +806,9 @@
           "action": "identical (69, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 69f av1/GOP2 360694B vs 435534B (0.83x) px 0.997 SIZE"
+          "observation.images.image": "320x192 69f av1/GOP2 425303B vs 435534B (0.98x) px 0.996 ok"
         },
-        "problems": [
-          "video observation.images.image: 360694 bytes against delivered 435534 (0.83x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 15,
@@ -855,11 +823,9 @@
           "action": "identical (90, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 90f av1/GOP2 401777B vs 505015B (0.80x) px 0.997 SIZE"
+          "observation.images.image": "320x192 90f av1/GOP2 479504B vs 505015B (0.95x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 401777 bytes against delivered 505015 (0.80x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 16,
@@ -874,11 +840,9 @@
           "action": "identical (77, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 77f av1/GOP2 341056B vs 434892B (0.78x) px 0.997 SIZE"
+          "observation.images.image": "320x192 77f av1/GOP2 411564B vs 434892B (0.95x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 341056 bytes against delivered 434892 (0.78x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 17,
@@ -893,11 +857,9 @@
           "action": "identical (66, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 66f av1/GOP2 359827B vs 432318B (0.83x) px 0.997 SIZE"
+          "observation.images.image": "320x192 66f av1/GOP2 421949B vs 432318B (0.98x) px 0.996 ok"
         },
-        "problems": [
-          "video observation.images.image: 359827 bytes against delivered 432318 (0.83x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 18,
@@ -912,11 +874,9 @@
           "action": "identical (143, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 143f av1/GOP2 626704B vs 776686B (0.81x) px 0.997 SIZE"
+          "observation.images.image": "320x192 143f av1/GOP2 742238B vs 776686B (0.96x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 626704 bytes against delivered 776686 (0.81x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 19,
@@ -931,11 +891,9 @@
           "action": "identical (71, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 71f av1/GOP2 385983B vs 460706B (0.84x) px 0.997 SIZE"
+          "observation.images.image": "320x192 71f av1/GOP2 448566B vs 460706B (0.97x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 385983 bytes against delivered 460706 (0.84x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 20,
@@ -950,11 +908,9 @@
           "action": "identical (62, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 62f av1/GOP2 278402B vs 349491B (0.80x) px 0.997 SIZE"
+          "observation.images.image": "320x192 62f av1/GOP2 332436B vs 349491B (0.95x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 278402 bytes against delivered 349491 (0.80x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 21,
@@ -969,11 +925,9 @@
           "action": "identical (60, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 60f av1/GOP2 318079B vs 381989B (0.83x) px 0.997 SIZE"
+          "observation.images.image": "320x192 60f av1/GOP2 372289B vs 381989B (0.97x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 318079 bytes against delivered 381989 (0.83x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 22,
@@ -988,11 +942,9 @@
           "action": "identical (71, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 71f av1/GOP2 384126B vs 458213B (0.84x) px 0.997 SIZE"
+          "observation.images.image": "320x192 71f av1/GOP2 447883B vs 458213B (0.98x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 384126 bytes against delivered 458213 (0.84x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 23,
@@ -1007,11 +959,9 @@
           "action": "identical (93, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 93f av1/GOP2 351622B vs 453595B (0.78x) px 0.998 SIZE"
+          "observation.images.image": "320x192 93f av1/GOP2 418678B vs 453595B (0.92x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 351622 bytes against delivered 453595 (0.78x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 24,
@@ -1026,11 +976,9 @@
           "action": "identical (97, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 97f av1/GOP2 415946B vs 540263B (0.77x) px 0.997 SIZE"
+          "observation.images.image": "320x192 97f av1/GOP2 499174B vs 540263B (0.92x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 415946 bytes against delivered 540263 (0.77x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 25,
@@ -1045,11 +993,9 @@
           "action": "identical (88, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 88f av1/GOP2 469800B vs 562369B (0.84x) px 0.997 SIZE"
+          "observation.images.image": "320x192 88f av1/GOP2 548392B vs 562369B (0.98x) px 0.996 ok"
         },
-        "problems": [
-          "video observation.images.image: 469800 bytes against delivered 562369 (0.84x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 26,
@@ -1064,11 +1010,9 @@
           "action": "identical (100, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 100f av1/GOP2 535446B vs 654124B (0.82x) px 0.997 SIZE"
+          "observation.images.image": "320x192 100f av1/GOP2 633034B vs 654124B (0.97x) px 0.996 ok"
         },
-        "problems": [
-          "video observation.images.image: 535446 bytes against delivered 654124 (0.82x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 27,
@@ -1083,11 +1027,9 @@
           "action": "identical (76, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 76f av1/GOP2 341520B vs 429221B (0.80x) px 0.997 SIZE"
+          "observation.images.image": "320x192 76f av1/GOP2 406665B vs 429221B (0.95x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 341520 bytes against delivered 429221 (0.80x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 28,
@@ -1102,11 +1044,9 @@
           "action": "identical (58, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 58f av1/GOP2 308857B vs 368604B (0.84x) px 0.997 SIZE"
+          "observation.images.image": "320x192 58f av1/GOP2 360705B vs 368604B (0.98x) px 0.996 ok"
         },
-        "problems": [
-          "video observation.images.image: 308857 bytes against delivered 368604 (0.84x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 29,
@@ -1121,11 +1061,9 @@
           "action": "identical (65, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 65f av1/GOP2 293283B vs 369307B (0.79x) px 0.998 SIZE"
+          "observation.images.image": "320x192 65f av1/GOP2 349111B vs 369307B (0.95x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 293283 bytes against delivered 369307 (0.79x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 30,
@@ -1140,11 +1078,9 @@
           "action": "identical (73, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 73f av1/GOP2 400959B vs 480840B (0.83x) px 0.997 SIZE"
+          "observation.images.image": "320x192 73f av1/GOP2 467277B vs 480840B (0.97x) px 0.996 ok"
         },
-        "problems": [
-          "video observation.images.image: 400959 bytes against delivered 480840 (0.83x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 31,
@@ -1159,11 +1095,9 @@
           "action": "identical (44, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 44f av1/GOP2 244915B vs 291724B (0.84x) px 0.997 SIZE"
+          "observation.images.image": "320x192 44f av1/GOP2 286001B vs 291724B (0.98x) px 0.996 ok"
         },
-        "problems": [
-          "video observation.images.image: 244915 bytes against delivered 291724 (0.84x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 72,
@@ -1178,7 +1112,7 @@
           "action": "identical (67, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 67f av1/GOP2 367197B vs 431867B (0.85x) px 0.997 ok"
+          "observation.images.image": "320x192 67f av1/GOP2 425546B vs 431867B (0.99x) px 0.996 ok"
         },
         "problems": []
       },
@@ -1195,11 +1129,9 @@
           "action": "identical (76, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 76f av1/GOP2 342195B vs 430985B (0.79x) px 0.997 SIZE"
+          "observation.images.image": "320x192 76f av1/GOP2 406070B vs 430985B (0.94x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 342195 bytes against delivered 430985 (0.79x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 74,
@@ -1214,11 +1146,9 @@
           "action": "identical (59, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 59f av1/GOP2 252407B vs 325852B (0.77x) px 0.997 SIZE"
+          "observation.images.image": "320x192 59f av1/GOP2 302762B vs 325852B (0.93x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 252407 bytes against delivered 325852 (0.77x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 75,
@@ -1233,11 +1163,9 @@
           "action": "identical (71, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 71f av1/GOP2 284755B vs 357076B (0.80x) px 0.998 SIZE"
+          "observation.images.image": "320x192 71f av1/GOP2 335426B vs 357076B (0.94x) px 0.998 ok"
         },
-        "problems": [
-          "video observation.images.image: 284755 bytes against delivered 357076 (0.80x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 76,
@@ -1252,11 +1180,9 @@
           "action": "identical (95, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 95f av1/GOP2 511485B vs 603824B (0.85x) px 0.997 SIZE"
+          "observation.images.image": "320x192 95f av1/GOP2 596246B vs 603824B (0.99x) px 0.996 ok"
         },
-        "problems": [
-          "video observation.images.image: 511485 bytes against delivered 603824 (0.85x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 77,
@@ -1271,11 +1197,9 @@
           "action": "identical (101, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 101f av1/GOP2 448117B vs 565648B (0.79x) px 0.997 SIZE"
+          "observation.images.image": "320x192 101f av1/GOP2 539055B vs 565648B (0.95x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 448117 bytes against delivered 565648 (0.79x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 78,
@@ -1290,11 +1214,9 @@
           "action": "identical (84, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 84f av1/GOP2 335036B vs 420435B (0.80x) px 0.998 SIZE"
+          "observation.images.image": "320x192 84f av1/GOP2 393754B vs 420435B (0.94x) px 0.998 ok"
         },
-        "problems": [
-          "video observation.images.image: 335036 bytes against delivered 420435 (0.80x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 79,
@@ -1309,11 +1231,9 @@
           "action": "identical (87, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 87f av1/GOP2 477844B vs 569603B (0.84x) px 0.997 SIZE"
+          "observation.images.image": "320x192 87f av1/GOP2 560244B vs 569603B (0.98x) px 0.996 ok"
         },
-        "problems": [
-          "video observation.images.image: 477844 bytes against delivered 569603 (0.84x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 80,
@@ -1328,11 +1248,9 @@
           "action": "identical (67, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 67f av1/GOP2 291396B vs 375738B (0.78x) px 0.997 SIZE"
+          "observation.images.image": "320x192 67f av1/GOP2 353112B vs 375738B (0.94x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 291396 bytes against delivered 375738 (0.78x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 81,
@@ -1347,11 +1265,9 @@
           "action": "identical (103, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 103f av1/GOP2 465970B vs 584810B (0.80x) px 0.997 SIZE"
+          "observation.images.image": "320x192 103f av1/GOP2 557072B vs 584810B (0.95x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 465970 bytes against delivered 584810 (0.80x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 82,
@@ -1366,11 +1282,9 @@
           "action": "identical (129, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 129f av1/GOP2 569804B vs 714755B (0.80x) px 0.998 SIZE"
+          "observation.images.image": "320x192 129f av1/GOP2 675624B vs 714755B (0.95x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 569804 bytes against delivered 714755 (0.80x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 83,
@@ -1385,11 +1299,9 @@
           "action": "identical (84, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 84f av1/GOP2 441905B vs 536659B (0.82x) px 0.997 SIZE"
+          "observation.images.image": "320x192 84f av1/GOP2 519427B vs 536659B (0.97x) px 0.996 ok"
         },
-        "problems": [
-          "video observation.images.image: 441905 bytes against delivered 536659 (0.82x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 84,
@@ -1404,11 +1316,9 @@
           "action": "identical (113, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 113f av1/GOP2 462246B vs 585226B (0.79x) px 0.997 SIZE"
+          "observation.images.image": "320x192 113f av1/GOP2 554016B vs 585226B (0.95x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 462246 bytes against delivered 585226 (0.79x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 85,
@@ -1423,11 +1333,9 @@
           "action": "identical (68, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 68f av1/GOP2 368858B vs 442106B (0.83x) px 0.997 SIZE"
+          "observation.images.image": "320x192 68f av1/GOP2 431052B vs 442106B (0.97x) px 0.996 ok"
         },
-        "problems": [
-          "video observation.images.image: 368858 bytes against delivered 442106 (0.83x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 86,
@@ -1442,11 +1350,9 @@
           "action": "identical (79, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 79f av1/GOP2 423114B vs 512381B (0.83x) px 0.997 SIZE"
+          "observation.images.image": "320x192 79f av1/GOP2 496334B vs 512381B (0.97x) px 0.996 ok"
         },
-        "problems": [
-          "video observation.images.image: 423114 bytes against delivered 512381 (0.83x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 87,
@@ -1461,11 +1367,9 @@
           "action": "identical (88, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 88f av1/GOP2 367600B vs 467942B (0.79x) px 0.997 SIZE"
+          "observation.images.image": "320x192 88f av1/GOP2 441242B vs 467942B (0.94x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 367600 bytes against delivered 467942 (0.79x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 88,
@@ -1480,11 +1384,9 @@
           "action": "identical (70, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 70f av1/GOP2 291859B vs 375254B (0.78x) px 0.997 SIZE"
+          "observation.images.image": "320x192 70f av1/GOP2 351441B vs 375254B (0.94x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 291859 bytes against delivered 375254 (0.78x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 89,
@@ -1499,11 +1401,9 @@
           "action": "identical (81, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 81f av1/GOP2 449537B vs 534771B (0.84x) px 0.997 SIZE"
+          "observation.images.image": "320x192 81f av1/GOP2 521211B vs 534771B (0.97x) px 0.996 ok"
         },
-        "problems": [
-          "video observation.images.image: 449537 bytes against delivered 534771 (0.84x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 90,
@@ -1518,11 +1418,9 @@
           "action": "identical (102, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 102f av1/GOP2 554004B vs 666144B (0.83x) px 0.997 SIZE"
+          "observation.images.image": "320x192 102f av1/GOP2 651525B vs 666144B (0.98x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 554004 bytes against delivered 666144 (0.83x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 91,
@@ -1537,11 +1435,9 @@
           "action": "identical (93, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 93f av1/GOP2 439778B vs 546378B (0.80x) px 0.997 SIZE"
+          "observation.images.image": "320x192 93f av1/GOP2 521646B vs 546378B (0.95x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 439778 bytes against delivered 546378 (0.80x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 92,
@@ -1556,11 +1452,9 @@
           "action": "identical (80, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 80f av1/GOP2 300113B vs 388285B (0.77x) px 0.998 SIZE"
+          "observation.images.image": "320x192 80f av1/GOP2 357648B vs 388285B (0.92x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 300113 bytes against delivered 388285 (0.77x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 93,
@@ -1575,11 +1469,9 @@
           "action": "identical (61, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 61f av1/GOP2 339366B vs 400814B (0.85x) px 0.997 SIZE"
+          "observation.images.image": "320x192 61f av1/GOP2 393480B vs 400814B (0.98x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 339366 bytes against delivered 400814 (0.85x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 94,
@@ -1594,11 +1486,9 @@
           "action": "identical (117, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 117f av1/GOP2 511906B vs 647006B (0.79x) px 0.997 SIZE"
+          "observation.images.image": "320x192 117f av1/GOP2 609286B vs 647006B (0.94x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 511906 bytes against delivered 647006 (0.79x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 95,
@@ -1613,11 +1503,9 @@
           "action": "identical (71, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 71f av1/GOP2 386570B vs 464648B (0.83x) px 0.997 SIZE"
+          "observation.images.image": "320x192 71f av1/GOP2 449665B vs 464648B (0.97x) px 0.996 ok"
         },
-        "problems": [
-          "video observation.images.image: 386570 bytes against delivered 464648 (0.83x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 96,
@@ -1632,11 +1520,9 @@
           "action": "identical (86, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 86f av1/GOP2 366210B vs 470825B (0.78x) px 0.997 SIZE"
+          "observation.images.image": "320x192 86f av1/GOP2 439194B vs 470825B (0.93x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 366210 bytes against delivered 470825 (0.78x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 97,
@@ -1651,11 +1537,9 @@
           "action": "identical (134, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 134f av1/GOP2 571571B vs 714321B (0.80x) px 0.997 SIZE"
+          "observation.images.image": "320x192 134f av1/GOP2 679380B vs 714321B (0.95x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 571571 bytes against delivered 714321 (0.80x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 98,
@@ -1670,11 +1554,9 @@
           "action": "identical (69, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 69f av1/GOP2 381590B vs 455481B (0.84x) px 0.997 SIZE"
+          "observation.images.image": "320x192 69f av1/GOP2 445051B vs 455481B (0.98x) px 0.996 ok"
         },
-        "problems": [
-          "video observation.images.image: 381590 bytes against delivered 455481 (0.84x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 99,
@@ -1689,11 +1571,9 @@
           "action": "identical (72, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 72f av1/GOP2 397639B vs 479691B (0.83x) px 0.997 SIZE"
+          "observation.images.image": "320x192 72f av1/GOP2 463663B vs 479691B (0.97x) px 0.996 ok"
         },
-        "problems": [
-          "video observation.images.image: 397639 bytes against delivered 479691 (0.83x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 100,
@@ -1708,11 +1588,9 @@
           "action": "identical (50, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 50f av1/GOP2 274523B vs 329256B (0.83x) px 0.997 SIZE"
+          "observation.images.image": "320x192 50f av1/GOP2 320239B vs 329256B (0.97x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 274523 bytes against delivered 329256 (0.83x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 101,
@@ -1727,11 +1605,9 @@
           "action": "identical (66, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 66f av1/GOP2 361481B vs 436974B (0.83x) px 0.997 SIZE"
+          "observation.images.image": "320x192 66f av1/GOP2 425782B vs 436974B (0.97x) px 0.996 ok"
         },
-        "problems": [
-          "video observation.images.image: 361481 bytes against delivered 436974 (0.83x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 102,
@@ -1746,11 +1622,9 @@
           "action": "identical (87, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 87f av1/GOP2 469836B vs 566450B (0.83x) px 0.997 SIZE"
+          "observation.images.image": "320x192 87f av1/GOP2 551868B vs 566450B (0.97x) px 0.996 ok"
         },
-        "problems": [
-          "video observation.images.image: 469836 bytes against delivered 566450 (0.83x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       },
       {
         "index": 103,
@@ -1765,11 +1639,9 @@
           "action": "identical (92, 7)"
         },
         "video": {
-          "observation.images.image": "320x192 92f av1/GOP2 426284B vs 528410B (0.81x) px 0.997 SIZE"
+          "observation.images.image": "320x192 92f av1/GOP2 505830B vs 528410B (0.96x) px 0.997 ok"
         },
-        "problems": [
-          "video observation.images.image: 426284 bytes against delivered 528410 (0.81x) -- beyond what a different ffmpeg build explains"
-        ]
+        "problems": []
       }
     ]
   },
@@ -1777,7 +1649,7 @@
     "rebuilt": {
       "observation.images.image": {
         "files": 104,
-        "bytes": 42585008
+        "bytes": 50330748
       }
     },
     "delivered": {
@@ -1786,9 +1658,7 @@
         "bytes": 52507689
       }
     },
-    "problems": [
-      "video observation.images.image: 409,471 bytes a file on average against delivered 504,882 (0.81x) -- beyond what a different ffmpeg build explains"
-    ]
+    "problems": []
   },
   "prompts": {
     "pairs_checked": 104,
