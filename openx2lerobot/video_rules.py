@@ -120,18 +120,30 @@ def target_shape(
     return shape if plan is None else plan.out_shape
 
 
-def resize_filter(resize: Mapping[str, Any] | None) -> str:
+def resize_filter(
+    resize: Mapping[str, Any] | None,
+    key: str = "",
+    shape: tuple[int, int] | None = None,
+) -> str:
     """Which resampler ``resize`` asks for, as a libswscale name.
 
-    Read off the same step object ``target_shape`` builds its geometry from, so the
-    filter cannot disagree with the one the transform stage puts in its ``scale``
+    Resolved on the same step object ``target_shape`` builds its geometry from, so
+    the filter cannot disagree with the one the transform stage puts in its ``scale``
     filter chain -- the two paths differ in *when* they resize and in nothing else.
+
+    ``shape`` is the source geometry, and it is needed because the profile may name a
+    rule rather than a filter: ``by_scale`` picks per downscale factor, and this path
+    resizes frame by frame, so it has to ask the same question the ``scale`` filter
+    would have asked about the same camera.
     """
     from lerobot_pipeline.steps.resize import DEFAULT_FILTER
 
     if not resize:
         return DEFAULT_FILTER
-    return getattr(build_step(dict(resize)), "filter", DEFAULT_FILTER)
+    step = build_step(dict(resize))
+    if shape is None:
+        return getattr(step, "filter", DEFAULT_FILTER)
+    return step.filter_for(shape, target_shape(resize, key, shape))
 
 
 def resize_frame(frame, shape: tuple[int, int], filter: str | None = None):

@@ -195,8 +195,13 @@ def frame_images(
             # contiguous, and a negative stride is not
             frame = frame[..., ::-1].copy()
         shape = shapes.get(name)
-        out[name] = (frame if shape is None
-                     else resize_frame(frame, shape, filter))
+        if shape is None:
+            out[name] = frame
+            continue
+        # by_scale asks per camera, so the filter is resolved from this frame's own
+        # source geometry rather than once for the dataset
+        out[name] = resize_frame(
+            frame, shape, filter(key, frame.shape[:2]) if callable(filter) else filter)
     return out
 
 

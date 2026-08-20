@@ -356,10 +356,27 @@ precisely where the sweep said sinc would overshoot: 1.09-1.10x measured at 1.31
 a 15% bound, and gentler than that is worse. Everything else lands in 0.96-1.15x.
 
 The change is still a net gain, five or more datasets fixed against two broken. But the
-conclusion the sweep hedged on is now settled: **the resampler has to follow the scale
-factor, not the collection.** `video.resize.filter` being a declared value rather than a
-default is what makes that a small change — a per-spec override, or a threshold in the
-step, would each do it.
+conclusion the sweep hedged on is settled: **the resampler has to follow the scale
+factor, not the collection.**
+
+So the profile now names `by_scale` rather than a filter, and the threshold is 1.3x:
+
+| downscale | filter | measured |
+|---|---|--:|
+| 1.21x `taco_play`, 1.25x `stanford_hydra` | bicubic | 0.985-1.019x |
+| 1.31x `austin_sirius` | sinc | 1.088-1.100x |
+| 1.94x `dlr_edan` | sinc | 0.959x |
+| 2.50x `ucsd_kitchen` + 4 more cameras | sinc | 0.988x |
+
+The step decides per camera rather than per dataset, because a dataset can hold a
+480x640 view and an 84x84 one and those are different downscales. Both resize paths
+resolve the rule through the same step object, which a test asserts directly — a rule
+that answered differently on the two would build half a collection one way and half the
+other, which is the failure the declared value was introduced to prevent.
+
+Still to check on a node: that this puts `stanford_hydra` and `taco_play` back inside the
+band. Everything above is measured, but the threshold itself has not yet been run
+end-to-end.
 
 ### The delivered image `std` is zero
 
