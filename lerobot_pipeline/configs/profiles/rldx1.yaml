@@ -35,6 +35,19 @@ video:
     type: resize_preserve_aspect_area
     max_area: 65536 # 256 ** 2
     multiple: 32 # image patch size
+    # Which resampler does the downscale, in libswscale's own names -- the same
+    # vocabulary ffmpeg's `scale` filter takes, because both paths that resize end in
+    # libswscale. It belongs here for the reason codec and crf belong in an encoding
+    # profile: it decides what the output looks like, so it should be a declared value
+    # and not a default nobody chose.
+    #
+    # It is only visible on a dataset that actually downscales, which is why it went
+    # unnoticed. cmu_stretch and austin_buds are 128x128 at the source, already the
+    # target size, so the resize composes to nothing and their video lands within 1-2%
+    # of the delivered files. dlr_edan is 360x640 down to 192x320 and came out 0.79x,
+    # keeping 78% of the delivered high-frequency detail: a softer picture costs the
+    # encoder less. See verification/records for the measurement.
+    filter: bicubic
   # No encoding, on purpose. The collection was not delivered in one: 19 of the
   # datasets carry LeRobot's own AV1 and 17 carry the H.264 only ffmpeg produces,
   # and which one a dataset is belongs in that dataset's spec, where it is a record

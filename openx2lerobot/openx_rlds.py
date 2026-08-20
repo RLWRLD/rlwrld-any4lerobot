@@ -41,7 +41,7 @@ from adapter import OpenXAdapter, read_raw_dir
 from generic_converter import run_converter
 from oxe_utils.configs import OXE_DATASET_CONFIGS, ActionEncoding, StateEncoding
 from oxe_utils.transforms import OXE_STANDARDIZATION_TRANSFORMS
-from video_rules import flips_channels, resize_frame, target_shape
+from video_rules import flips_channels, resize_filter, resize_frame, target_shape
 
 np.set_printoptions(precision=2)
 
@@ -177,6 +177,7 @@ def frame_images(
     shapes: dict[str, tuple[int, int]],
     dataset_name: str = "",
     channels=None,
+    filter: str | None = None,
 ):
     """One frame's camera images, keyed and sized the way they will be written.
 
@@ -194,7 +195,8 @@ def frame_images(
             # contiguous, and a negative stride is not
             frame = frame[..., ::-1].copy()
         shape = shapes.get(name)
-        out[name] = frame if shape is None else resize_frame(frame, shape)
+        out[name] = (frame if shape is None
+                     else resize_frame(frame, shape, filter))
     return out
 
 

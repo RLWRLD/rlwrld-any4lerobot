@@ -292,15 +292,19 @@ class OpenXAdapter(BaseAdapter):
 
     def save_episode(self, dataset, episode_data, task: ConversionTask) -> bool:
         from openx_rlds import camera_shapes, frame_images
+        from video_rules import parse_rule, resize_filter
 
         shapes = camera_shapes(self.features)
+        # The same mapping the shapes came from, so geometry and resampler are read
+        # off one declaration rather than two.
+        filter = resize_filter(parse_rule(self.resize))
         traj = episode_data["steps"]
         for index in range(traj["action"].shape[0]):
             dataset.add_frame(
                 {
                     **frame_images(
                         traj["observation"], index, shapes,
-                        self.dataset_name, self.channels,
+                        self.dataset_name, self.channels, filter,
                     ),
                     "observation.state": traj["proprio"][index],
                     "action": traj["action"][index],

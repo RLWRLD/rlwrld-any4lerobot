@@ -29,13 +29,13 @@ def test_resize_step_is_a_video_step():
 def test_plan_emits_only_a_scale_filter_when_crop_is_a_no_op():
     plan = _resize().plan((480, 640))
     assert plan.out_shape == (192, 256)
-    assert plan.filters == ("scale=256:192",)
+    assert plan.filters == ("scale=256:192:flags=bicubic",)
 
 
 def test_plan_emits_scale_then_crop_when_the_resize_is_not_a_multiple():
     plan = _resize().plan((1280, 720))
     assert plan.out_shape == (320, 192)
-    assert plan.filters == ("scale=192:341", "crop=192:320")
+    assert plan.filters == ("scale=192:341:flags=bicubic", "crop=192:320")
 
 
 def test_plan_returns_none_when_the_source_is_already_at_the_target():
@@ -64,8 +64,8 @@ def test_compose_chains_filters_and_reports_the_final_shape():
     composed = compose_video_plans(steps, "observation.images.cam", (480, 640))
     assert composed.out_shape == (96, 128)
     assert composed.filters == (
-        "scale=256:192",
-        "scale=128:96",
+        "scale=256:192:flags=bicubic",
+        "scale=128:96:flags=bicubic",
     )
 
 

@@ -120,7 +120,21 @@ def target_shape(
     return shape if plan is None else plan.out_shape
 
 
-def resize_frame(frame, shape: tuple[int, int]):
+def resize_filter(resize: Mapping[str, Any] | None) -> str:
+    """Which resampler ``resize`` asks for, as a libswscale name.
+
+    Read off the same step object ``target_shape`` builds its geometry from, so the
+    filter cannot disagree with the one the transform stage puts in its ``scale``
+    filter chain -- the two paths differ in *when* they resize and in nothing else.
+    """
+    from lerobot_pipeline.steps.resize import DEFAULT_FILTER
+
+    if not resize:
+        return DEFAULT_FILTER
+    return getattr(build_step(dict(resize)), "filter", DEFAULT_FILTER)
+
+
+def resize_frame(frame, shape: tuple[int, int], filter: str | None = None):
     """Downscale ``frame`` to ``shape``, centre-cropping whatever the scale leaves over.
 
     Through libswscale, which is the resizer ffmpeg's ``scale`` filter *is* -- not a
@@ -149,15 +163,29 @@ def resize_frame(frame, shape: tuple[int, int]):
     import av
     from av.video.reformatter import Interpolation
 
+    from lerobot_pipeline.steps.resize import DEFAULT_FILTER, UnknownFilterError
+
     height, width = shape
     if frame.shape[:2] == (height, width):
         return frame
+
+    name = (filter or DEFAULT_FILTER).upper()
+    interpolation = getattr(Interpolation, name, None)
+    if interpolation is None:
+        # PyAV exposes a subset of libswscale's names, and which subset depends on the
+        # build -- SPLINE is missing from the one in the node image. Failing here beats
+        # falling back, which would resize a whole collection with a filter nobody asked
+        # for and leave no trace of it.
+        raise UnknownFilterError(
+            f"PyAV in this build has no Interpolation.{name}; "
+            f"available: {', '.join(sorted(m.name.lower() for m in Interpolation))}"
+        )
 
     scale = max(height / frame.shape[0], width / frame.shape[1])
     scaled_h = max(height, round(frame.shape[0] * scale))
     scaled_w = max(width, round(frame.shape[1] * scale))
     picture = av.VideoFrame.from_ndarray(frame, format="rgb24").reformat(
-        width=scaled_w, height=scaled_h, interpolation=Interpolation.BICUBIC
+        width=scaled_w, height=scaled_h, interpolation=interpolation
     )
     resized = picture.to_ndarray(format="rgb24")
 

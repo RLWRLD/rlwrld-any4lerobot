@@ -93,7 +93,7 @@ def test_a_key_already_at_the_target_shape_is_linked_not_re_encoded(tmp_path):
 def test_transcode_carries_the_composed_filter_chain(tmp_path):
     root = _dataset(tmp_path)
     plan = plan_transform(root, tmp_path / "out", [_resize()])
-    assert plan.transcodes[0].filters == ("scale=256:192",)
+    assert plan.transcodes[0].filters == ("scale=256:192:flags=bicubic",)
 
 
 def test_transcode_mirrors_the_source_codec(tmp_path):

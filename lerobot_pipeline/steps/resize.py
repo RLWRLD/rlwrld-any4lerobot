@@ -14,6 +14,22 @@ from ..registry import VideoPlan, register_step
 DEFAULT_MAX_AREA = 256**2
 DEFAULT_MULTIPLE = 32
 
+# libswscale's own names, because both paths that resize end up in libswscale: the
+# transform stage through ffmpeg's `scale` filter, and openx2lerobot through PyAV's
+# reformatter, whose Interpolation members are these words uppercased.
+#
+# bicubic is the default here because it is what was shipped -- ffmpeg's `scale`
+# defaults to it and video_rules asked PyAV for it by name, so the two agreed by
+# coincidence rather than by declaration. Naming it is the point: a filter that is
+# implicit on one path and explicit on the other is one edit away from silently
+# building half a collection differently from the other half.
+RESIZE_FILTERS = ("bicubic", "bilinear", "lanczos", "sinc", "area", "gauss", "bicublin")
+DEFAULT_FILTER = "bicubic"
+
+
+class UnknownFilterError(ValueError):
+    """Raised when a resize names a resampler libswscale does not have."""
+
 
 class AreaBoundError(ValueError):
     """Raised when the computed crop exceeds the requested area bound."""
@@ -72,10 +88,17 @@ class ResizePreserveAspectArea:
         max_area: int = DEFAULT_MAX_AREA,
         multiple: int = DEFAULT_MULTIPLE,
         keys: Sequence[str] | None = None,
+        filter: str = DEFAULT_FILTER,
     ):
         self.max_area = int(max_area)
         self.multiple = int(multiple)
         self.keys = tuple(keys) if keys else None
+        if filter not in RESIZE_FILTERS:
+            raise UnknownFilterError(
+                f"unknown resize filter {filter!r}; "
+                f"expected one of {', '.join(RESIZE_FILTERS)}"
+            )
+        self.filter = filter
 
     def applies_to(self, key: str) -> bool:
         return self.keys is None or key in self.keys
@@ -88,7 +111,11 @@ class ResizePreserveAspectArea:
 
         filters: list[str] = []
         if (h_r, w_r) != (h, w):
-            filters.append(f"scale={w_r}:{h_r}")
+            # flags= is passed even when it names the default: this filter decides how
+            # much detail survives a downscale, and a setting that reads as absent is
+            # a setting nobody reviews. dlr_edan's video came out 0.79x the delivered
+            # size on the shipped filter, against 0.98x for datasets not resized at all.
+            filters.append(f"scale={w_r}:{h_r}:flags={self.filter}")
         if (h_c, w_c) != (h_r, w_r):
             # ffmpeg's crop filter centres by default
             filters.append(f"crop={w_c}:{h_c}")
