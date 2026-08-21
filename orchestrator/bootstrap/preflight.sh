@@ -88,7 +88,7 @@ apple=$(find . -name '._*' | wc -l)
 echo "== environment"
 
 if $PYTHON -c "
-import lerobot, tensorflow, tensorflow_datasets, datatrove
+import lerobot, ray, tensorflow, tensorflow_datasets, datatrove
 from generic_converter.pipeline import aggregate_tasks
 from openx2lerobot.adapter import OpenXAdapter
 " >/dev/null 2>&1; then
