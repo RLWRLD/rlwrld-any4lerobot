@@ -80,3 +80,13 @@ def test_too_few_frames_is_skipped(tmp_path):
     with h5py.File(path, "r") as handle:
         with pytest.raises(EpisodeSkipped, match="too few frames"):
             episode_fps(handle, config)
+
+
+def test_missing_timestamp_is_skipped(tmp_path):
+    """An empty file with no camera_observations/timestamp raises EpisodeSkipped."""
+    config = configs.load("tienyi")
+    path = write_episode(tmp_path, "tienyi", "task", "0006_000000", frames=0, broken="empty")
+
+    with h5py.File(path, "r") as handle:
+        with pytest.raises(EpisodeSkipped, match="camera_observations/timestamp is missing"):
+            episode_fps(handle, config)

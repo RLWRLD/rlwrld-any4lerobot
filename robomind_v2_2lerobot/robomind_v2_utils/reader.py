@@ -54,14 +54,14 @@ def discover(src_paths: list[Path]) -> Iterator[EpisodeRef]:
 def check_usable(handle, config: EmbodimentConfig) -> None:
     """Raise ``EpisodeSkipped`` unless every dataset the config names is present.
 
-    Three kinds of broken file exist upstream. 4,500 UR5 files are a valid hdf5
-    with nothing in it -- recognisable by size alone, and caught before the
-    config's key list is even built. The other two both need that key list
-    checked against the file, and are told apart by how many keys survive: two
-    more files were truncated mid-write and hold only their first stream, so a
-    few of the config's keys are present and the rest are missing; a config
-    pointed at the wrong embodiment names keys the file never had, so none of
-    them are present at all.
+    Three kinds of broken file exist upstream. 4,500 files in one repo of the
+    release are a valid hdf5 with nothing in it -- recognisable by size alone,
+    and caught before the config's key list is even built. The other two both
+    need that key list checked against the file, and are told apart by how many
+    keys survive: two more files were truncated mid-write and hold only their
+    first stream, so a few of the config's keys are present and the rest are
+    missing; a config pointed at the wrong embodiment names keys the file never
+    had, so none of them are present at all.
     """
     if not handle.keys():
         raise EpisodeSkipped("no objects in the file")
@@ -165,9 +165,9 @@ MIN_FRAMES = 2
 def episode_fps(handle, config) -> float:
     """This episode's frame rate.
 
-    Measured, not configured: the rate runs from about 7 Hz on UR5 to about
-    101 Hz on AgileX, and moves between episodes of one embodiment. v1 wrote 30
-    for everything.
+    Measured, not configured: the rate runs from about 7 Hz to about 101 Hz
+    across the release's robots, and moves between episodes of one embodiment.
+    v1 wrote 30 for everything.
 
     ``camera_observations/timestamp`` is whole seconds, so a short episode carries
     a boundary error of up to one second at each end. The value is good enough to
@@ -176,6 +176,8 @@ def episode_fps(handle, config) -> float:
     A simulated episode's timestamps never advance, so its rate comes from the
     config instead -- the one number a config is allowed to state.
     """
+    if "camera_observations/timestamp" not in handle:
+        raise EpisodeSkipped("camera_observations/timestamp is missing")
     stamps = np.asarray(handle["camera_observations/timestamp"][()], dtype=np.int64)
     if stamps.size < MIN_FRAMES:
         raise EpisodeSkipped(f"too few frames: {stamps.size}")
