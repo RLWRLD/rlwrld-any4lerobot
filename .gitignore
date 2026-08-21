@@ -177,3 +177,10 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+# Local working notes: source-access findings, design specs, scratch docs.
+# Ignored so the image build sees a clean tree -- `COPY . .` copies the tree, not the
+# commit, so an untracked file would be in the image and not in the tag naming it.
+docs/superpowers/
+
+# Claude Code worktrees, session state and local agent config
+.claude/
