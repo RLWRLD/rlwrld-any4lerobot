@@ -177,9 +177,12 @@ The rule this project uses: config states only what is constant within an embodi
   rate instead. Measuring real files disproved that: `camera_observations/timestamp`
   advances on `sim` too, on every episode checked, just in milliseconds rather than
   `real`'s seconds. `episode_fps` converts by `layout` and measures both; one simulated
-  episode's clock jumps backward once, mid-episode, so `sim` uses the median
-  frame-to-frame step rather than the first-to-last span, which that jump would
-  otherwise corrupt. There was never a case where the rate genuinely couldn't be
+  episode's clock jumps backward once, mid-episode, so `sim` averages the *positive*
+  frame-to-frame steps rather than using the first-to-last span, which that jump would
+  otherwise corrupt. The mean, not the median: the timestamps are whole milliseconds,
+  so a true 33.333 ms tick still has to land on 33 or 34 every frame, and the median
+  just picks whichever is more common — reading a systematically fast 30.3030 Hz
+  instead of 30.0000. There was never a case where the rate genuinely couldn't be
   measured, so there is no `fps` config field for either layout.
 - **resolution** is measured by decoding an episode's first frame
   (`images.frame_shape`), never read from the file's own `camera_color_resolution`

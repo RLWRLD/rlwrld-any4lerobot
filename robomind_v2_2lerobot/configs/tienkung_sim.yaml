@@ -7,7 +7,9 @@
 #  * timestamp 는 초가 아니라 밀리초다 — 33-34 씩 진행 (~30 Hz). config 에는 그래서
 #    fps 필드가 없다 — reader.episode_fps 가 layout: sim 을 보고 단위를 바꿔서 잰다.
 #    한 에피소드는 중간에 시계가 한 번 거꾸로(-2600 근처) 튀었다 — episode_fps 는
-#    그래서 양끝 차이 대신 프레임 간 간격의 중앙값을 쓴다 (그 함수의 docstring 참고).
+#    그래서 양끝 차이 대신 프레임 간 간격 중 양수만 골라 평균을 쓴다 (중앙값이 아니라
+#    평균인 이유는 그 함수의 docstring 참고 — timestamp 가 정수 밀리초라 중앙값은
+#    33/34 중 한쪽으로 양자화돼 +1% 오차가 생긴다).
 #  * master 에는 end_effector_{left,right}_pose 가 없다 (puppet 에만 있다) — franka_sim
 #    과 같은 이유로 여기 선언하지 않는다.
 #  * end_effector_{left,right}_position 도 뺐다 — 이유가 다르다: puppet 은 12-wide,

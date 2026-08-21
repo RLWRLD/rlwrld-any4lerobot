@@ -213,6 +213,15 @@ def episode_fps(handle, config) -> float:
       could not be measured, only a wrong assumption about which branch would
       fire.
 
+    The two branches estimate different quantities, not just different units,
+    so do not expect them to agree even on identical clean data: ``sim``
+    estimates a frame *period* (the typical gap between one frame and the
+    next) and inverts it into a rate, while ``real`` divides a frame *count*
+    by a span. For T uniformly-spaced frames the two differ by a factor of
+    T/(T-1) -- count-over-span implicitly treats T frames as T intervals,
+    while a period estimate correctly divides by the T-1 gaps that actually
+    exist between them.
+
     One simulated episode was found with a single mid-episode backward jump (one
     frame-to-frame step of roughly -2600, amid hundreds of otherwise constant
     +33/+34 steps) -- the clock resets partway through, rather than merely
@@ -220,13 +229,34 @@ def episode_fps(handle, config) -> float:
     ``sim`` would silently bake that one glitch into the total and understate
     the elapsed time by however much the clock fell (measured: it turns a ~30 Hz
     episode into an apparent ~35 Hz one). Because the per-frame step is
-    otherwise extremely uniform, the *median* consecutive step is used for
-    ``sim`` instead of the endpoint span -- a statistic one outlier among
-    hundreds of samples cannot move -- and the rate is its reciprocal. ``real``
-    keeps the endpoint span: its timestamps are whole seconds, so most
-    consecutive steps are 0 and the median would be 0 too; the coarse
-    total-span average is the only usable signal there, and no backward jump
-    was observed on any real episode.
+    otherwise extremely uniform, ``sim`` instead averages the *positive*
+    consecutive steps -- discarding the one backward step rather than letting
+    it drag the total down -- and the rate is the reciprocal of that mean.
+
+    Mean, not median: the timestamps are whole milliseconds, so a true
+    33.333 ms period (an exact 30.0000 Hz tick) still has to be stored as a 33
+    or a 34 every single frame, never the fractional true value. Whichever of
+    the two is the majority dominates the median outright -- 33, in every
+    simulated episode sampled -- reading a systematically fast 30.3030 Hz, a
+    +1% bias with no episode-to-episode variation to average away. The mean of
+    those same whole-millisecond steps is under no such constraint and
+    converges on the true 33.333 instead, recovering 30.0000 Hz. Measured on
+    the release's four simulated sample episodes, the mean reads within 0.005%
+    of 30 Hz on all four, including the one with the backward jump; the naive
+    endpoint span is off by about 18% on that one.
+
+    ``real`` keeps the endpoint span rather than a mean or median of steps:
+    its timestamps are whole seconds, so most consecutive steps are 0 (several
+    frames land in the same second) and only a few are 1 -- an average of
+    mostly zeroes would read most real episodes as frozen. The coarse
+    total-span count is the only usable signal there, and no backward jump was
+    ever observed on a real episode, so there is nothing for ``real`` to be
+    robust against.
+
+    A ``sim`` episode whose clock is frozen or runs only backward has no
+    positive step to average -- raised as unknown rather than computed from an
+    empty mean, which would otherwise be a silent ``nan`` (or a
+    ``ZeroDivisionError`` on its reciprocal).
     """
     if "camera_observations/timestamp" not in handle:
         raise EpisodeSkipped("camera_observations/timestamp is missing")
@@ -235,8 +265,10 @@ def episode_fps(handle, config) -> float:
         raise EpisodeSkipped(f"too few frames: {stamps.size}")
 
     if config.layout == "sim":
-        step_ms = float(np.median(np.diff(stamps)))
-        if step_ms > 0:
+        steps = np.diff(stamps)
+        positive_steps = steps[steps > 0]
+        if positive_steps.size > 0:
+            step_ms = float(np.mean(positive_steps))
             return 1000.0 / step_ms
         raise EpisodeSkipped(
             "timestamps do not advance, so the frame rate is unknown"

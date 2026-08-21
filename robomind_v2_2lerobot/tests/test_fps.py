@@ -11,7 +11,11 @@ sim 은 단위가 다르다 — timestamp 가 초가 아니라 밀리초로 흐�
 대체했지만, 실측해보니 sim 도 흐르고 있었다 — 단위만 달랐다. 그래서 config 에는
 이제 fps 필드 자체가 없다 (양쪽 layout 다). 실측 중 한 에피소드는 중간에 시계가
 한 번 거꾸로(-2600 근처) 튀는 것도 발견됐다 — 양끝 차이(span)를 그대로 쓰면 이
-튐 하나가 전체 경과 시간을 깎아먹으므로, sim 은 프레임 간 간격의 중앙값을 쓴다.
+튐 하나가 전체 경과 시간을 깎아먹으므로, sim 은 프레임 간 간격 중 양수만 골라
+평균을 쓴다. 중앙값이 아니라 평균인 이유: timestamp 가 정수 밀리초라 33.333 처럼
+참값이 정수가 아니면 33/34 를 오가는데, 중앙값은 그중 더 흔한 쪽(예: 33)을 그대로
+답으로 내놓아 30.3030 Hz 처럼 +1% 오차를 체계적으로 만든다. 평균은 정수에 묶이지
+않으므로 33.333 에 수렴해 30.0000 Hz 를 돌려준다.
 """
 
 import h5py
@@ -75,14 +79,37 @@ def test_sim_fps_comes_from_millisecond_timestamps(tmp_path):
         assert episode_fps(handle, config) == pytest.approx(1000 / 33, rel=1e-6)
 
 
+def test_a_whole_millisecond_tick_yields_the_unbiased_rate(tmp_path):
+    """This is not test_sim_fps_comes_from_millisecond_timestamps's scenario:
+    that fixture's ground truth is a literal, exact 33 ms period (30.3030 Hz
+    is the *correct* answer there). Here the ground truth period is 33.333 ms
+    -- an exact 30.0000 Hz tick -- which cannot be stored as a constant
+    whole-millisecond step at all: it has to land on 33 six times out of nine
+    and 34 the other three to average out (see episode_fps's docstring). The
+    old median-based estimate picked whichever of the two was more common --
+    33 -- and returned a systematically fast 30.3030 Hz, indistinguishable
+    from the other test's genuinely-33ms case even though the true rate here
+    is different. Averaging the same nine steps instead recovers the true
+    33.333 ms and the true 30.0000 Hz: the +1% bias this change removes.
+    """
+    config = sim_config(tmp_path)
+    path = write_episode(
+        tmp_path, "probe_sim", "task", "0002_000001", frames=10,
+        streams={"arm_left_position": 7}, layout="sim", milliseconds=300,
+    )
+
+    with h5py.File(path, "r") as handle:
+        assert episode_fps(handle, config) == pytest.approx(30.0)
+
+
 def test_a_mid_episode_backward_jump_does_not_skew_the_sim_rate(tmp_path):
     """Synthetic mirror of the one release episode whose clock jumps backward
     once, mid-episode, amid an otherwise constant step (see episode_fps's
-    docstring for why the median step is used for sim instead of the endpoint
-    span). 10 frames at a clean 100 ms step (10 Hz) with a single -500 ms jump
-    injected at frame 5: the endpoint span reads this as 25 Hz (400 ms of
-    apparent span for 10 frames); the median step reads through the one
-    outlier to the true 10 Hz.
+    docstring for why the mean of the *positive* steps is used for sim instead
+    of the endpoint span). 10 frames at a clean 100 ms step (10 Hz) with a
+    single -500 ms jump injected at frame 5: the endpoint span reads this as
+    25 Hz (400 ms of apparent span for 10 frames); averaging only the positive
+    steps reads through the one negative outlier to the true 10 Hz.
     """
     config = sim_config(tmp_path)
     path = write_episode(
