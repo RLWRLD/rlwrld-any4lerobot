@@ -9,6 +9,7 @@
 """
 
 import re
+from collections import Counter
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
@@ -199,8 +200,19 @@ def read_streams(handle, config, *, save_depth: bool = False) -> dict[str, "np.n
 MIN_FRAMES = 2
 
 
-def episode_fps(handle, config) -> float:
-    """This episode's frame rate.
+def episode_fps(handle, config) -> tuple[float, int | None]:
+    """This episode's frame rate, and (for ``real`` episodes only) the span in
+    whole seconds the rate was divided out of.
+
+    The span is what a caller uses to size its own tolerance for how far this
+    one episode's rate may drift from its task's median before that counts as
+    a real disagreement rather than measurement noise (see
+    ``robomind_v2_h5``'s ``_drift_tolerance``): a ``real`` rate is
+    ``frame_count / span`` from a span rounded to whole seconds, so the span
+    itself bounds how precisely that rate can be known -- a short span means
+    a coarse rate, not a wrong one. ``sim``'s timestamps carry no comparable
+    quantization (see below), so its span is reported as ``None`` -- there is
+    nothing for a caller to size a tolerance from, and none is needed.
 
     Measured, not configured: the rate runs from about 7 Hz to about 101 Hz
     across the release's robots, and moves between episodes of one embodiment.
@@ -281,75 +293,165 @@ def episode_fps(handle, config) -> float:
         positive_steps = steps[steps > 0]
         if positive_steps.size > 0:
             step_ms = float(np.mean(positive_steps))
-            return 1000.0 / step_ms
+            return 1000.0 / step_ms, None
         raise EpisodeSkipped(
             "timestamps do not advance, so the frame rate is unknown"
         )
 
     span = int(stamps[-1] - stamps[0])
     if span > 0:
-        return float(stamps.size) / span
+        return float(stamps.size) / span, span
     raise EpisodeSkipped(
         "timestamps do not advance, so the frame rate is unknown"
     )
 
 
-# A rate that rounds below this cannot be a dataset's fps -- see task_fps below,
-# and convert_task's own drift check, which both hold single episodes to the
-# same floor.
+# A rate that rounds below this cannot be a dataset's fps -- see task_profile
+# below, and convert_task's own drift check, which both hold single episodes to
+# the same floor.
 _MIN_TASK_FPS = 1
 
 
-def task_fps(refs: list[EpisodeRef], config, min_frames: int = 0) -> float | None:
-    """The whole task's frame rate: the median of its episodes' own measured rates.
+@dataclass(frozen=True)
+class TaskProfile:
+    """A task's own basics, measured once up front from every episode's file
+    rather than assumed from whichever one happens to be looked at first (see
+    ``convert_task``, and the I1/I-B findings this closes together).
 
-    One LeRobot dataset is opened per ``(embodiment, task)`` at a single fps, but
-    that rate moves between episodes of the same task -- real evidence from this
-    release: one task's episodes measured 26.94 Hz and 31.33 Hz, 16% apart.
-    Taking it from whichever episode happens to survive first and write
-    everything else onto that base, silently or with a mere warning, is what this
-    function replaces: the caller fixes the task at this median instead, and
-    skips any episode whose own rate drifts too far from it (see ``convert_task``).
+    ``fps`` is the median of every episode's own measured rate. ``shapes`` is
+    the per-camera colour shape (``observation.images.<camera> -> (H, W, 3)``)
+    that the largest number of episodes actually agree on -- a task's dataset
+    is created at this shape, not at whichever episode happens to be opened
+    first, so one odd-resolution episode arriving first in discovery order
+    can no longer make every other episode the "wrong" one. Either field is
+    ``None`` when not one episode produced a usable measurement of it.
+    """
 
-    A cheap pre-pass, deliberately: ``camera_observations/timestamp`` is a tiny
-    dataset, so this opens every episode's file for that array alone, without
-    decoding a single camera frame -- nothing here approaches the cost of
-    ``read_episode``, called once per episode that actually gets written.
+    fps: float | None
+    shapes: dict[str, tuple[int, ...]] | None
 
-    ``min_frames`` should be the same floor the caller applies to a full episode
-    (``convert_task``'s own ``min_frames``): an episode this short will be
-    skipped there regardless of its rate, and a broken-recording-length episode's
-    own timestamp span is exactly the kind of measurement least likely to be
-    trustworthy (``episode_fps``'s own docstring notes the boundary error a short
-    ``real`` episode carries) -- so it is excluded from the median here too,
-    rather than letting a handful of them quietly pull a task's whole rate away
-    from what its real episodes actually run at.
 
-    An episode this function cannot open, or cannot measure a rate for, is simply
-    left out of the median -- ``read_episode`` reaches the same file again and
-    logs the specific reason when the caller processes it for real. A measured
-    rate that rounds below ``_MIN_TASK_FPS`` is left out too, the same floor a
-    lone surviving episode was always held to: unusable as a dataset's fps on its
-    own, so it must not get to drag the median toward zero either.
+def task_profile(refs: list[EpisodeRef], config, min_frames: int = 0) -> TaskProfile:
+    """The whole task's frame rate and camera shape, from one pass over every
+    episode's file.
 
-    Returns ``None`` if not one episode produced a usable rate -- the caller
-    treats that the same as every episode failing to read.
+    **fps**: one LeRobot dataset is opened per ``(embodiment, task)`` at a
+    single fps, but the rate moves between episodes of the same task -- real
+    evidence from this release: one task's episodes measured 26.94 Hz and
+    31.33 Hz, 16% apart. Taking it from whichever episode happens to survive
+    first and write everything else onto that base, silently or with a mere
+    warning, is what the median here replaces: the caller fixes the task at
+    this median instead, and skips any episode whose own rate drifts too far
+    from it (see ``convert_task``).
+
+    **shapes**: built the same way, for the same reason -- both 720x1280 and
+    480x640 occur within a single release task, ``build_features`` fixes a
+    task's video shape once, and an odd-resolution episode arriving first in
+    discovery order used to make *it* the dataset's shape and every
+    correctly-sized episode the one that gets skipped (see the I-B finding).
+    The most common exact per-camera shape combination across this task's
+    episodes is returned, not a per-key majority computed independently --
+    picking per-key would synthesize a shape combination no real episode
+    actually has, if different episodes disagree on different cameras.
+
+    Measuring a shape costs one JPEG decode per camera per episode
+    (``images.frame_shape``, on the first frame only) -- not free like the fps
+    half of this pre-pass, which reads only the tiny ``camera_observations/
+    timestamp`` array, but still nowhere near ``read_episode``'s full
+    per-frame decode of every frame of every camera, paid once per episode
+    that actually gets written rather than once per episode in the task.
+
+    ``min_frames`` should be the same floor the caller applies to a full
+    episode (``convert_task``'s own ``min_frames``): an episode this short
+    will be skipped there regardless of its rate or shape, and a
+    broken-recording-length episode's own measurements are exactly the kind
+    least likely to be trustworthy (``episode_fps``'s own docstring notes the
+    boundary error a short ``real`` episode carries) -- so it is excluded
+    from both the median and the shape vote here too, rather than letting a
+    handful of them quietly pull either away from what the task's real
+    episodes actually look like.
+
+    An episode this function cannot open, or cannot measure a rate or a shape
+    for, is simply left out of that measurement's own tally -- ``read_episode``
+    reaches the same file again and logs the specific reason when the caller
+    processes it for real. A measured rate that rounds below ``_MIN_TASK_FPS``
+    is left out of the median too, the same floor a lone surviving episode was
+    always held to: unusable as a dataset's fps on its own, so it must not get
+    to drag the median toward zero either.
     """
     import h5py
 
     rates = []
+    shape_votes: Counter = Counter()
+    shape_for_signature: dict[tuple, dict[str, tuple[int, ...]]] = {}
+
     for ref in refs:
         try:
             with h5py.File(ref.path, "r") as handle:
                 key = "camera_observations/timestamp"
                 if key in handle and len(handle[key]) < min_frames:
                     continue
-                rate = episode_fps(handle, config)
-        except (OSError, ValueError, EpisodeSkipped):
+
+                try:
+                    rate, _span = episode_fps(handle, config)
+                except (OSError, ValueError, EpisodeSkipped):
+                    pass
+                else:
+                    if round(rate) >= _MIN_TASK_FPS:
+                        rates.append(rate)
+
+                try:
+                    shapes = {
+                        f"observation.images.{camera.name}": frame_shape(handle, camera.name)
+                        for camera in config.cameras
+                    }
+                except (OSError, ValueError, KeyError, EpisodeSkipped):
+                    pass
+                else:
+                    signature = tuple(sorted(shapes.items()))
+                    shape_votes[signature] += 1
+                    shape_for_signature[signature] = shapes
+        except (OSError, ValueError):
             continue
-        if round(rate) >= _MIN_TASK_FPS:
-            rates.append(rate)
-    return float(np.median(rates)) if rates else None
+
+    fps = float(np.median(rates)) if rates else None
+    shapes = shape_for_signature[shape_votes.most_common(1)[0][0]] if shape_votes else None
+    return TaskProfile(fps=fps, shapes=shapes)
+
+
+def task_max_frames(refs: list[EpisodeRef]) -> int:
+    """The largest frame count among this task's episodes, or 0 if none of
+    them could even be opened.
+
+    Sizing a Ray memory reservation before a task is scheduled (see
+    ``robomind_v2_h5``'s ``_task_memory_bytes``) needs to know, before any
+    episode is actually read, how large the biggest one might be: peak memory
+    during ``read_episode`` scales with an episode's own frame count, not
+    just its camera count (see the I-C finding). This reads only
+    ``camera_observations/timestamp``'s length for every episode -- the same
+    tiny dataset ``task_profile`` already opens each file for, no frame
+    decode -- so on its own it costs about what discovering the task's
+    episodes already did, nowhere near what actually converting one does.
+
+    Deliberately independent of ``task_profile``: that pre-pass runs inside
+    each Ray worker, in parallel across however many tasks Ray schedules at
+    once; this one has to run on the driver, before any task is scheduled at
+    all, so it stays as cheap as possible rather than also paying for
+    ``task_profile``'s per-camera shape decode serially for the whole corpus
+    before a single worker starts.
+    """
+    import h5py
+
+    max_frames = 0
+    for ref in refs:
+        try:
+            with h5py.File(ref.path, "r") as handle:
+                key = "camera_observations/timestamp"
+                if key in handle:
+                    max_frames = max(max_frames, len(handle[key]))
+        except (OSError, ValueError):
+            continue
+    return max_frames
 
 
 _SIM_TASK_PREFIX = re.compile(r"^\d+-")
@@ -436,6 +538,13 @@ class Episode:
     ref: EpisodeRef
     frames: list[dict]
     fps: float
+    # The span (whole seconds) this episode's own fps was divided out of --
+    # `None` for a `sim` episode, which has no comparable span to report (see
+    # `episode_fps`). `convert_task`'s drift check uses this to size how much
+    # a `real` episode's own rate may disagree with its task's median before
+    # that counts as real drift rather than this episode's own measurement
+    # noise (the I-A finding).
+    fps_span: int | None
     task: str
     # LeRobot needs each video key's shape up front, and it is measured per
     # episode rather than configured, so it travels with the episode.
@@ -465,7 +574,7 @@ def read_episode(ref: EpisodeRef, config, *, save_depth: bool = False) -> Episod
         # config with no streams. Also the same value read_streams already
         # checked every column's length against, so nothing else changes.
         count = len(handle["camera_observations/timestamp"])
-        fps = episode_fps(handle, config)
+        fps, fps_span = episode_fps(handle, config)
         task = instruction(ref, config, handle)
 
         images: dict[str, np.ndarray] = {}
@@ -500,4 +609,4 @@ def read_episode(ref: EpisodeRef, config, *, save_depth: bool = False) -> Episod
         }
         for index in range(count)
     ]
-    return Episode(ref=ref, frames=frames, fps=fps, task=task, shapes=shapes)
+    return Episode(ref=ref, frames=frames, fps=fps, fps_span=fps_span, task=task, shapes=shapes)

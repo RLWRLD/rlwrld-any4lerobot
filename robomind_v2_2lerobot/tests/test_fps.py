@@ -25,7 +25,7 @@ from fixtures import write_episode
 
 from robomind_v2_utils import configs
 from robomind_v2_utils.errors import EpisodeSkipped
-from robomind_v2_utils.reader import EpisodeRef, episode_fps, task_fps
+from robomind_v2_utils.reader import EpisodeRef, episode_fps, task_max_frames, task_profile
 
 
 def sim_config(tmp_path):
@@ -50,7 +50,9 @@ def test_fps_is_frames_over_span(tmp_path):
     path = write_episode(tmp_path, "tienyi", "task", "0001_000000", frames=101, seconds=10)
 
     with h5py.File(path, "r") as handle:
-        assert episode_fps(handle, config) == pytest.approx(10.1, abs=0.05)
+        fps, span = episode_fps(handle, config)
+        assert fps == pytest.approx(10.1, abs=0.05)
+        assert span == 10
 
 
 def test_a_fast_episode_reads_high(tmp_path):
@@ -59,7 +61,9 @@ def test_a_fast_episode_reads_high(tmp_path):
     path = write_episode(tmp_path, "tienyi", "task", "0002_000000", frames=203, seconds=2)
 
     with h5py.File(path, "r") as handle:
-        assert episode_fps(handle, config) > 90
+        fps, span = episode_fps(handle, config)
+        assert fps > 90
+        assert span == 2
 
 
 def test_sim_fps_comes_from_millisecond_timestamps(tmp_path):
@@ -76,7 +80,9 @@ def test_sim_fps_comes_from_millisecond_timestamps(tmp_path):
     )
 
     with h5py.File(path, "r") as handle:
-        assert episode_fps(handle, config) == pytest.approx(1000 / 33, rel=1e-6)
+        fps, span = episode_fps(handle, config)
+        assert fps == pytest.approx(1000 / 33, rel=1e-6)
+        assert span is None
 
 
 def test_a_whole_millisecond_tick_yields_the_unbiased_rate(tmp_path):
@@ -99,7 +105,9 @@ def test_a_whole_millisecond_tick_yields_the_unbiased_rate(tmp_path):
     )
 
     with h5py.File(path, "r") as handle:
-        assert episode_fps(handle, config) == pytest.approx(30.0)
+        fps, span = episode_fps(handle, config)
+        assert fps == pytest.approx(30.0)
+        assert span is None
 
 
 def test_a_mid_episode_backward_jump_does_not_skew_the_sim_rate(tmp_path):
@@ -123,7 +131,9 @@ def test_a_mid_episode_backward_jump_does_not_skew_the_sim_rate(tmp_path):
         handle.create_dataset("camera_observations/timestamp", data=stamps)
 
     with h5py.File(path, "r") as handle:
-        assert episode_fps(handle, config) == pytest.approx(10.0)
+        fps, span = episode_fps(handle, config)
+        assert fps == pytest.approx(10.0)
+        assert span is None
 
 
 def test_a_sim_episode_with_a_dead_clock_is_skipped(tmp_path):
@@ -175,7 +185,7 @@ def _refs(paths, embodiment="tienyi", task="task"):
     return [EpisodeRef(embodiment=embodiment, task=task, path=path) for path in paths]
 
 
-def test_task_fps_is_the_median_of_its_episodes(tmp_path):
+def test_task_profile_fps_is_the_median_of_its_episodes(tmp_path):
     """One dataset is opened per task at a single fps, so a task with more than
     one episode needs one rate for all of them -- the median of what each
     episode actually measured, not whichever happens to be looked at first
@@ -188,12 +198,12 @@ def test_task_fps_is_the_median_of_its_episodes(tmp_path):
     slow_b = write_episode(tmp_path, "tienyi", "task", "0002_000000", frames=101, seconds=10)
     fast = write_episode(tmp_path, "tienyi", "task", "0003_000000", frames=203, seconds=2)
 
-    rate = task_fps(_refs([slow_a, slow_b, fast]), config)
+    profile = task_profile(_refs([slow_a, slow_b, fast]), config)
 
-    assert rate == pytest.approx(10.1, abs=0.05)
+    assert profile.fps == pytest.approx(10.1, abs=0.05)
 
 
-def test_task_fps_excludes_a_rate_that_rounds_to_zero(tmp_path):
+def test_task_profile_fps_excludes_a_rate_that_rounds_to_zero(tmp_path):
     """A rate this slow can't be a dataset's fps on its own -- convert_task holds
     a single surviving episode to the same floor (round(fps) >= 1) -- so it must
     not get to drag the task's median toward zero either.
@@ -202,33 +212,39 @@ def test_task_fps_excludes_a_rate_that_rounds_to_zero(tmp_path):
     slow = write_episode(tmp_path, "tienyi", "task", "0001_000000", frames=2, seconds=10)
     normal = write_episode(tmp_path, "tienyi", "task", "0002_000000", frames=6, seconds=2)
 
-    rate = task_fps(_refs([slow, normal]), config)
+    profile = task_profile(_refs([slow, normal]), config)
 
-    assert rate == pytest.approx(3.0, abs=0.1)
+    assert profile.fps == pytest.approx(3.0, abs=0.1)
 
 
-def test_task_fps_skips_a_file_it_cannot_open(tmp_path):
-    """A ref this function can't even open contributes nothing to the median --
-    read_episode hits the same file again for real and logs the specific
-    reason when the caller actually processes it.
+def test_task_profile_skips_a_file_it_cannot_open(tmp_path):
+    """A ref this function can't even open contributes nothing to either the
+    fps median or the shape vote -- read_episode hits the same file again for
+    real and logs the specific reason when the caller actually processes it.
     """
     config = configs.load("tienyi")
     good = write_episode(tmp_path, "tienyi", "task", "0001_000000", frames=6, seconds=2)
     missing = tmp_path / "does_not_exist.hdf5"
 
-    rate = task_fps(_refs([missing, good]), config)
+    profile = task_profile(_refs([missing, good]), config)
 
-    assert rate == pytest.approx(3.0, abs=0.1)
+    assert profile.fps == pytest.approx(3.0, abs=0.1)
+    assert profile.shapes == {"observation.images.camera_top": (48, 64, 3)}
 
 
-def test_task_fps_is_none_when_no_episode_is_measurable(tmp_path):
+def test_task_profile_is_all_none_when_no_episode_is_measurable(tmp_path):
     config = configs.load("tienyi")
     dead_clock = write_episode(tmp_path, "tienyi", "task", "0001_000000", frames=8, seconds=0)
 
-    assert task_fps(_refs([dead_clock]), config) is None
+    profile = task_profile(_refs([dead_clock]), config)
+
+    assert profile.fps is None
+    # A dead clock only breaks episode_fps -- frame_shape reads the same
+    # colour dataset regardless of the clock, so the shape vote is untouched.
+    assert profile.shapes == {"observation.images.camera_top": (48, 64, 3)}
 
 
-def test_task_fps_excludes_episodes_shorter_than_min_frames(tmp_path):
+def test_task_profile_fps_excludes_episodes_shorter_than_min_frames(tmp_path):
     """An episode this short will be skipped by convert_task's own min_frames
     check regardless of its rate, and a broken-recording-length episode's own
     timestamp span is exactly the least trustworthy measurement (see
@@ -242,6 +258,61 @@ def test_task_fps_excludes_episodes_shorter_than_min_frames(tmp_path):
     too_short = write_episode(tmp_path, "tienyi", "task", "0001_000000", frames=2, seconds=2)
     normal = write_episode(tmp_path, "tienyi", "task", "0002_000000", frames=6, seconds=2)
 
-    rate = task_fps(_refs([too_short, normal]), config, min_frames=3)
+    profile = task_profile(_refs([too_short, normal]), config, min_frames=3)
 
-    assert rate == pytest.approx(3.0, abs=0.1)
+    assert profile.fps == pytest.approx(3.0, abs=0.1)
+
+
+def test_task_profile_shape_is_the_majority_not_the_first_episode(tmp_path):
+    """A task's dataset used to be created from whichever episode happened to
+    survive first, so one odd-resolution episode arriving first in discovery
+    order made *it* the dataset's shape and every correctly-sized episode the
+    one that gets skipped instead (the I-B finding). "0001" sorts first, so
+    it is the odd one out here -- and the majority (three 32x32 episodes
+    against one 48x64) must win regardless of arrival order.
+    """
+    config = configs.load("tienyi")
+    odd = write_episode(
+        tmp_path, "tienyi", "task", "0001_000000", frames=6, seconds=2, resolution=(48, 64)
+    )
+    common = [
+        write_episode(
+            tmp_path, "tienyi", "task", stamp, frames=6, seconds=2, resolution=(32, 32)
+        )
+        for stamp in ("0002_000000", "0003_000000", "0004_000000")
+    ]
+
+    profile = task_profile(_refs([odd, *common]), config)
+
+    assert profile.shapes == {"observation.images.camera_top": (32, 32, 3)}
+
+
+def test_task_profile_shape_is_none_when_no_episode_is_measurable(tmp_path):
+    """A file with no datasets at all (see reader.check_usable's own docstring
+    on this exact release shape) breaks frame_shape the same way it breaks
+    everything else -- there is no colour dataset to measure at all."""
+    config = configs.load("tienyi")
+    broken = write_episode(tmp_path, "tienyi", "task", "0001_000000", broken="empty")
+
+    profile = task_profile(_refs([broken]), config)
+
+    assert profile.fps is None
+    assert profile.shapes is None
+
+
+def test_task_max_frames_is_the_largest_episode(tmp_path):
+    """Sizing a Ray memory reservation before a task is scheduled needs the
+    worst case up front (see robomind_v2_h5's _task_memory_bytes and the I-C
+    finding) -- the largest frame count among the task's episodes, not the
+    first one's.
+    """
+    small = write_episode(tmp_path, "tienyi", "task", "0001_000000", frames=6, seconds=2)
+    large = write_episode(tmp_path, "tienyi", "task", "0002_000000", frames=101, seconds=10)
+
+    assert task_max_frames(_refs([small, large])) == 101
+
+
+def test_task_max_frames_is_zero_when_nothing_can_be_opened(tmp_path):
+    missing = tmp_path / "does_not_exist.hdf5"
+
+    assert task_max_frames(_refs([missing])) == 0
