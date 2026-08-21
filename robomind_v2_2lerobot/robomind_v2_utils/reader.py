@@ -25,8 +25,9 @@ class EpisodeRef:
 def discover(src_paths: list[Path]) -> Iterator[EpisodeRef]:
     """Every episode under the given source roots, in a stable order.
 
-    Several roots can share one embodiment: RoboMIND ships Franka as five repos
-    that all start at ``data/franka``, so they carry one config between them.
+    Several roots can share one embodiment: in this release, one robot ships
+    as five separate repos that all start at the same ``data/<embodiment>``
+    path, so they carry one config between them.
     """
     for src_path in sorted(Path(root).expanduser().resolve() for root in src_paths):
         data = src_path / "data"
