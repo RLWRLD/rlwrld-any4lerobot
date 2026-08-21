@@ -385,3 +385,18 @@ class TestTheDeclaredFilter:
         assert resize_filter(rule) == "sinc"
         for shape in ((150, 200), (240, 320), (360, 640), (480, 640), (84, 84)):
             assert f"flags={resize_filter(rule)}" in step.plan(shape).filters[0], shape
+
+
+def test_the_converter_is_told_how_long_this_dataset_s_episodes_are():
+    """Task size is derived from it, and the spec already knows: a constant episodes
+    per task is 2,608 frames of work on toto and 120 on language_table."""
+    config = _resolved("ucsd_kitchen_dataset_converted_externally_to_rlds")
+
+    assert config.source.args["frames_per_episode"] == pytest.approx(3970 / 150)
+
+
+def test_a_spec_without_delivered_counts_says_nothing_about_episode_length():
+    """Better than a made-up number: the converter falls back to its own default."""
+    from lerobot_pipeline.config import _frames_per_episode
+
+    assert _frames_per_episode(None) is None

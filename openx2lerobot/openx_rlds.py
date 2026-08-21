@@ -219,7 +219,9 @@ def create_lerobot_dataset(
     workers: int = -1,
     cpus_per_task: int = 1,
     tasks_per_job: int = 1,
-    episodes_per_task: int = 100,
+    episodes_per_task: int | None = None,
+    frames_per_episode: float | None = None,
+    frames_per_task: int | None = None,
     max_episodes: int | None = None,
     resume_dir: Path | None = None,
     debug: bool = False,
@@ -236,10 +238,15 @@ def create_lerobot_dataset(
     if output_path.exists():
         shutil.rmtree(output_path)
 
+    from adapter import FRAMES_PER_TASK
+
     adapter = OpenXAdapter(
         raw_dir=raw_dir,
         output_path=output_path,
         episodes_per_task=episodes_per_task,
+        frames_per_episode=frames_per_episode,
+        workers=workers,
+        frames_per_task=frames_per_task or FRAMES_PER_TASK,
         resize=resize,
         encoding=encoding,
         channels=channels,
@@ -250,6 +257,17 @@ def create_lerobot_dataset(
         image_writer_threads=image_writer_threads,
         max_episodes=max_episodes,
     )
+
+    # Resolved here rather than left to local_config, because the task size is derived
+    # from it: how finely to cut the work depends on how many workers will pull from
+    # the queue, and -1 answers nothing. The adapter has to exist first -- the estimate
+    # takes the size of an episode, which only it can say.
+    if workers == -1:
+        from generic_converter.pipeline import worker_budget
+
+        workers = worker_budget(cpus_per_task, adapter.episode_bytes())
+    adapter.workers = workers
+
     return run_converter(
         adapter=adapter,
         executor=executor,
@@ -362,8 +380,23 @@ def main():
     parser.add_argument(
         "--episodes-per-task",
         type=int,
-        default=100,
-        help="episodes per temporary dataset; one task per chunk",
+        default=None,
+        help="episodes per temporary dataset; one task per chunk. Left unset it is "
+             "derived from --frames-per-episode and the worker count, which is what "
+             "a collection of very differently shaped datasets needs.",
+    )
+    parser.add_argument(
+        "--frames-per-episode",
+        type=float,
+        default=None,
+        help="this dataset's mean episode length, from its spec's delivered counts. "
+             "What the task size is derived from; no source is read to find it.",
+    )
+    parser.add_argument(
+        "--frames-per-task",
+        type=int,
+        default=None,
+        help="how much work a task should carry, measured (see adapter.FRAMES_PER_TASK)",
     )
     parser.add_argument(
         "--max-episodes",

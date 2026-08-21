@@ -202,6 +202,16 @@ def _apply_profile(
         if source["type"] == "spec":
             # the spec-driven converter is dataset-agnostic; which dataset is a flag
             args["dataset"] = spec.id
+        per_episode = _frames_per_episode(spec)
+        if (
+            per_episode is not None
+            and "frames_per_episode" not in args
+            and _accepts(source["type"], "frames_per_episode")
+        ):
+            # How finely to cut the work is a property of the dataset, and this is the
+            # layer that knows it. A constant episodes-per-task is 2,608 frames of work
+            # on toto and 120 on language_table, whose episodes are 16 frames long.
+            args["frames_per_episode"] = per_episode
         if _converter_writes_the_video(source["type"], encoding):
             # a converter that writes the video is told how -- by the dataset when
             # nothing else asked, since the OXE sources carry two different encodings.
@@ -276,6 +286,40 @@ def _encoding_to_build_with(
     from .encoding import load_profile
 
     return {**load_profile(delivered), **dict(asked)}
+
+
+def _accepts(source_type: str, flag: str) -> bool:
+    """Whether that converter takes ``flag``.
+
+    Asked rather than assumed: only the RLDS converter derives its task size so far,
+    and handing the flag to one that does not take it is a run that dies at argument
+    parsing, which is what converter_args exists to prevent.
+    """
+    from .converter_args import converter_flags
+    from .stages import _CONVERTERS
+
+    entry = _CONVERTERS.get(source_type)
+    if entry is None:
+        return False
+    flags = converter_flags(entry[0])
+    return bool(flags and flag in flags)
+
+
+def _frames_per_episode(spec) -> float | None:
+    """This dataset's mean episode length, or ``None`` when the spec cannot say.
+
+    Read off the delivered counts, so no source is opened to find it out. ``None``
+    rather than a guess: the converter has a default, and a made-up number here would
+    be indistinguishable from a measured one downstream.
+    """
+    if spec is None:
+        return None
+    delivered = (getattr(spec, "raw", None) or {}).get("delivered") or {}
+    frames = delivered.get("frames")
+    episodes = getattr(spec, "delivered_episodes", 0) or delivered.get("episodes")
+    if not frames or not episodes:
+        return None
+    return frames / episodes
 
 
 def _converter_writes_the_video(source_type: str, encoding) -> bool:
