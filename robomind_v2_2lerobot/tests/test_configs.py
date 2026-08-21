@@ -128,3 +128,19 @@ def test_extras_shape_becomes_a_tuple(tmp_path, monkeypatch):
         "tactile_left",
         (2, 6),
     )
+
+
+def test_ur_has_six_cameras_and_a_one_wide_gripper():
+    """ur 과 ur_dex 는 스트림 이름이 같고 폭만 다르다. 그 차이를 config 가 들고 있다."""
+    config = load("ur")
+
+    assert len(config.cameras) == 6
+    assert [camera.name for camera in config.cameras] == [
+        "camera_front", "camera_left", "camera_right",
+        "camera_top", "camera_wrist_left", "camera_wrist_right",
+    ]
+    assert config.stream("arm_left_position").width == 6
+    assert config.stream("end_effector_left_position").width == 1
+    assert config.stream("end_effector_left_pose").width == 7
+    assert config.layout == "real"
+    assert config.fps is None
