@@ -1,0 +1,29 @@
+# UR5e 양팔 + 12-DoF dexterous hand. repo 는 RoboMIND2.0-UR5-Dex, 디렉토리는 data/ur_dex.
+# 1,795 에피소드 / 0.41 TB / 6 task. 실측 fps ~8.
+#
+# ⚠️ 스트림 이름이 ur 과 완전히 같고 end_effector_*_position 의 폭만 1 → 12 다.
+# 이름으로만 매핑하면 손을 gripper 로 읽고도 에러가 나지 않는다.
+#
+# 이 repo 에는 zh_description.txt 가 하나도 없다 — instruction 은 디렉토리 이름뿐이다.
+robot_type: ur_dex
+
+cameras:
+  camera_front:       {depth: true}
+  camera_left:        {depth: true}
+  camera_right:       {depth: true}
+  camera_top:         {depth: true}
+  camera_wrist_left:  {depth: true}
+  camera_wrist_right: {depth: true}
+
+streams:
+  arm_left_position:           {width: 6}
+  arm_right_position:          {width: 6}
+  end_effector_left_pose:      {width: 7}
+  end_effector_left_position:  {width: 12}   # dexterous hand. ur 은 1 이다
+  end_effector_right_pose:     {width: 7}
+  end_effector_right_position: {width: 12}
+
+instruction:
+  source: dirname
+
+layout: real

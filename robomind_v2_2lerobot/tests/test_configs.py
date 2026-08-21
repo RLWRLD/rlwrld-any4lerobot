@@ -144,3 +144,20 @@ def test_ur_has_six_cameras_and_a_one_wide_gripper():
     assert config.stream("end_effector_left_pose").width == 7
     assert config.layout == "real"
     assert config.fps is None
+
+
+def test_ur_dex_differs_from_ur_only_in_end_effector_width():
+    """이름은 같고 폭만 다르다 — 이 데이터셋의 가장 조용한 함정이다."""
+    ur = load("ur")
+    dex = load("ur_dex")
+
+    assert {stream.name for stream in ur.streams} == {stream.name for stream in dex.streams}
+    assert {camera.name for camera in ur.cameras} == {camera.name for camera in dex.cameras}
+    assert dex.stream("end_effector_left_position").width == 12
+    assert dex.stream("end_effector_right_position").width == 12
+    assert dex.stream("arm_left_position").width == 6
+
+
+def test_ur_dex_has_no_description_file():
+    """이 repo 에는 zh_description.txt 가 하나도 없다 — 디렉토리 이름뿐이다."""
+    assert load("ur_dex").instruction_source == "dirname"
