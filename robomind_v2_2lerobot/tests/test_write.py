@@ -22,15 +22,6 @@ def config():
     return load("tienyi")
 
 
-# `RoboMINDv2DatasetMetadata.save_episode` (lerobot_utils.py, copied from v1 -- see
-# that module's docstring) updates `self.info["total_episodes"]` etc. with dict-style
-# indexing. The pinned lerobot's `DatasetInfo` is a dataclass whose dict-style
-# compatibility shim (`__getitem__`/`__setitem__`) warns on every such access: 7
-# DeprecationWarnings per `save_episode()` call, confirmed by running this test
-# without the filter below. Silencing it here, scoped to this one test, is the
-# available fix -- the alternative would be editing one of the three ported writer
-# classes, which this task does not authorize.
-@pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_a_synthetic_episode_becomes_a_real_lerobot_dataset(tmp_path, config):
     path = write_episode(
         tmp_path, "tienyi", "task", "0001_000000", frames=4, seconds=1, resolution=(32, 32)

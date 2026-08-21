@@ -191,6 +191,12 @@ def compute_episode_stats(episode_data, features: dict, quantile_list=None) -> d
 # changes -- v1 never set the old parameter either, so both sides still
 # default to "let the library choose."
 #
+# Additionally, ``RoboMINDv2DatasetMetadata.save_episode`` now accesses the
+# ``DatasetInfo`` dataclass by its fields (e.g., ``self.info.total_episodes``)
+# instead of dict-style indexing, as the compatibility shim for dict-style
+# access is deprecated. The distinction is that ``splits`` is a dict field,
+# so indexing into it (``self.info.splits["train"]``) is correct and stays.
+#
 # Everything else -- control flow, comments, the broad ``except Exception`` in
 # the parallel video-encoding block -- is unchanged from v1.
 # ---------------------------------------------------------------------------
@@ -249,10 +255,10 @@ class RoboMINDv2DatasetMetadata(LeRobotDatasetMetadata):
         self._save_episode_metadata(episode_dict)
 
         # Update info
-        self.info["total_episodes"] += 1
-        self.info["total_frames"] += episode_length
-        self.info["total_tasks"] = len(self.tasks)
-        self.info["splits"]["train"] = f"0:{self.info['total_episodes']}"
+        self.info.total_episodes += 1
+        self.info.total_frames += episode_length
+        self.info.total_tasks = len(self.tasks)
+        self.info.splits["train"] = f"0:{self.info.total_episodes}"
 
         write_info(self.info, self.root)
 
