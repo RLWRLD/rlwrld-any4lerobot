@@ -21,6 +21,7 @@ import shutil
 import sys
 from collections import Counter, defaultdict
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -29,7 +30,13 @@ from robomind_v2_utils.configs import ConfigError, EmbodimentConfig, available
 from robomind_v2_utils.configs import load as load_config
 from robomind_v2_utils.lerobot_utils import RoboMINDv2Dataset, build_features
 from robomind_v2_utils.errors import EpisodeSkipped
-from robomind_v2_utils.reader import EpisodeRef, discover, read_episode, task_fps
+from robomind_v2_utils.reader import (
+    EpisodeRef,
+    discover,
+    read_episode,
+    task_max_frames,
+    task_profile,
+)
 
 # This module's own logger -- never `logging` (the root logger) directly.
 # Importing this file must not reconfigure logging for everyone else who
@@ -60,6 +67,31 @@ DEFAULT_MIN_FRAMES = 50
 # evidence this threshold catches: one release task's episodes measured
 # 26.94 Hz and 31.33 Hz -- 16% apart -- and the slower one set the dataset's rate.
 _FPS_DRIFT_THRESHOLD = 0.1
+
+
+def _drift_tolerance(fps_span: int | None) -> float:
+    """How much additional drift this one episode's own rate measurement
+    cannot actually distinguish from a genuinely different rate, on top of
+    the flat ``_FPS_DRIFT_THRESHOLD`` every episode is held to.
+
+    A ``real`` episode's rate is ``frame_count / span`` from a span rounded
+    to whole seconds (``reader.episode_fps``): the true span could be up to
+    about a second shorter or longer than the recorded one, so the rate
+    itself already carries roughly ``1/span`` of quantization noise before an
+    episode has drifted from its task at all. Across this release's real
+    sample episodes, spans of 8-34 seconds put that noise band at
+    2.9%-12.5% -- comparable to, or larger than, the flat 10% threshold on
+    its own -- so a flat threshold alone would skip perfectly good short
+    episodes as "drift" that is really just how coarsely a short episode's
+    own rate can ever be known (the I-A finding).
+
+    ``fps_span`` is ``None`` for a simulated episode (see ``episode_fps``):
+    its timestamps are milliseconds on a fine clock, which carries no
+    comparable quantization, so it gets no extra tolerance here -- the flat
+    threshold alone already fits it.
+    """
+    return 1.0 / fps_span if fps_span else 0.0
+
 
 # Categories a skipped or failed episode is bucketed into, for the per-task,
 # per-embodiment tally `main` logs and writes beside the output (`TaskResult`,
@@ -129,12 +161,15 @@ def _shape_mismatch(dataset_shapes: dict, episode_shapes: dict) -> str | None:
     """``None`` if every key ``dataset_shapes`` names matches in ``episode_shapes``;
     otherwise a message naming each key that disagrees and both shapes.
 
-    ``build_features`` fixes a task's video shapes once, from whichever episode
-    happens to create the dataset; every later episode's own measured shape --
-    already in hand, ``read_episode`` returns it as ``Episode.shapes`` -- is
-    compared against that rather than trusted to match. Both 720x1280 and
-    480x640 occur within a single release task, and the older converter had a
-    workaround for exactly this case.
+    ``build_features`` fixes a task's video shapes once. That basis used to be
+    whichever episode happened to create the dataset; it is now the task's own
+    pre-pass majority shape (``reader.task_profile``, colour keys) merged with
+    that first episode's own depth keys (see ``convert_task``) -- either way,
+    every episode's own measured shape -- already in hand, ``read_episode``
+    returns it as ``Episode.shapes`` -- is compared against the basis rather
+    than trusted to match, including the episode that ends up creating the
+    dataset itself. Both 720x1280 and 480x640 occur within a single release
+    task, and the older converter had a workaround for exactly this case.
     """
     mismatches = [
         f"{key} is {episode_shapes.get(key)}, {dataset_shapes[key]} was opened"
@@ -164,6 +199,71 @@ def _quarantine(local_dir: Path) -> None:
     if quarantined.exists():
         shutil.rmtree(quarantined)
     local_dir.rename(quarantined)
+
+
+_PARTIAL_RESULT_FILENAME = "partial.json"
+
+
+def _write_partial_result(
+    embodiment: str, task: str, local_dir: Path, written: int, skipped: int, reasons: dict
+) -> None:
+    """A task's own written/skipped tally, written into its own directory just
+    before a fatal failure quarantines it.
+
+    This is the one place that tally survives a task that dies after writing
+    real episodes: threading it through the exception ``convert_task`` raises
+    instead would depend on an exception object's own custom attributes
+    surviving Ray's serialization of a failed remote task across the
+    worker/driver boundary -- a real, previously-hit failure mode for a far
+    simpler object (see ``TaskResult``'s own docstring) -- while this is a
+    plain file, written synchronously from inside the worker before the
+    task's process goes anywhere. ``_summarize`` reads it back
+    (``_read_partial_result``) from the quarantined directory, so a task that
+    died after writing real episodes is not reported as having written zero
+    (the I-D finding).
+
+    Any exception writing it is caught and logged, not raised: this runs from
+    ``convert_task``'s own outer failure handler, which is already failing for
+    its own reason -- a disk genuinely full enough to fail the original write
+    (proven live: this really happens, not a hypothetical) is exactly the
+    condition most likely to also fail this one, and letting that mask the
+    original exception (skipping the ``_quarantine`` call right after it, in
+    the same handler) would be strictly worse than simply not having this
+    enrichment for this one task.
+    """
+    try:
+        local_dir.mkdir(parents=True, exist_ok=True)
+        (local_dir / _PARTIAL_RESULT_FILENAME).write_text(
+            json.dumps({"written": written, "skipped": skipped, "reasons": dict(reasons)})
+        )
+    except OSError as exc:
+        logger.error(
+            "%s/%s: could not write %s -- its own written/skipped counts will read as "
+            "zero in summary.json: %s",
+            embodiment, task, _PARTIAL_RESULT_FILENAME, exc,
+        )
+
+
+def _read_partial_result(output_path: Path, embodiment: str, task: str) -> TaskResult:
+    """A failed task's own written/skipped/reasons tally, recovered from the
+    marker file it wrote into its own directory just before quarantine (see
+    ``_write_partial_result``).
+
+    Falls back to all-zero if that marker is itself missing or unreadable --
+    e.g. a task that failed before ``_write_partial_result`` itself ran (a
+    bug in this cleanup path, or a version of this file predating it) should
+    not also crash the summary it is trying to make more honest.
+    """
+    path = output_path / embodiment / f"{task}.failed" / _PARTIAL_RESULT_FILENAME
+    try:
+        data = json.loads(path.read_text())
+        return TaskResult(
+            written=int(data.get("written", 0)),
+            skipped=int(data.get("skipped", 0)),
+            reasons=dict(data.get("reasons", {})),
+        )
+    except (OSError, ValueError, TypeError):
+        return TaskResult(written=0, skipped=0, reasons={})
 
 
 def convert_task(
@@ -197,14 +297,18 @@ def convert_task(
         shutil.rmtree(local_dir)
 
     try:
-        # One dataset per task, so its rate has to be one number -- but that
-        # number used to come from whichever episode happened to survive
-        # first, with every later disagreement only warned about and written
-        # onto that base anyway. This pre-pass (cheap: `camera_observations/
-        # timestamp` is tiny, and nothing here decodes a camera frame) measures
-        # every episode's own rate up front so the task is opened at their
-        # median instead, and any one episode's own rate can be checked
-        # against it below rather than trusted just for arriving first.
+        # One dataset per task, so its rate and its camera shape each have to
+        # be one value -- but both used to come from whichever episode
+        # happened to survive first, with every later disagreement either
+        # only warned about and written onto that rate anyway (fps), or
+        # skipped outright in favour of the first arrival (shape) regardless
+        # of which one was actually the odd one out. This pre-pass (cheap:
+        # `camera_observations/timestamp` is tiny and a shape costs one JPEG
+        # decode per camera, nowhere near a full episode's worth of frames)
+        # measures every episode's own rate and shape up front, so the task
+        # is opened at their median rate and majority shape instead, and any
+        # one episode's own measurements can be checked against those below
+        # rather than trusted just for arriving first.
         #
         # The drift check just below compares against this unrounded median,
         # never against the integer `dataset_fps` a LeRobot dataset actually
@@ -213,11 +317,15 @@ def convert_task(
         # 11.1% gap from that integer with zero episodes actually disagreeing)
         # -- comparing episodes against each other's median, not against the
         # rounding that median happens to produce, is what this guards against.
-        median_fps = task_fps(refs, config, min_frames=min_frames)
+        profile = task_profile(refs, config, min_frames=min_frames)
+        median_fps = profile.fps
         dataset_fps = round(median_fps) if median_fps is not None else None
+        # Colour keys only (see task_profile) -- empty when the pre-pass could
+        # not measure a shape from any episode, which falls back to today's
+        # behaviour of trusting whichever episode ends up creating the dataset.
+        dataset_shapes: dict[str, tuple[int, ...]] = dict(profile.shapes or {})
 
         dataset = None
-        dataset_shapes: dict[str, tuple[int, ...]] = {}
         written = 0
         skipped = 0
         reasons: Counter = Counter()
@@ -246,8 +354,8 @@ def convert_task(
 
             # A rate at or below 0.5 Hz rounds to 0, and a dataset can't be
             # opened at 0 fps -- nor can the drift check below divide by it.
-            # `task_fps` already excludes a rate like this from the median it
-            # computed (see its own docstring) for the same reason; this is
+            # `task_profile` already excludes a rate like this from the median
+            # it computed (see its own docstring) for the same reason; this is
             # the same floor, just re-applied per episode rather than trusted
             # to have been excluded upstream.
             if round(episode.fps) < 1:
@@ -260,9 +368,9 @@ def convert_task(
                 continue
 
             if median_fps is None:
-                # Every episode task_fps looked at failed to open, or failed
-                # to yield a usable rate -- and this ref's own file is the
-                # same file `read_episode` above just read successfully
+                # Every episode task_profile looked at failed to open, or
+                # failed to yield a usable rate -- and this ref's own file is
+                # the same file `read_episode` above just read successfully
                 # (including its own call to the same rate measurement), so
                 # in practice this branch cannot fire once execution reaches
                 # here. Kept anyway as a guard, not an assumption: dividing by
@@ -276,33 +384,57 @@ def convert_task(
                 reasons[_RATE_UNUSABLE] += 1
                 continue
 
-            if abs(episode.fps - median_fps) / median_fps > _FPS_DRIFT_THRESHOLD:
+            drift = abs(episode.fps - median_fps) / median_fps
+            threshold = max(_FPS_DRIFT_THRESHOLD, _drift_tolerance(episode.fps_span))
+            if drift > threshold:
                 logger.warning(
                     "skipped %s: measured %.1f Hz drifts from %s/%s's %d Hz base "
-                    "by more than %d%% -- not written onto the wrong time base",
-                    ref.path, episode.fps, embodiment, task, dataset_fps,
-                    int(_FPS_DRIFT_THRESHOLD * 100),
+                    "by %.1f%% (span %s, tolerance %.1f%%) -- not written onto the "
+                    "wrong time base",
+                    ref.path, episode.fps, embodiment, task, dataset_fps, drift * 100,
+                    f"{episode.fps_span}s" if episode.fps_span else "n/a",
+                    threshold * 100,
                 )
                 skipped += 1
                 reasons[_RATE_DRIFT] += 1
                 continue
 
+            # `dataset_shapes` is the task's own pre-pass majority (colour
+            # keys only -- see task_profile), decided before this loop ever
+            # started, so this same check already applies to the very first
+            # episode reached, not just later ones: an odd-resolution episode
+            # that happens to sort first in discovery order is what used to
+            # get to define the dataset's shape and make every correctly-sized
+            # episode the one that gets skipped instead (the I-B finding).
+            # Trivially passes while `dataset_shapes` is still empty (the
+            # majority itself could not be measured, or depth keys, which the
+            # majority never covers -- see below).
+            mismatch = _shape_mismatch(dataset_shapes, episode.shapes)
+            if mismatch:
+                logger.warning("skipped %s: shape mismatch: %s", ref.path, mismatch)
+                skipped += 1
+                reasons[_RESOLUTION_MISMATCH] += 1
+                continue
+
             if dataset is None:
+                # Fill in whatever the majority basis does not cover -- depth
+                # keys (never part of it: majority-voting depth would mean
+                # decoding a depth frame per camera per episode in the
+                # pre-pass, for a feature most conversions do not even ask to
+                # write), or every key if the majority itself could not be
+                # measured -- from this specific episode, the one that ends
+                # up actually creating the dataset. The majority basis, where
+                # it exists, always wins for the keys it names: `episode.shapes`
+                # is listed first only so its keys still contribute when
+                # `dataset_shapes` does not already carry them.
+                dataset_shapes = {**episode.shapes, **dataset_shapes}
                 dataset = RoboMINDv2Dataset.create(
                     repo_id=f"{embodiment}/{task}",
                     root=local_dir,
                     fps=dataset_fps,
                     robot_type=config.robot_type,
-                    features=build_features(config, episode.shapes),
+                    features=build_features(config, dataset_shapes),
                 )
-                dataset_shapes = episode.shapes
-            else:
-                mismatch = _shape_mismatch(dataset_shapes, episode.shapes)
-                if mismatch:
-                    logger.warning("skipped %s: shape mismatch: %s", ref.path, mismatch)
-                    skipped += 1
-                    reasons[_RESOLUTION_MISMATCH] += 1
-                    continue
 
             try:
                 for frame in episode.frames:
@@ -324,7 +456,20 @@ def convert_task(
 
             try:
                 dataset.save_episode()
-            except OSError as exc:
+            except Exception as exc:  # noqa: BLE001 - deliberately as broad as
+                # the outer `except Exception` this feeds into: every failure
+                # from save_episode leaves the same bookkeeping-ahead-of-
+                # total_frames problem described below regardless of its
+                # type, so catching only OSError here (as an earlier version
+                # did) caught the common case (an ffmpeg or disk failure) but
+                # let anything else -- a pyarrow error, a bug -- skip this
+                # specific "failed to save" message while still being just as
+                # fatal via the outer handler a few lines down. This is not a
+                # narrower, more-recoverable catch than that one -- it exists
+                # only to log a save-specific message before re-raising, so
+                # its scope now actually matches what it is for instead of
+                # only appearing to.
+                #
                 # save_episode writes this episode's non-video columns to the
                 # data parquet (`_save_episode_data`) *before* it encodes
                 # video -- so by the time encoding fails (any ffmpeg failure)
@@ -354,7 +499,62 @@ def convert_task(
         return TaskResult(written=written, skipped=skipped, reasons=dict(reasons))
     except Exception:
         logger.error("%s/%s failed; quarantining %s", embodiment, task, local_dir)
+        if dataset is not None:
+            # A task-fatal failure can leave real, already-committed episodes
+            # sitting only in this dataset's own in-memory metadata buffer --
+            # LeRobotDatasetMetadata flushes it to disk only every
+            # `metadata_buffer_size` episodes, or on finalize(). Left
+            # unflushed, that buffer is lost the moment this object is
+            # garbage-collected, since `_quarantine` below only renames
+            # whatever is already *on disk*. Finalizing here -- while
+            # `local_dir` is still at its live path -- flushes it there
+            # before the rename, and, on a clean pass, marks the dataset, its
+            # writer, and its writer's metadata finalized, so the garbage-
+            # collection safety net below (`DatasetWriter.__del__`) becomes a
+            # no-op wherever it eventually runs instead of recreating this
+            # directory after it is gone (see the evidence doc for how this
+            # was reproduced: a writer collected after `_quarantine` renamed
+            # its directory away re-ran `_flush_metadata_buffer`, whose
+            # `mkdir(parents=True, exist_ok=True)` against the writer's own,
+            # still-stale `root` recreated the very directory that had just
+            # been renamed).
+            #
+            # Any exception finalize() itself raises here is suppressed, not
+            # re-raised: this function is already failing for its own
+            # reason, and finalize() failing too -- plausibly from the exact
+            # same disk error -- must not replace or mask that original
+            # exception.
+            try:
+                dataset.finalize()
+            except Exception as finalize_exc:  # noqa: BLE001 - see comment above
+                logger.error(
+                    "%s/%s: finalize during cleanup also failed: %s",
+                    embodiment, task, finalize_exc,
+                )
+        _write_partial_result(embodiment, task, local_dir, written, skipped, reasons)
         _quarantine(local_dir)
+        if dataset is not None:
+            # finalize() sets its own `_finalized` flag -- on the dataset, its
+            # writer, and the writer's metadata, three separate flags -- only
+            # once *every* step inside it completes without raising. A
+            # failure partway through (the one just above, suppressed, or an
+            # earlier one during the episode loop that this exception
+            # happened after) can leave one or more of them `False`. Left
+            # `False`, `DatasetWriter.__del__`'s garbage-collection safety net
+            # retries finalize() whenever this object is eventually collected
+            # -- at a time this function does not control -- and by then
+            # `_quarantine` above has already renamed this directory away, so
+            # a retry reproduces exactly the recreate-the-directory bug the
+            # finalize() call above exists to prevent. Forcing every flag
+            # `True` here, regardless of whether finalize() actually
+            # completed, is what makes `__del__` a guaranteed no-op from this
+            # point on, whenever it eventually runs -- a stale flag is a far
+            # smaller risk than a resurrected directory: nothing reads these
+            # three private flags again once this task has failed and been
+            # quarantined.
+            dataset._is_finalized = True
+            dataset.writer._finalized = True
+            dataset.writer._meta._finalized = True
         raise
 
 
@@ -364,57 +564,128 @@ def convert_task(
 #
 # `read_episode` holds every camera's fully decoded frames in one dict before
 # it ever builds the frame list, so the peak scales with frames x cameras x
-# resolution. Measured directly (not assumed) on two real episodes: 2,653
-# frames x 3 cameras x 480x640 colour is 6.83 GiB (2.28 GiB/camera), +3.80 GiB
-# more with depth at 400x640 (3.54 GiB/camera combined). A 310-frame x
-# 6-camera x 720x1280 episode is 4.79 GiB colour (0.80 GiB/camera), +3.19 GiB
-# depth (1.33 GiB/camera combined) -- despite the larger frames, because it has
-# far fewer of them. The first episode's per-camera figures are the worse of
-# the two and are what every camera is priced at below, rounded up a little
-# further for margin (2.3 and 3.6): resolution is measured per episode, never
-# configured (see `build_features`), so a task's own peak can't be known
-# without decoding a frame from it, which is what this avoids paying for every
-# task before Ray even schedules it.
-_WORST_MEASURED_GIB_PER_CAMERA = 2.3          # colour only (the 480x640 episode, 2.28 measured)
-_WORST_MEASURED_GIB_PER_CAMERA_WITH_DEPTH = 3.6   # same episode, colour + depth, 3.54 measured
+# resolution -- all three, not just camera count. An earlier version of this
+# reservation priced only a "per camera" constant fitted to one specific
+# episode's own frame count (2,653), which silently implied every task runs
+# about that many frames: fine for the episode it was measured on, wrong by
+# roughly however far a task's real frame count differs from it -- for the
+# six-camera, 720x1280 robot in this release, whose own sampled episode ran
+# only 310 frames, that constant implied a ceiling far short of what its own
+# longer episodes actually need (the I-C finding).
+#
+# Recomputed here on a per-frame, per-camera basis instead, from the same two
+# measured episodes, so it scales with whatever frame count a task's own
+# pre-pass (`reader.task_max_frames`) actually finds: 2,653 frames x 3 cameras
+# x 480x640 colour is 6.83 GiB, 0.878 MiB/frame/camera; 310 frames x 6 cameras
+# x 720x1280 colour is 4.79 GiB, 2.638 MiB/frame/camera -- the larger figure
+# despite fewer frames, because each one is over 4x the pixels (720x1280 vs
+# 480x640). The larger of the two per-frame figures is what every camera-
+# frame is priced at below (rounded up a little further for margin: 2.7
+# without depth). Depth adds 0.489 MiB/frame/camera on the first episode and
+# 1.756 MiB/frame/camera on the second (measured the same way, from the same
+# two episodes' own +depth totals) -- again the second, larger-resolution
+# episode is worse, so combined colour+depth is priced at 4.5 MiB/frame/camera.
+_WORST_MEASURED_MIB_PER_CAMERA_FRAME = 2.7             # colour only (720x1280 episode, 2.638 measured)
+_WORST_MEASURED_MIB_PER_CAMERA_FRAME_WITH_DEPTH = 4.5  # same episode, colour + depth, 4.394 measured
 _MEMORY_SAFETY_FACTOR = 1.5  # decode_color's transient extra copy, plus slop
 
 
-def _task_memory_bytes(config: EmbodimentConfig, save_depth: bool) -> int:
-    """A per-task Ray memory reservation, in bytes. See the comment above."""
-    per_camera_gib = (
-        _WORST_MEASURED_GIB_PER_CAMERA_WITH_DEPTH if save_depth else _WORST_MEASURED_GIB_PER_CAMERA
+def _task_memory_bytes(config: EmbodimentConfig, save_depth: bool, max_frames: int) -> int:
+    """A per-task Ray memory reservation, in bytes. See the comment above.
+
+    ``max_frames`` is the task's own largest episode frame count
+    (``reader.task_max_frames``) -- every camera-frame this task could ever
+    actually decode is priced, rather than a fixed, episode-specific frame
+    count baked into the per-camera constant itself.
+    """
+    per_frame_mib = (
+        _WORST_MEASURED_MIB_PER_CAMERA_FRAME_WITH_DEPTH if save_depth
+        else _WORST_MEASURED_MIB_PER_CAMERA_FRAME
     )
-    per_camera_bytes = per_camera_gib * (1024**3)
-    return int(len(config.cameras) * per_camera_bytes * _MEMORY_SAFETY_FACTOR)
+    per_frame_bytes = per_frame_mib * (1024**2)
+    return int(max_frames * len(config.cameras) * per_frame_bytes * _MEMORY_SAFETY_FACTOR)
+
+
+def _max_node_memory(nodes: list[dict]) -> int:
+    """The largest ``memory`` resource (bytes) any one live node reports, or 0
+    if that can't be determined from ``nodes`` (typically ``ray.nodes()``).
+
+    A task's ``memory`` reservation has to fit on *one* node -- Ray does not
+    split a single task across several -- so a reservation is compared
+    against the largest single node, not the cluster's summed total: a
+    cluster of several smaller nodes can sum to more memory than one task
+    needs while still having no single node that actually fits it. Taking
+    plain dicts rather than calling ``ray.nodes()`` itself keeps this
+    trivially testable without a real or mocked Ray cluster.
+    """
+    return max(
+        (node.get("Resources", {}).get("memory", 0) for node in nodes if node.get("Alive")),
+        default=0,
+    )
 
 
 def _summarize(
+    output_path: Path,
     results: dict[tuple[str, str], TaskResult],
     failures: dict[tuple[str, str], str],
 ) -> dict:
-    """Aggregate every task's outcome into a per-embodiment tally: written and
-    skipped counts, skip reasons, and which tasks failed outright.
+    """Aggregate every task's outcome into a per-embodiment, per-task tally:
+    written and skipped counts, skip reasons, and which tasks failed outright.
 
     With 4,502 known-broken files in the corpus and no persisted record beside
     the output before this, an operator had no way to reconcile what landed
     against what was expected. This is that record.
+
+    A failed task's own written/skipped/reasons are read back from the
+    marker file it left in its own (now quarantined) directory
+    (``_read_partial_result``) rather than reported as zero: the bytes
+    ``_quarantine`` preserves on disk are real, and a record that calls them
+    zero because the task did not finish cleanly is not honest about what is
+    actually sitting there (the I-D finding).
+
+    Per-task counts are nested under each embodiment (``by_embodiment.
+    <embodiment>.tasks.<task>``) rather than only rolled up: an embodiment-
+    level total alone hides a single task that lost almost all of its
+    episodes inside an otherwise-healthy embodiment's sum (the I-B finding).
+    A task whose skipped count exceeds what it wrote is also logged as a
+    warning here -- not failed outright: a skip is already a deliberately
+    recoverable, reported outcome (that is the whole point of ``TaskResult``
+    over letting one bad episode fail a task), and majority-shape-basing
+    (see ``convert_task``) already fixes the single worst known cause of a
+    task losing most of its episodes. A residual case after that is a real
+    signal worth an operator's attention, not by itself evidence of a bug
+    that should quarantine otherwise-good, already-written episodes.
     """
     by_embodiment: dict[str, dict] = {}
 
     def bucket(embodiment: str) -> dict:
         return by_embodiment.setdefault(
-            embodiment, {"written": 0, "skipped": 0, "reasons": {}, "failed_tasks": []}
+            embodiment, {"written": 0, "skipped": 0, "reasons": {}, "failed_tasks": [], "tasks": {}}
         )
 
-    for (embodiment, _task), result in results.items():
+    def record_task(embodiment: str, task: str, result: TaskResult) -> None:
         entry = bucket(embodiment)
         entry["written"] += result.written
         entry["skipped"] += result.skipped
         for reason, count in result.reasons.items():
             entry["reasons"][reason] = entry["reasons"].get(reason, 0) + count
+        entry["tasks"][task] = {
+            "written": result.written,
+            "skipped": result.skipped,
+            "reasons": dict(result.reasons),
+        }
+        if result.skipped > result.written:
+            logger.warning(
+                "%s/%s: skipped %d episode(s) but only wrote %d -- most of this "
+                "task's episodes did not survive; see its reasons in summary.json",
+                embodiment, task, result.skipped, result.written,
+            )
+
+    for (embodiment, task), result in results.items():
+        record_task(embodiment, task, result)
 
     for (embodiment, task), error in failures.items():
+        record_task(embodiment, task, _read_partial_result(output_path, embodiment, task))
         bucket(embodiment)["failed_tasks"].append({"task": task, "error": error})
 
     return {
@@ -426,15 +697,82 @@ def _summarize(
     }
 
 
-def _write_summary(output_path: Path, summary: dict) -> None:
-    """Persist ``_summarize``'s tally beside the output, so a run's outcome
-    survives past its own log lines -- the log itself is not kept anywhere
-    once a run's terminal is gone, and Ray never brings a worker's per-episode
-    log records back to the driver's console in the first place (see the
-    module logger's docstring).
+def _write_summary(path: Path, summary: dict) -> None:
+    """Persist ``_summarize``'s tally at ``path``, so a run's outcome survives
+    past its own log lines -- the log itself is not kept anywhere once a
+    run's terminal is gone, and Ray never brings a worker's per-episode log
+    records back to the driver's console in the first place (see the module
+    logger's docstring).
     """
-    output_path.mkdir(parents=True, exist_ok=True)
-    (output_path / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(summary, indent=2, sort_keys=True))
+
+
+def _checkpoint_summary(
+    output_path: Path,
+    run_summary_path: Path,
+    results: dict[tuple[str, str], TaskResult],
+    failures: dict[tuple[str, str], str],
+) -> dict:
+    """Recompute and persist the run's tally so far -- to the stable
+    ``summary.json`` (always the most recent run's tally, for whatever
+    already expects that fixed name) and to this run's own timestamped copy
+    at ``run_summary_path`` (so a later run into the same ``--output-path``
+    does not destroy this one's -- see ``main``) -- and return it, so the
+    caller can reuse the final call's return value for its own per-embodiment
+    log lines once every task has resolved.
+
+    Called after *every* task resolves, not only once after the last one:
+    writing only at the very end means a run killed hours into a 114 TB
+    conversion leaves no record at all of the tasks that had already finished
+    (the I-D finding). Each call recomputes the whole tally from ``results``/
+    ``failures`` rather than patching the previous write, which is simple to
+    reason about and cheap enough at this scale: both dicts hold at most one
+    entry per task -- a few hundred, for the full release -- not per episode.
+
+    Always returns the computed tally even if writing either copy fails (a
+    genuinely full output disk, proven live, is exactly the condition under
+    which this is most likely to happen): a checkpoint that cannot currently
+    be persisted must not crash the whole run out from under whatever tasks
+    are still in flight, or replace the real reason a task failed with an
+    unrelated "could not write summary.json" one.
+    """
+    summary = _summarize(output_path, results, failures)
+    for path in (output_path / "summary.json", run_summary_path):
+        try:
+            _write_summary(path, summary)
+        except OSError as exc:
+            logger.error("could not write %s: %s", path, exc)
+    return summary
+
+
+def _describe_failure(exc: BaseException) -> str:
+    """A short, readable description of a task's fatal exception.
+
+    Under Ray, ``str(exc)`` on a remote task's exception is the *entire*
+    worker traceback -- ANSI colour escapes included -- with the actual
+    exception type and message only on its own last line (every one of them
+    leads with something like ``ray::convert_task() (pid=..., ip=...)``
+    first). Keeping only that last line, alongside the raised (possibly
+    Ray-wrapped) exception's own type name, is what actually says what went
+    wrong and is short enough to live in ``failures``/``summary.json``; the
+    full traceback already reached the worker's own stderr once. A
+    ``--debug`` run's exception is not Ray-wrapped and is usually one line
+    already, so this is close to a no-op for it.
+
+    Using this for both the log line and ``failures`` (rather than the
+    exception object itself, or its full ``str()``) also means nothing here
+    embeds the exception *object* in a log record's ``args`` -- which, kept
+    alive by a log-capturing handler, is what used to pin a failed task's
+    entire traceback (and everything it references, including the dataset
+    object that failed) alive for longer than this function call, regardless
+    of whether the object holding it was actually still needed. See
+    ``test_a_fatal_write_failure_fails_the_task_and_quarantines_its_output``
+    in ``tests/test_cli.py`` for exactly where that mattered.
+    """
+    text = str(exc).strip()
+    last_line = text.splitlines()[-1] if text else ""
+    return f"{type(exc).__name__}: {last_line}" if last_line else type(exc).__name__
 
 
 def main(
@@ -488,6 +826,19 @@ def main(
     results: dict[tuple[str, str], TaskResult] = {}
     failures: dict[tuple[str, str], str] = {}
 
+    # Timestamped so a later run into the same --output-path accumulates
+    # rather than clobbers: summary.json alone used to be the *only* record,
+    # so consecutive per-robot runs each destroyed the previous run's tally
+    # (the I-D finding). summary.json itself is still written too, on every
+    # checkpoint below, and always reflects whichever run wrote it most
+    # recently -- for anything that wants "the latest tally" under a fixed
+    # name -- while this run's own copy is never overwritten by a later one.
+    # Microsecond resolution, not just seconds: two runs (or, in a test, two
+    # calls) can start well under a second apart, and a same-second collision
+    # would silently make the second run overwrite the first's timestamped
+    # copy -- exactly the clobbering this exists to prevent.
+    run_summary_path = output_path / f"summary-{datetime.now(timezone.utc):%Y%m%dT%H%M%S.%fZ}.json"
+
     if debug:
         for (embodiment, task), refs in sorted(grouped.items()):
             try:
@@ -495,8 +846,10 @@ def main(
                     refs, embodiment, task, output_path, save_depth, min_frames
                 )
             except Exception as exc:  # noqa: BLE001 - one task must not kill the run
-                logger.error("failed %s/%s: %s", embodiment, task, exc)
-                failures[(embodiment, task)] = str(exc)
+                summary_text = _describe_failure(exc)
+                logger.error("failed %s/%s: %s", embodiment, task, summary_text)
+                failures[(embodiment, task)] = summary_text
+            summary = _checkpoint_summary(output_path, run_summary_path, results, failures)
     else:
         ray.init(
             runtime_env=RuntimeEnv(
@@ -506,26 +859,44 @@ def main(
                 }
             )
         )
+        # Advisory only: a task whose reservation exceeds every node's own
+        # memory can never be scheduled anywhere, and Ray's response to that
+        # is not to fail the task but to leave it pending forever (the I-C
+        # finding) -- silent unless someone happens to go looking at the
+        # dashboard. Warning here at least puts it in the log up front,
+        # before a run spends hours waiting on a task that was never going to
+        # start.
+        max_node_memory = _max_node_memory(ray.nodes())
+
         remote = ray.remote(convert_task)
-        futures = {
-            (embodiment, task): remote.options(
-                num_cpus=cpus_per_task,
-                memory=_task_memory_bytes(configs[embodiment], save_depth),
+        futures = {}
+        for (embodiment, task), refs in sorted(grouped.items()):
+            reservation = _task_memory_bytes(
+                configs[embodiment], save_depth, task_max_frames(refs)
+            )
+            if max_node_memory and reservation > max_node_memory:
+                logger.warning(
+                    "%s/%s: %.1f GiB memory reservation exceeds every node's own "
+                    "memory (largest: %.1f GiB) -- Ray will never schedule this "
+                    "task; it will sit pending rather than fail",
+                    embodiment, task, reservation / 1024**3, max_node_memory / 1024**3,
+                )
+            futures[(embodiment, task)] = remote.options(
+                num_cpus=cpus_per_task, memory=reservation,
             ).remote(refs, embodiment, task, output_path, save_depth, min_frames)
-            for (embodiment, task), refs in sorted(grouped.items())
-        }
+
         for (embodiment, task), future in futures.items():
             try:
                 results[(embodiment, task)] = ray.get(future)
             except Exception as exc:  # noqa: BLE001 - one task must not kill the run
-                logger.error("failed %s/%s: %s", embodiment, task, exc)
-                failures[(embodiment, task)] = str(exc)
+                summary_text = _describe_failure(exc)
+                logger.error("failed %s/%s: %s", embodiment, task, summary_text)
+                failures[(embodiment, task)] = summary_text
+            summary = _checkpoint_summary(output_path, run_summary_path, results, failures)
 
     total_written = sum(result.written for result in results.values())
     total_skipped = sum(result.skipped for result in results.values())
 
-    summary = _summarize(results, failures)
-    _write_summary(output_path, summary)
     for embodiment, tally in sorted(summary["by_embodiment"].items()):
         reasons = ", ".join(
             f"{reason}={count}" for reason, count in sorted(tally["reasons"].items())
