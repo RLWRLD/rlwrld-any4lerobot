@@ -5,6 +5,7 @@ v1 은 `h5_<embodiment>/` 를 못 찾으면 아무 것도 yield 하지 않고 �
 성공처럼 보였다. 이 테스트가 그 회귀를 막는다.
 """
 
+import json
 import re
 from pathlib import Path
 
@@ -69,6 +70,55 @@ def test_short_episodes_alone_raise(tmp_path):
             min_frames=1000,
             debug=True,
         )
+
+
+def test_a_rate_that_rounds_to_zero_is_skipped_rather_than_divided_by(tmp_path, caplog):
+    """`convert_task` takes a task's fps from its first surviving episode via
+    `round(episode.fps)`, with no floor: below 0.5 Hz that rounds to 0. The
+    later drift check (`abs(episode.fps - fps) / fps`) would then divide by
+    it for every subsequent episode -- but empirically, before the fix, the
+    crash actually happens one step earlier and as a different exception:
+    opening the dataset itself at `fps=0` raises `ValueError` from LeRobot's
+    own `DatasetInfo` (`fps must be positive, got 0`), on the first episode,
+    before a second episode is ever looked at. Same root cause either way --
+    nothing stops a rate that rounds to 0 from being used as the task's fps --
+    just a stricter downstream guard than the one this fix adds. The fix
+    skips the zero-rounding episode like any other unusable one, so the
+    second, normal-rate episode becomes the task's first surviving episode
+    instead, and neither exception is reached.
+
+    Two episodes are used deliberately, matching the two-episode shape the
+    review finding described: a second episode still exists, so success here
+    means the fix actually prevents the crash rather than the task merely
+    running out of episodes to divide with (`test_short_episodes_alone_raise`
+    above already covers the all-skipped/`NothingConverted` case; this test is
+    about the survivor, not the absence of one).
+    """
+    from robomind_v2_h5 import main
+
+    # 2 frames / 10 seconds = 0.2 Hz -> round() = 0. min_frames=2 lets this
+    # short, deliberately-slow episode reach the fps check instead of being
+    # rejected earlier for being short.
+    write_episode(tmp_path, "tienyi", "task", "0001_000000", frames=2, seconds=10)
+    # A normal-rate episode right behind it, so the task actually succeeds and
+    # the skip shows up as a smaller episode count rather than as NothingConverted.
+    write_episode(tmp_path, "tienyi", "task", "0002_000000", frames=6, seconds=2)
+
+    output_path = tmp_path / "out"
+    with caplog.at_level("WARNING"):
+        result = main(
+            src_paths=[tmp_path], output_path=output_path, min_frames=2, debug=True
+        )
+
+    assert result == output_path
+    assert "measured rate 0.200 Hz rounds to 0" in caplog.text
+
+    # The skip is visible in the count: one episode was written, not two, and
+    # the survivor -- not the zero-rate one -- is what set the dataset up.
+    info = json.loads((output_path / "tienyi" / "task" / "meta" / "info.json").read_text())
+    assert info["total_episodes"] == 1
+    assert info["total_frames"] == 6
+    assert info["fps"] == 3
 
 
 def test_no_embodiment_name_appears_in_the_converter():

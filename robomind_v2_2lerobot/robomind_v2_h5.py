@@ -88,6 +88,16 @@ def convert_task(
             # disagrees by more than a tenth is logged rather than silently
             # written onto the wrong time base.
             fps = round(episode.fps)
+            if fps < 1:
+                # Below 0.5 Hz rounds to 0, and a dataset can't be opened at
+                # 0 fps -- nor can the drift check below divide by it. Treat
+                # this measurement the same as any other unusable episode:
+                # skip it and let the next surviving episode set the rate.
+                logging.warning(
+                    "skipped %s: measured rate %.3f Hz rounds to 0, not usable as a fps",
+                    ref.path, episode.fps,
+                )
+                continue
             dataset = RoboMINDv2Dataset.create(
                 repo_id=f"{embodiment}/{task}",
                 root=local_dir,
