@@ -94,7 +94,7 @@ for the settings that matter.
   - [x] [Spec to LeRobot](./spec2lerobot/README.md) — any registry dataset, no per-dataset code (Fourier ActionNet today)
   - [x] [Open X-Embodiment to LeRobot](./openx2lerobot/README.md)
   - [x] [AgiBot-World to LeRobot](./agibot2lerobot/README.md)
-  - [x] [RoboMIND to LeRobot](./robomind2lerobot/README.md)
+  - [x] [RoboMIND to LeRobot](./robomind2lerobot)
   - [x] [LeRobot to RLDS](./lerobot2rlds/README.md)
   - [x] [LIBERO to LeRobot](./libero2lerobot/README.md)
   - [x] [RoboCasa to LeRobot](./robocasa2lerobot/README.md)
