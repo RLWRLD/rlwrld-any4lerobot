@@ -159,7 +159,7 @@ def test_the_resize_reaches_the_converter_with_the_profile_s_parameters():
         "type": "resize_preserve_aspect_area",
         "max_area": 65536,
         "multiple": 32,
-        "filter": "by_scale",
+        "filter": "sinc",
     }
 
 
@@ -311,7 +311,7 @@ class TestResizeFilter:
         resize = yaml.safe_load(
             (root / "lerobot_pipeline/configs/profiles/rldx1.yaml").read_text()
         )["video"]["resize"]
-        assert resize["filter"] in (*RESIZE_FILTERS, "by_scale")
+        assert resize["filter"] in RESIZE_FILTERS
         ResizePreserveAspectArea(**{k: v for k, v in resize.items() if k != "type"})
 
     def test_both_paths_read_one_declaration(self):
@@ -332,74 +332,56 @@ class TestResizeFilter:
         assert any("flags=lanczos" in f for f in step.plan((360, 640)).filters)
 
 
-class TestFilterByScale:
-    """No single resampler fits the collection, so the profile names a rule.
+class TestTheDeclaredFilter:
+    """One resampler for the whole collection, named in the profile.
 
-    sinc as one value fixed the strong downscales and left exactly two datasets
-    failing -- stanford_hydra at 1.25x and taco_play at 1.21x. Bicubic is nearly
-    exact there (0.985/1.019) and misses dlr_edan at 2x by 18.9%. The threshold is
-    the only assignment measured to put every resized camera inside SIZE_TOLERANCE.
+    A rule over the downscale factor was implemented and measured -- bicubic below
+    1.3x, sinc above, the only assignment that put all eight resized cameras inside
+    SIZE_TOLERANCE -- and it is gone. The collection is one value: every camera
+    resized the same way whatever its scale factor. What that costs is recorded
+    beside the value in the profile and in verification/README.md.
     """
 
-    def _step(self):
+    def _step(self, filter="sinc"):
         from lerobot_pipeline.steps.resize import ResizePreserveAspectArea
 
-        return ResizePreserveAspectArea(max_area=65536, multiple=32, filter="by_scale")
+        return ResizePreserveAspectArea(max_area=65536, multiple=32, filter=filter)
 
-    def test_a_gentle_downscale_takes_bicubic(self):
-        """taco_play's rgb_static, 1.21x, where sinc came out over the band."""
-        step = self._step()
-        assert "flags=bicubic" in step.plan((150, 200)).filters[0]
-
-    def test_stanford_hydra_is_on_the_bicubic_side(self):
-        """1.25x. It and taco_play were the two failures under plain sinc."""
-        step = self._step()
-        assert "flags=bicubic" in step.plan((240, 320)).filters[0]
-
-    def test_a_strong_downscale_takes_sinc(self):
-        """dlr_edan, 1.94x, which bicubic missed by 18.9%."""
-        step = self._step()
-        assert "flags=sinc" in step.plan((360, 640)).filters[0]
-
-    def test_ucsd_takes_sinc(self):
-        """2.5x, and four more cameras sit at this factor."""
-        step = self._step()
-        assert "flags=sinc" in step.plan((480, 640)).filters[0]
-
-    def test_austin_sirius_is_measured_and_passes_either_way(self):
-        """1.31x came out 1.09-1.10x on sinc, inside the band, so the threshold at
-        1.3 puts it on the sinc side without breaking it."""
-        step = self._step()
-        assert "flags=sinc" in step.plan((84, 84)).filters[0]
-
-    def test_a_named_filter_is_still_honoured_everywhere(self):
-        """The rule is opt-in: naming lanczos must not become a threshold."""
-        from lerobot_pipeline.steps.resize import ResizePreserveAspectArea
-
-        step = ResizePreserveAspectArea(max_area=65536, multiple=32, filter="lanczos")
-        for shape in ((150, 200), (360, 640), (480, 640)):
-            assert "flags=lanczos" in step.plan(shape).filters[0], shape
-
-    def test_the_profile_names_the_rule(self):
+    def test_the_profile_names_one_filter_for_the_whole_collection(self):
         import yaml
 
         root = Path(__file__).resolve().parents[2]
         profile = yaml.safe_load(
             (root / "lerobot_pipeline/configs/profiles/rldx1.yaml").read_text())
-        assert profile["video"]["resize"]["filter"] == "by_scale"
+        assert profile["video"]["resize"]["filter"] == "sinc"
 
-    def test_both_paths_resolve_the_rule_the_same_way(self):
+    def test_the_named_filter_holds_at_every_scale_factor(self):
+        """1.21x through 2.50x, the span the rule used to divide."""
+        step = self._step()
+        for shape in ((150, 200), (240, 320), (84, 84), (360, 640), (480, 640)):
+            assert "flags=sinc" in step.plan(shape).filters[0], shape
+
+    def test_the_removed_rule_is_not_silently_accepted(self):
+        """`by_scale` was a valid value until 2026-08-21. A profile still carrying it
+        has to fail, not fall back to a filter nobody asked for -- a whole collection
+        resized by a default is the failure the declared value was introduced for."""
+        from lerobot_pipeline.steps.resize import UnknownFilterError
+
+        with pytest.raises(UnknownFilterError, match="by_scale"):
+            self._step(filter="by_scale")
+
+    def test_both_paths_resolve_the_same_filter(self):
         """openx2lerobot resizes frame by frame and the transform stage emits a
-        `scale` filter; a rule that answered differently on the two would build half
-        a collection one way."""
+        `scale` chain; the two answering differently would build half a collection
+        one way and half the other."""
         import sys
 
         sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "openx2lerobot"))
         from video_rules import resize_filter
 
         rule = {"type": "resize_preserve_aspect_area", "max_area": 65536,
-                "multiple": 32, "filter": "by_scale"}
+                "multiple": 32, "filter": "sinc"}
         step = self._step()
+        assert resize_filter(rule) == "sinc"
         for shape in ((150, 200), (240, 320), (360, 640), (480, 640), (84, 84)):
-            assert resize_filter(rule, "image", shape) == \
-                step.filter_for(shape, step.plan(shape).out_shape), shape
+            assert f"flags={resize_filter(rule)}" in step.plan(shape).filters[0], shape

@@ -26,25 +26,6 @@ DEFAULT_MULTIPLE = 32
 RESIZE_FILTERS = ("bicubic", "bilinear", "lanczos", "sinc", "area", "gauss", "bicublin")
 DEFAULT_FILTER = "bicubic"
 
-# A filter may also be written as a rule over the downscale factor, because no single
-# resampler fits the collection. Measured as total video bytes against the delivered
-# copies (verification/records/resize-filter-sweep.md and speed.md):
-#
-#                 1.21-1.25x      1.31x        1.94x     2.50x
-#   bicubic            -       0.985/1.019     0.811     0.885
-#   sinc          >1.15 FAIL    1.100/1.088    0.959     0.988
-#
-# Every filter comes out larger the gentler the downscale, and choosing one slides
-# that curve rather than levelling it. sinc has the flattest curve and so the most
-# room, but it still overshoots below about 1.3x -- stanford_hydra at 1.25x and
-# taco_play at 1.21x were the two failures out of fifteen. Bicubic is nearly exact
-# there and misses badly at 2x.
-#
-# So the value is a threshold, not a filter: gentle downscales take the sharper-looking
-# option and strong ones take the softer, which is the only assignment that puts all
-# eight resized cameras inside SIZE_TOLERANCE.
-FILTER_BY_SCALE = ((1.3, "bicubic"), (float("inf"), "sinc"))
-
 
 class UnknownFilterError(ValueError):
     """Raised when a resize names a resampler libswscale does not have."""
@@ -112,31 +93,15 @@ class ResizePreserveAspectArea:
         self.max_area = int(max_area)
         self.multiple = int(multiple)
         self.keys = tuple(keys) if keys else None
-        if filter == "by_scale":
-            self.filter = filter
-        elif filter in RESIZE_FILTERS:
-            self.filter = filter
-        else:
+        if filter not in RESIZE_FILTERS:
             raise UnknownFilterError(
-                f"unknown resize filter {filter!r}; expected 'by_scale' or one of "
+                f"unknown resize filter {filter!r}; expected one of "
                 f"{', '.join(RESIZE_FILTERS)}"
             )
+        self.filter = filter
 
     def applies_to(self, key: str) -> bool:
         return self.keys is None or key in self.keys
-
-    def filter_for(self, shape: tuple[int, int], out: tuple[int, int]) -> str:
-        """Which resampler to use for this particular downscale.
-
-        Fixed unless the filter is ``by_scale``, in which case the factor decides --
-        see ``FILTER_BY_SCALE``. Area ratio rather than either side's ratio, so a
-        crop that changes the aspect does not make one camera look gentler than it is.
-        """
-        if self.filter != "by_scale":
-            return self.filter
-        source, target = shape[0] * shape[1], out[0] * out[1]
-        scale = (source / target) ** 0.5 if target else 1.0
-        return next(name for limit, name in FILTER_BY_SCALE if scale < limit)
 
     def plan(self, shape: tuple[int, int]) -> VideoPlan | None:
         h, w = shape
@@ -150,8 +115,7 @@ class ResizePreserveAspectArea:
             # much detail survives a downscale, and a setting that reads as absent is
             # a setting nobody reviews. dlr_edan's video came out 0.79x the delivered
             # size on the shipped filter, against 0.98x for datasets not resized at all.
-            filters.append(
-                f"scale={w_r}:{h_r}:flags={self.filter_for(shape, (h_r, w_r))}")
+            filters.append(f"scale={w_r}:{h_r}:flags={self.filter}")
         if (h_c, w_c) != (h_r, w_r):
             # ffmpeg's crop filter centres by default
             filters.append(f"crop={w_c}:{h_c}")

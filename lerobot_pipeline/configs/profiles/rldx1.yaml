@@ -45,9 +45,9 @@ video:
     # went unnoticed for so long: cmu_stretch and austin_buds are 128x128 at the source,
     # already the target size, so the resize composes to nothing.
     #
-    # A rule, not a filter, because no single resampler fits the collection. Measured
-    # as total video bytes against the delivered copies, rebuilt through the real
-    # pipeline -- verification/records/resize-filter-sweep.md and speed.md:
+    # One filter for the whole collection, and it is sinc. Measured as total video
+    # bytes against the delivered copies, rebuilt through the real pipeline --
+    # verification/records/resize-filter-sweep.md and speed.md:
     #
     #                1.21-1.25x      1.31x        1.94x    2.50x    worst
     #   bicubic           -       0.985/1.019     0.811    0.885    18.9%
@@ -55,16 +55,25 @@ video:
     #   sinc          >1.15 FAIL  1.100/1.088     0.959    0.988    15%+
     #
     # Every filter comes out larger the gentler the downscale, so choosing one slides
-    # that curve rather than levelling it. sinc was tried as a single value and it is
-    # a clear improvement -- dlr_edan went 0.79x to 0.96x, ucsd 0.885x to 0.99x -- but
-    # of fifteen datasets it left exactly two failing, stanford_hydra at 1.25x down and
-    # taco_play at 1.21x, which is where its overshoot passes SIZE_TOLERANCE. Bicubic
-    # is nearly exact there and misses badly at 2x.
+    # that curve rather than levelling it. sinc has the flattest curve and is the only
+    # filter within 5% at the strong end: dlr_edan went 0.79x to 0.96x and ucsd 0.885x
+    # to 0.99x.
     #
-    # So the threshold is 1.3x: below it bicubic, above it sinc. That is the only
-    # assignment measured to put all eight resized cameras inside the band. The step
-    # decides per camera, since a dataset can hold a 480x640 view and an 84x84 one.
-    filter: by_scale
+    # What one value costs, both measured, both accepted here rather than worked around:
+    #
+    #   Two datasets fail on video size. stanford_hydra at 1.25x down and taco_play at
+    #   1.21x are where sinc's overshoot passes SIZE_TOLERANCE -- 24 and 11 episodes
+    #   under the run that used sinc everywhere. A 1.3x threshold took both to zero,
+    #   and it was removed along with this decision rather than left behind as dead
+    #   configuration. verification/README.md records what it measured.
+    #
+    #   19% of build throughput against lanczos and 24% against bicubic: 1,273 frames/s
+    #   against 1,516 and 1,581. sinc is the widest kernel libswscale has, and on a
+    #   dataset that actually downscales the resize is 55% of a worker's time.
+    #
+    # One value rather than a rule is a statement about what the collection is: every
+    # camera resized the same way, whatever its scale factor.
+    filter: sinc
   # No encoding, on purpose. The collection was not delivered in one: 19 of the
   # datasets carry LeRobot's own AV1 and 17 carry the H.264 only ffmpeg produces,
   # and which one a dataset is belongs in that dataset's spec, where it is a record

@@ -41,7 +41,7 @@ from adapter import OpenXAdapter, read_raw_dir
 from generic_converter import run_converter
 from oxe_utils.configs import OXE_DATASET_CONFIGS, ActionEncoding, StateEncoding
 from oxe_utils.transforms import OXE_STANDARDIZATION_TRANSFORMS
-from video_rules import flips_channels, resize_filter, resize_frame, target_shape
+from video_rules import flips_channels, resize_frame, target_shape
 
 np.set_printoptions(precision=2)
 
@@ -198,10 +198,7 @@ def frame_images(
         if shape is None:
             out[name] = frame
             continue
-        # by_scale asks per camera, so the filter is resolved from this frame's own
-        # source geometry rather than once for the dataset
-        out[name] = resize_frame(
-            frame, shape, filter(key, frame.shape[:2]) if callable(filter) else filter)
+        out[name] = resize_frame(frame, shape, filter)
     return out
 
 

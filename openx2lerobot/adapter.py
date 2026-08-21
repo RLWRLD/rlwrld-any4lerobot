@@ -319,13 +319,8 @@ class OpenXAdapter(BaseAdapter):
 
         shapes = camera_shapes(self.features)
         # The same mapping the shapes came from, so geometry and resampler are read
-        # off one declaration rather than two. Passed as a callable because
-        # `by_scale` answers per camera: a dataset can hold a 480x640 view and an
-        # 84x84 one, and those are different downscales.
-        rule = parse_rule(self.resize)
-
-        def filter(key, shape):
-            return resize_filter(rule, key, tuple(shape))
+        # off one declaration rather than two.
+        filter = resize_filter(parse_rule(self.resize))
         traj = episode_data["steps"]
         for index in range(traj["action"].shape[0]):
             dataset.add_frame(
