@@ -161,3 +161,37 @@ def test_ur_dex_differs_from_ur_only_in_end_effector_width():
 def test_ur_dex_has_no_description_file():
     """이 repo 에는 zh_description.txt 가 하나도 없다 — 디렉토리 이름뿐이다."""
     assert load("ur_dex").instruction_source == "dirname"
+
+
+CAMERA_COUNTS = {
+    "franka": 6, "agilex": 3, "ark": 3, "tienkung": 1,
+    "ur": 6, "ur_dex": 6, "tienyi": 1,
+}
+ARM_WIDTHS = {
+    "franka": 8, "agilex": 6, "ark": 6, "tienkung": 7,
+    "ur": 6, "ur_dex": 6, "tienyi": 7,
+}
+
+
+@pytest.mark.parametrize("name", sorted(CAMERA_COUNTS))
+def test_measured_camera_count(name):
+    assert len(load(name).cameras) == CAMERA_COUNTS[name]
+
+
+@pytest.mark.parametrize("name", sorted(ARM_WIDTHS))
+def test_measured_arm_width(name):
+    assert load(name).stream("arm_left_position").width == ARM_WIDTHS[name]
+    assert load(name).stream("arm_right_position").width == ARM_WIDTHS[name]
+
+
+def test_ark_cameras_are_left_right_top_not_front():
+    """ark 는 카메라 3 대인데 이름이 agilex 와 다르다."""
+    assert [camera.name for camera in load("ark").cameras] == [
+        "camera_left", "camera_right", "camera_top"
+    ]
+
+
+def test_agilex_cameras_are_front_left_right():
+    assert [camera.name for camera in load("agilex").cameras] == [
+        "camera_front", "camera_left", "camera_right"
+    ]

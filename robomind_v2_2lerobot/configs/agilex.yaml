@@ -1,0 +1,24 @@
+# AgileX 정적 양팔. 22,206 에피소드 / 13.28 TB / 66 task.
+# 실측 fps ~101 — 12 종 중 가장 빠르다. v1 의 fps=30 과 3 배 이상 다르다.
+#
+# depth 해상도가 color 와 다르다(color 480x640, depth 400x640). 해상도는 config 에
+# 적지 않고 프레임을 디코드해서 얻으므로 여기서는 문제가 되지 않는다.
+robot_type: agilex
+
+cameras:
+  camera_front: {depth: true}
+  camera_left:  {depth: true}
+  camera_right: {depth: true}
+
+streams:
+  arm_left_position:           {width: 6}
+  arm_right_position:          {width: 6}
+  end_effector_left_pose:      {width: 7}
+  end_effector_left_position:  {width: 1}
+  end_effector_right_pose:     {width: 7}
+  end_effector_right_position: {width: 1}
+
+instruction:
+  source: zh_file
+
+layout: real

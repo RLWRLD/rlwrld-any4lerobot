@@ -1,0 +1,20 @@
+# Tien Kung 휴머노이드 양팔. 14,740 에피소드 / 5.85 TB / 47 task. 실측 fps 20-29.
+# 카메라 1 대(camera_top). arm 은 7 관절이다.
+robot_type: tienkung
+
+cameras:
+  camera_top: {depth: true}
+
+# ⚠️ end_effector_*_pose 는 선언하지 않는다. 실측 결과 Tien Kung 계열 3종
+# (이 embodiment, tienyi, tienyi_mobile) 만 그 데이터셋이 shape (0,) 로 비어 있다.
+# 나머지 9종은 채워져 있다. 선언하면 전 에피소드가 skip 된다.
+streams:
+  arm_left_position:           {width: 7}
+  arm_right_position:          {width: 7}
+  end_effector_left_position:  {width: 1}
+  end_effector_right_position: {width: 1}
+
+instruction:
+  source: zh_file
+
+layout: real

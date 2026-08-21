@@ -1,0 +1,21 @@
+# ARX 정적 양팔. 14,857 에피소드 / 10.45 TB / 54 task. 실측 fps 56-61.
+# 카메라 3 대지만 이름이 agilex 와 다르다: front 가 없고 top 이 있다.
+robot_type: ark
+
+cameras:
+  camera_left:  {depth: true}
+  camera_right: {depth: true}
+  camera_top:   {depth: true}
+
+streams:
+  arm_left_position:           {width: 6}
+  arm_right_position:          {width: 6}
+  end_effector_left_pose:      {width: 7}
+  end_effector_left_position:  {width: 1}
+  end_effector_right_pose:     {width: 7}
+  end_effector_right_position: {width: 1}
+
+instruction:
+  source: zh_file
+
+layout: real
