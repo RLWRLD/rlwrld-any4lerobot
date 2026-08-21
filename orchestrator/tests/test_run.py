@@ -66,9 +66,11 @@ class FakeRun:
         self.returncode = returncode
         self.creates = creates
         self.calls: list[list[str]] = []
+        self.environments: list[dict | None] = []
 
     def __call__(self, command, **kwargs):
         self.calls.append(list(command))
+        self.environments.append(kwargs.get("env"))
         if self.returncode == 0 and self.creates is not None:
             self.creates.mkdir(parents=True, exist_ok=True)
             (self.creates / "meta").mkdir(exist_ok=True)
@@ -189,6 +191,40 @@ def test_build_divides_the_worker_budget_across_a_batch(env, steps):
 
     command = run.calls[0]
     assert command[command.index("--workers") + 1] == "12"
+
+
+def test_build_tells_a_shared_machine_how_many_ways_it_is_split(env, steps):
+    """Each build sizes its own workers against the memory it can see, so a batch
+    that starts three of them has to say so or all three plan for the whole node."""
+    spec = load("action_net")
+    env.raw_path(spec).mkdir(parents=True)
+    run = FakeRun()
+
+    build(env, spec, steps, env_source="ec2", batch_size=3, run=run)
+
+    assert run.environments[0]["ANY4LEROBOT_MEMORY_SHARE"] == "3"
+
+
+def test_build_alone_on_a_machine_declares_no_share(env, steps):
+    spec = load("action_net")
+    env.raw_path(spec).mkdir(parents=True)
+    run = FakeRun()
+
+    build(env, spec, steps, env_source="ec2", batch_size=1, run=run)
+
+    assert run.environments[0] is None
+
+
+def test_a_batch_passes_its_size_to_every_build_it_starts(env, steps):
+    specs = [load("action_net"), load("viola")]
+    for spec in specs:
+        env.raw_path(spec).mkdir(parents=True)
+    run = FakeRun()
+
+    process(env, specs, steps, env_source="ec2", only=["build"], run=run)
+
+    declared = [environment["ANY4LEROBOT_MEMORY_SHARE"] for environment in run.environments]
+    assert declared == ["2", "2"]
 
 
 def test_build_refuses_a_dataset_whose_layout_was_never_recovered(env, steps):

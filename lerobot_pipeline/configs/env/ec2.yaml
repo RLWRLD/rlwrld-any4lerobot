@@ -21,24 +21,26 @@ batch:
   target_episodes: 768
 
 builders:
-  # RLDS splits by episode, so one dataset can use the whole instance. The chunk is
-  # small on purpose: a task is a chunk, and a chunk count below the worker count
-  # leaves cores idle -- austin_sirius is 559 episodes, which is 6 tasks at 100 and
-  # 23 at 25. Measured at 25: 600s on one worker against 112s on 48.
+  # RLDS splits by episode, so one dataset can use the whole instance. Task size and
+  # worker count are both worked out on the machine rather than written down; each
+  # field below carries the measurement it was set from.
   #
   # The image writer is turned down to one process because the parallelism has moved
   # up a level: every worker used to spawn five of them, which on 24 workers is 144
   # processes each holding TensorFlow. One writer per task, many tasks.
   #
-  # -1 is "one worker per core", worked out on the machine rather than written down
-  # here. A number written down is a number for one machine: 64 was chosen on a
-  # 192-core instance and then run on 48-core ones, where it oversubscribed by a
-  # third and put 64 tasks of ~3 GB into 192 GB of RAM. One worker per core needs
-  # 144 GB for the same work and fits.
+  # -1 is "as many workers as this machine can hold". It used to mean one per core,
+  # and cores were the wrong question: the constraint is memory per *worker*, which
+  # runs 4.7 GB to 9.3 GB across this collection, so 48 workers on a 48-core 185 GB
+  # node asked for 226 GB and the kernel killed twelve of them. worker_budget sizes
+  # it from the episode a dataset actually has.
   #
-  # Memory is the binding constraint, not cores, and it is per worker rather than per
-  # core -- see worker_budget, which sizes it from the episode a dataset actually has.
-  # Across this collection that is 4.7 GB a worker at one end and 9.3 at the other.
+  # A number written down is a number for one machine: 64 was chosen on a 192-core
+  # instance and then run on 48-core ones, where it oversubscribed by a third.
+  #
+  # With max_datasets above 1 the orchestrator also declares how many builds share
+  # the node, because each one sizes itself against the memory it can see and what
+  # it can see is the whole machine however many are started.
   openx:
     executor: local
     # 8 rather than 25, measured. Finer is better on both axes at once: 25 leaves a
@@ -57,6 +59,11 @@ builders:
 runtime:
   # left to the pipeline, which sizes them from the core count and the file count;
   # set them here to pin a run instead
+  #
+  # Unset, each build in a batch plans ffmpeg for the whole node, so a batch of three
+  # oversubscribes threefold. Left alone deliberately: x264 cannot saturate the
+  # threads it is given at this output size, and 16x16 measured marginally faster
+  # than 16x1. Memory is the one that wedges a node, and that one is divided.
   workers: null
   threads_per_ffmpeg: null
   # What this machine's link carries, for the CRT client's target_bandwidth. Leaving it

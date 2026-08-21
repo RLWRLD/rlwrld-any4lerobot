@@ -85,7 +85,15 @@ LEGACY_STATS_KEYS = ("mean", "std", "min", "max", "count")
 
 
 def resolve_workers(workers: int) -> int:
-    """How many jobs to keep in flight; ``-1`` means one per core."""
+    """How many jobs to keep in flight; ``-1`` means one per core.
+
+    ``-1`` means something else in ``generic_converter.pipeline`` -- there it is "as
+    many as this machine's memory holds", because a converter worker is a process
+    holding one whole decoded episode and memory is what runs out first. The jobs
+    here are threads waiting on ffmpeg or pyarrow and hold nothing of the sort, so
+    cores really are the question. Same sentinel, different unit; the unit is what
+    decides which rule applies.
+    """
 
     if workers == -1:
         return os.cpu_count() or 1
