@@ -17,6 +17,7 @@ import numpy as np
 
 from .configs import EmbodimentConfig
 from .errors import EpisodeSkipped
+from .images import decode_color, decode_depth, frame_shape
 
 
 @dataclass(frozen=True)
@@ -271,3 +272,60 @@ def instruction(ref: EpisodeRef, config, handle) -> str:
                 return text
 
     return _from_dirname(ref.task)
+
+
+@dataclass(frozen=True)
+class Episode:
+    ref: EpisodeRef
+    frames: list[dict]
+    fps: float
+    task: str
+    # LeRobot needs each video key's shape up front, and it is measured per
+    # episode rather than configured, so it travels with the episode.
+    shapes: dict[str, tuple[int, ...]]
+
+
+def read_episode(ref: EpisodeRef, config, *, save_depth: bool = False) -> Episode:
+    """One episode as the per-frame dicts LeRobot's ``add_frame`` takes.
+
+    Raises ``EpisodeSkipped`` for anything wrong with this one file -- a broken
+    write, a width that contradicts the config, a clock that never advances -- so
+    that a run drops the episode and keeps going.
+    """
+    import h5py
+
+    with h5py.File(ref.path, "r") as handle:
+        columns = read_streams(handle, config)
+        fps = episode_fps(handle, config)
+        task = instruction(ref, config, handle)
+
+        images: dict[str, np.ndarray] = {}
+        shapes: dict[str, tuple[int, ...]] = {}
+        for camera in config.cameras:
+            key = f"observation.images.{camera.name}"
+            images[key] = decode_color(
+                handle[f"camera_observations/color_images/{camera.name}"]
+            )
+            shapes[key] = frame_shape(handle, camera.name)
+            if camera.depth and save_depth:
+                depth_key = f"{key}_depth"
+                images[depth_key] = decode_depth(
+                    handle[f"camera_observations/depth_images/{camera.name}"]
+                )
+                height, width, _ = shapes[key]
+                shapes[depth_key] = (height, width, 1)
+
+    count = len(next(iter(columns.values())))
+    for key, value in images.items():
+        if len(value) != count:
+            raise EpisodeSkipped(f"{key} has {len(value)} frames, streams have {count}")
+
+    frames = [
+        {
+            **{key: value[index] for key, value in images.items()},
+            **{key: value[index] for key, value in columns.items()},
+            "task": task,
+        }
+        for index in range(count)
+    ]
+    return Episode(ref=ref, frames=frames, fps=fps, task=task, shapes=shapes)
