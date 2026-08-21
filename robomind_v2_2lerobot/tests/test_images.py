@@ -5,7 +5,9 @@
 양쪽 다 (H, W) 다.
 """
 
+import cv2
 import h5py
+import numpy as np
 from fixtures import write_episode
 
 from robomind_v2_utils.images import decode_color, decode_depth, frame_shape
@@ -19,6 +21,31 @@ def test_color_decodes_to_hwc_uint8(tmp_path):
 
     assert frames.shape == (4, 48, 64, 3)
     assert frames.dtype.name == "uint8"
+
+
+def test_color_channel_order_is_not_flipped():
+    """실측(task 11): 이 컨버터가 지금 다루는 config 는 채널을 뒤집지 않아야
+    한다 -- 실물 프레임을 ``PIL.Image.fromarray`` 로 있는 그대로(재해석 없이)
+    렌더링해서 눈으로 확인했다(빨간 사과 task 의 실제 프레임이, 뒤집지 않았을
+    때 자연스러운 빨강으로 나오고 뒤집으면 파랗게 나온다). 근거와, 이 판정에서
+    ``cv2.imwrite`` 기반 비교가 결론을 반대로 뒤집을 뻔했던 함정은
+    ``decode_color`` 의 docstring 을 본다.
+
+    여기서는 그 "뒤집지 않는다" 는 계약 자체를 고정한다: ``decode_color`` 의
+    출력이 ``cv2.imdecode`` 의 원시 출력과 채널 순서까지 완전히 같아야 한다.
+    """
+    image = np.zeros((8, 8, 3), dtype=np.uint8)
+    image[..., 0] = 200
+    image[..., 1] = 50
+    image[..., 2] = 10
+    ok, buffer = cv2.imencode(".jpg", image)
+    assert ok
+    blob = buffer.reshape(-1)
+
+    raw = cv2.imdecode(blob, cv2.IMREAD_COLOR)
+    decoded = decode_color([blob])
+
+    assert decoded[0].tolist() == raw.tolist()
 
 
 def test_depth_decodes_with_a_trailing_channel(tmp_path):

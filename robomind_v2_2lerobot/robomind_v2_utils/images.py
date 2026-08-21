@@ -5,6 +5,12 @@ color 는 JPEG(`ffd8ff`), depth 는 PNG(`89504e47`) 다. v1 의 ``decode_images`
 
 해상도는 ``camera_color_resolution`` 을 읽지 않고 디코드한 결과에서 얻는다. 그 필드는
 real 이 (H, W), sim 이 (W, H) 로 축 순서가 반대다.
+
+색 채널 순서도 같은 종류의 의심을 받았다 -- v1 은 embodiment 에 따라 ``bgr2rgb``
+플래그가 필요했었다. task 11 에서 실물로 다시 확인했고, 이 컨버터가 지금 다루는
+config 에서는 뒤집지 않아도 된다는 결론이 났다(``camera_color_channel`` 필드의
+``b'rgb'`` 주장과 일치). 근거와, 그 확인 과정에서 걸렸던 함정은 ``decode_color``
+의 docstring 을 본다.
 """
 
 import cv2
@@ -25,6 +31,56 @@ def _blob(value) -> np.ndarray:
 
 
 def decode_color(blobs) -> np.ndarray:
+    """JPEG(또는 raw) 컬러 프레임을 ``(T, H, W, 3)`` **RGB** 배열로 디코드한다.
+
+    ``cv2.imdecode(..., IMREAD_COLOR)`` 는 스스로는 항상 BGR 이라고 주장한다 --
+    OpenCV 의 고정된 계약이다. 하지만 이 컨버터가 지금 다루는 config 의 실물
+    프레임으로 실측한 결과, 그 원시 출력을 **그대로**(채널을 뒤집지 않고) RGB 로
+    해석했을 때 자연스러운 색이 나온다 -- 즉 여기서는 뒤집지 않는다. 이 함수가
+    아무것도 하지 않고 ``cv2.imdecode`` 의 결과를 그대로 내보내는 것은 게을러서가
+    아니라, 실측 후 "뒤집지 않는 것이 맞다" 는 결론에 도달했기 때문이다.
+
+    판정 근거 (task 11 실측 -- 실물 프레임을 PNG 로 저장해서 눈으로 확인):
+
+    * 결정적 증거: "빨간 사과를 바구니에 담는" task 의 실제 프레임을,
+      ``PIL.Image.fromarray(frame, mode="RGB")`` 로 -- 즉 배열을 어떤 재해석도
+      없이 있는 그대로 R,G,B 로 저장하면 사과가 자연스러운 빨강/노랑, 바구니가
+      갈색 등나무로 나온다. 반대로 ``frame[..., ::-1]`` 을 같은 방식으로
+      저장하면 사과가 선명한 파란색, 바구니가 파란색으로 나온다 -- 자연에 파란
+      사과는 없고 task 디렉토리 이름 자체가 "빨간 사과" 라고 말하므로, 뒤집지
+      않은 쪽이 진짜다.
+    * ``cv2.imwrite`` 로 판정하려다 한 번 뒤집어서 결론 낼 뻔한 함정: ``imwrite``
+      는 입력을 BGR 로 "기대"할 뿐 아니라, 파일에 쓸 때 그 자체로 내부적으로
+      채널을 한 번 뒤집는다(BGR 배열 -> 표준 RGB 파일). 그래서
+      ``cv2.imwrite(path, frame)`` (뒤집지 않고 그대로 저장) 로 만든 파일이
+      실제로 보여주는 (R,G,B) 는 ``(frame[...,2], frame[...,1], frame[...,0])``
+      이지 ``frame`` 그대로가 아니다 -- ``imwrite`` 기반 비교는 "뒤집어서 자연
+      스러운 쪽" 이 "코드에서 뒤집어야 하는 쪽" 과 반대가 된다. 이 컨버터의
+      초안은 이 함정에 빠져 정반대로(``[..., ::-1]``) 뒤집는 코드를 잠깐
+      만들었었다 -- ``PIL.Image.fromarray`` 로 배열을 있는 그대로 다시 확인하고
+      서야 잡았다. 다음에 같은 판정을 반복할 때는 ``imwrite`` 두 장 비교가 아니라
+      ``PIL.Image.fromarray(frame, mode="RGB")`` 로 배열을 직접 렌더링해서
+      확인해야 이 재반전 함정을 피한다.
+    * ``camera_color_channel`` 필드는 측정한 모든 프레임에서 ``b'rgb'`` 라고
+      말하는데, 위 실측 결론과 일치한다 -- ``camera_color_resolution`` 이 축
+      순서를 거짓으로 말하는 것(모듈 docstring, ``frame_shape`` 참고)과 달리,
+      이 필드는 이 config 에 한해 신뢰해도 되는 것으로 보인다.
+    * 채널별 평균(디코드 직후, R/G/B 순서로 약 104/108/106)은 서로 가까워서 그
+      자체로는 약한 신호였다 -- 실제로 판정을 내린 것은 사과 색이었지 평균이
+      아니다.
+
+    v1 에는 이것이 embodiment 마다 다를 수 있다는 전례가 있다: 자신이 다루던
+    일부 embodiment 는 이미지가 실제로 BGR 이라고 실측해서 밝히고 embodiment 별
+    flip 플래그를 따로 뒀다(``robomind_h5.py``). 이 컨버터가 지금 다루는 config
+    는 v1 이 다루지 않던 embodiment 라 별도로 다시 확인해야 했고, 이번에는
+    뒤집지 않는 쪽으로 결론이 났다 -- "embodiment 마다 다르다" 는 v1 의 경험이
+    맞다는 뜻이지, 이 config 도 뒤집어야 한다는 뜻은 아니었다. 지금은 config 가
+    하나뿐이라 무조건 그대로 내보내지만, 새 embodiment 를 추가할 때마다 이
+    함수의 판정 절차(실제 프레임을 ``PIL.Image.fromarray`` 로 직접 렌더링해서
+    사람이 알아볼 수 있는 색의 물체로 확인)를 반복해야 한다. 그때 뒤집어야 하는
+    embodiment 가 나오면 여기를 v1 처럼 per-embodiment 플래그로 바꿔야 한다 --
+    지금 무조건 그대로 내보내는 코드를 그 embodiment 에도 적용하면 안 된다.
+    """
     frames = []
     for value in blobs:
         buffer = _blob(value)
