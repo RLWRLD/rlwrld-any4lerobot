@@ -240,6 +240,104 @@ def test_workers_do_not_change_what_the_data_conversion_writes(tmp_path):
         assert (serial / relative).read_bytes() == (parallel / relative).read_bytes()
 
 
+def test_an_episode_parquet_says_what_datasets_would_have_said(tmp_path):
+    """The writer changed; what a v2.1 reader sees must not have.
+
+    ``_split_data_file`` writes each episode with pyarrow now, instead of building a
+    ``datasets.Dataset`` for it and writing through that. The two differ in row-group
+    layout and file size, which no reader looks at. They must not differ in the
+    columns, the types, the values, or the feature description in the schema
+    metadata, which is everything a reader does look at.
+    """
+
+    import pyarrow.parquet as pq
+    from datasets import Dataset
+
+    source = tmp_path / "in"
+    records = _data_dataset(source, files=1, episodes_per_file=2)
+    dg.convert_data(source, tmp_path / "out", records, workers=1)
+
+    table = pq.read_table(
+        source / dg.DEFAULT_DATA_PATH.format(chunk_index=0, file_index=0)
+    )
+    through_datasets = tmp_path / "through_datasets.parquet"
+    Dataset(table.slice(0, ROWS_PER_EPISODE)).to_parquet(through_datasets)
+
+    written = pq.read_table(sorted((tmp_path / "out").rglob("*.parquet"))[0])
+    expected = pq.read_table(through_datasets)
+
+    assert written.schema.names == expected.schema.names
+    assert written.schema.types == expected.schema.types
+    assert written.schema.metadata == expected.schema.metadata
+    assert written.to_pydict() == expected.to_pydict()
+
+
+def _wide_data_dataset(root, rows_per_episode, width, episodes):
+    """A v3.0 source whose columns are shaped like a real one's.
+
+    ``_data_dataset`` writes one float per row, which is too little for the writer
+    settings to show up in: a dictionary of four sequential values costs nothing
+    either way. Robot state and action columns are tens of floats wide and repeat
+    almost nothing, which is where dictionary encoding turns into dead weight.
+    """
+
+    import numpy as np
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    rows = rows_per_episode * episodes
+    rng = np.random.default_rng(0)
+    path = root / dg.DEFAULT_DATA_PATH.format(chunk_index=0, file_index=0)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    pq.write_table(
+        pa.table(
+            {
+                "index": pa.array(np.arange(rows, dtype="int64")),
+                "action": pa.array(rng.random((rows, 7)).tolist()),
+                "observation.state": pa.array(rng.random((rows, width)).tolist()),
+            }
+        ),
+        path,
+    )
+    return [
+        {
+            "episode_index": episode,
+            "dataset_from_index": episode * rows_per_episode,
+            "dataset_to_index": (episode + 1) * rows_per_episode,
+            "data/chunk_index": 0,
+            "data/file_index": 0,
+        }
+        for episode in range(episodes)
+    ]
+
+
+def test_an_episode_parquet_is_not_bigger_than_datasets_would_have_written(tmp_path):
+    """The writer settings are mirrored to hold the size, so hold them to it.
+
+    pyarrow's own defaults dictionary-encode the float columns, and robot state and
+    action data does not repeat enough for that to pay. Dropping the mirrored
+    settings from ``_parquet_writing`` would not fail any of the checks above --
+    every one of them still passes on a fatter file.
+    """
+
+    import pyarrow.parquet as pq
+    from datasets import Dataset
+
+    source = tmp_path / "in"
+    records = _wide_data_dataset(source, rows_per_episode=60, width=30, episodes=2)
+    dg.convert_data(source, tmp_path / "out", records, workers=1)
+
+    table = pq.read_table(
+        source / dg.DEFAULT_DATA_PATH.format(chunk_index=0, file_index=0)
+    )
+    through_datasets = tmp_path / "through_datasets.parquet"
+    Dataset(table.slice(0, 60)).to_parquet(through_datasets)
+
+    written = sorted((tmp_path / "out").rglob("*.parquet"))[0]
+    ratio = written.stat().st_size / through_datasets.stat().st_size
+    assert ratio < 1.05, f"episode parquet is {ratio:.2f}x what datasets would write"
+
+
 EPISODES = 6
 
 

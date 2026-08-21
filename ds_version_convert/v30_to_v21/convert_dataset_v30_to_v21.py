@@ -34,9 +34,11 @@ from typing import Any, Iterable, NamedTuple
 
 import jsonlines
 import numpy as np
+import pyarrow as pa
 import pyarrow.parquet as pq
 import tqdm
-from datasets import Dataset
+from datasets import Dataset, config
+from datasets.features.features import require_storage_embed
 from huggingface_hub import snapshot_download
 from lerobot.datasets.io_utils import (
     INFO_PATH,
@@ -248,6 +250,64 @@ def _group_episodes_by_data_file(
     return grouped
 
 
+def _parquet_writing(table: pa.Table) -> tuple[dict[bytes, bytes], dict[str, Any]]:
+    """How ``datasets`` would write this table: its schema metadata, and pyarrow's
+    settings for it.
+
+    Every episode of a dataset is a slice of one of these tables, so all of them get
+    the same answer, and one call answers for a whole file. That is the point of
+    having this: it used to be a ``Dataset(slice).to_parquet(path)`` per episode, at
+    **105 episodes a second** against **3,703** for a write with these settings.
+
+    The cost was never the writing. It was constructing the ``Dataset``, which infers
+    the features afresh for every episode and measured 121 episodes a second on its
+    own -- and which is python the whole way down, so it holds the GIL. That is why
+    the thread pool in :func:`convert_data` was not saving it: across seven files it
+    managed **136 episodes a second** where one thread alone did 129. With the
+    ``Dataset`` construction lifted out to once a file the same seven files run at
+    **6,598**, and 87k episodes take a quarter of a minute instead of eleven.
+
+    The settings are the ones ``datasets.io.parquet.ParquetDatasetWriter`` passes,
+    mirrored rather than reused because that writer only takes a whole ``Dataset``.
+    Mirroring them is what keeps the files the same size: pyarrow's own defaults
+    dictionary-encode the float columns, which robot state and action data do not
+    repeat enough to benefit from, and that alone wrote 12% more bytes.
+
+    ``require_storage_embed`` is what tells an image or audio column -- bytes that
+    are already compressed -- from a numeric one. It comes from inside ``datasets``
+    because the distinction does, and no public name exposes it; if a version bump
+    moves it, this import is where that will be said, loudly.
+
+    One thing ``datasets`` writes is deliberately left out. It stamps a
+    ``content_defined_chunking`` key on the *file* after the schema is closed, which
+    is a note to the Hub's deduplicator and is not part of the schema. Written the
+    only way there is from here it would land *in* the schema instead, where a reader
+    would see a key ``datasets`` never puts there. The chunking itself is kept -- it
+    is what shapes the pages -- and only the note is dropped.
+    """
+
+    dataset = Dataset(table)
+    embedded = {
+        name: require_storage_embed(feature)
+        for name, feature in dataset.features.items()
+    }
+
+    return dataset.data.schema.metadata, {
+        "use_content_defined_chunking": config.DEFAULT_CDC_OPTIONS,
+        "write_page_index": True,
+        "compression": {
+            name: "none" if is_embedded else "snappy"
+            for name, is_embedded in embedded.items()
+        },
+        "use_dictionary": [
+            name for name, is_embedded in embedded.items() if not is_embedded
+        ],
+        "column_encoding": {
+            name: "PLAIN" for name, is_embedded in embedded.items() if is_embedded
+        },
+    }
+
+
 def _split_data_file(
     root: Path,
     new_root: Path,
@@ -258,6 +318,12 @@ def _split_data_file(
 
     The unit of work is the file, not the episode: the whole table is read once
     and every episode in it is sliced out of that one read.
+
+    That makes the file count the width of the pool above, and a v3.0 dataset has
+    few of them -- its data is packed to 100 MB apiece, so a dataset of 87k short
+    episodes has around seven. The episodes inside one file are still written one
+    after another, which is affordable only because writing one is cheap; see
+    :func:`_parquet_writing` for what it used to cost instead.
     """
 
     chunk_idx, file_idx = key
@@ -268,6 +334,7 @@ def _split_data_file(
         raise FileNotFoundError(f"Expected source parquet file not found: {source_path}")
 
     table = pq.read_table(source_path)
+    schema_metadata, writer_options = _parquet_writing(table)
     records = sorted(records, key=lambda rec: int(rec["dataset_from_index"]))
     file_offset = int(records[0]["dataset_from_index"])
 
@@ -283,7 +350,9 @@ def _split_data_file(
                 f"episode_index={episode_index}, length={length}"
             )
 
-        episode_table = table.slice(start, length)
+        episode_table = table.slice(start, length).replace_schema_metadata(
+            schema_metadata
+        )
 
         dest_chunk = episode_index // DEFAULT_CHUNK_SIZE
         dest_path = new_root / LEGACY_DATA_PATH_TEMPLATE.format(
@@ -291,7 +360,7 @@ def _split_data_file(
             episode_index=episode_index,
         )
         dest_path.parent.mkdir(parents=True, exist_ok=True)
-        Dataset(episode_table).to_parquet(dest_path)
+        pq.write_table(episode_table, dest_path, **writer_options)
 
 
 def convert_data(
