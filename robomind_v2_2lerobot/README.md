@@ -117,7 +117,7 @@ Assumptions section (linked at the bottom) for that caveat.
 | `tienyi` | 7,145 | 1.90 | 36 | 1 | 7 | 1 | — | ~48 |
 | `ur_dex` | 1,795 | 0.41 | 6 | 6 | 6 | **12** | — | ~8 |
 | `tienyi_mobile` | 1,779 | 0.29 | 10 | 1 | 7 | 1 | chassis twist, head_position | ~19 |
-| `tienkung_sim` | 8,015 | 0.19 | 25 | 1 (`camera_head`) | 7 | 1 | `_raw` duplicate, metadata | ~30 |
+| `tienkung_sim` | 8,015 | 0.19 | 25 | 1 (`camera_head`) | 7 | **12 puppet / 6 master — dropped** | `_raw` duplicate, metadata, intrinsics/extrinsics | ~30 |
 
 fps for the two `_sim` embodiments looked unmeasurable at first glance — their
 `camera_observations/timestamp` was assumed frozen, by analogy with a design that never
