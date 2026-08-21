@@ -1,3 +1,4 @@
+#!/bin/bash
 export HDF5_USE_FILE_LOCKING=FALSE
 export RAY_DEDUP_LOGS=0
 

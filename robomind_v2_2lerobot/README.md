@@ -15,7 +15,7 @@ Edit the paths in `convert.sh`, then run it:
 export HDF5_USE_FILE_LOCKING=FALSE
 export RAY_DEDUP_LOGS=0
 
-python robomind_v2_h5.py \
+python robomind_v2_2lerobot/robomind_v2_h5.py \
     --src-paths /path/to/robomind_2_0/franka-part-1 \
                 /path/to/robomind_2_0/franka-part-2 \
                 /path/to/robomind_2_0/franka-part-3 \
@@ -33,9 +33,10 @@ start at the same `data/franka` path — they need to land in one embodiment, on
 one set of LeRobot datasets.
 
 Other flags: `--debug` runs serially with no Ray (this is also what the test suite
-uses); `--save-depth` additionally writes each depth camera as an `image` feature;
-`--min-frames` (default 50) is the frame count below which an episode is treated as a
-broken recording rather than a short task, carried over from v1's floor.
+uses); `--cpus-per-task` (default 2) is how many CPUs Ray reserves for each task when
+not running with `--debug`; `--save-depth` additionally writes each depth camera as an
+`image` feature; `--min-frames` (default 50) is the frame count below which an episode
+is treated as a broken recording rather than a short task, carried over from v1's floor.
 
 Run the tests from the repo root with `uv run pytest robomind_v2_2lerobot/tests`.
 
