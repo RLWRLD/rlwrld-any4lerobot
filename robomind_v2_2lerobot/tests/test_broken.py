@@ -91,3 +91,25 @@ def test_a_missing_stream_is_skipped(tmp_path, config):
     with h5py.File(path, "r") as handle:
         with pytest.raises(EpisodeSkipped, match="arm_right_position"):
             check_usable(handle, config)
+
+
+def test_missing_depth_is_only_required_when_saving_it(tmp_path, config):
+    """``tienyi``'s one camera has ``depth: true``, but ``--save-depth`` defaults off
+    and no real conversion has ever passed it (see the I4 finding this closes). Before
+    the fix, ``check_usable`` required the depth dataset regardless of ``save_depth`` --
+    which, since every one of the twelve configs sets ``depth: true`` on every camera,
+    meant depth availability gated every episode of every robot while nothing was ever
+    asked to write it.
+    """
+    path = write_episode(tmp_path, "tienyi", "task", "0007_000000")
+
+    # write_episode always writes both colour and depth; delete depth back out so
+    # this file matches what a real conversion without --save-depth actually reads:
+    # depth data that is never consulted, present or not.
+    with h5py.File(path, "a") as handle:
+        del handle["camera_observations/depth_images/camera_top"]
+
+    with h5py.File(path, "r") as handle:
+        check_usable(handle, config)  # does not raise: save_depth defaults False
+        with pytest.raises(EpisodeSkipped, match="camera_observations/depth_images/camera_top"):
+            check_usable(handle, config, save_depth=True)

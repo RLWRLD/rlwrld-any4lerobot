@@ -73,7 +73,7 @@ def _has_any_dataset(handle) -> bool:
     )
 
 
-def check_usable(handle, config: EmbodimentConfig) -> None:
+def check_usable(handle, config: EmbodimentConfig, *, save_depth: bool = False) -> None:
     """Raise ``EpisodeSkipped`` unless every dataset the config names is present.
 
     Three kinds of broken file exist upstream. 4,500 files in one repo of the
@@ -87,6 +87,14 @@ def check_usable(handle, config: EmbodimentConfig) -> None:
     so a few of the config's keys are present and the rest are missing; a
     config pointed at the wrong embodiment names keys the file never had, so
     none of them are present at all.
+
+    A camera's ``depth: true`` only makes its depth dataset *required* when
+    ``save_depth`` is also true. All twelve configs in this release set
+    ``depth: true`` on every camera, but ``--save-depth`` defaults off and no
+    real conversion has passed it yet -- gating on the config field alone,
+    regardless of ``save_depth``, would fail every episode of every robot the
+    moment a run actually left depth off, for a feature nothing was asked to
+    write.
     """
     if not _has_any_dataset(handle):
         raise EpisodeSkipped("no datasets in the file")
@@ -94,7 +102,7 @@ def check_usable(handle, config: EmbodimentConfig) -> None:
     own_keys: list[str] = []
     for camera in config.cameras:
         own_keys.append(f"camera_observations/color_images/{camera.name}")
-        if camera.depth:
+        if camera.depth and save_depth:
             own_keys.append(f"camera_observations/depth_images/{camera.name}")
     for stream in config.streams:
         own_keys.append(f"puppet/{stream.name}_align/data")
@@ -141,7 +149,7 @@ def _stream_data(handle, path: str, width: int) -> "np.ndarray":
     return values
 
 
-def read_streams(handle, config) -> dict[str, "np.ndarray"]:
+def read_streams(handle, config, *, save_depth: bool = False) -> dict[str, "np.ndarray"]:
     """The per-frame vectors this config names, as ``(T, width)`` arrays.
 
     Only ``_align`` is read. Simulated episodes carry a ``_raw`` copy of every
@@ -152,8 +160,12 @@ def read_streams(handle, config) -> dict[str, "np.ndarray"]:
     their streams identically and differ only in that ``end_effector_*_position``
     is one column wide on one and twelve on the other, so reading by name alone
     would silently reinterpret a dexterous hand as a gripper.
+
+    ``save_depth`` only affects which datasets ``check_usable`` requires -- see
+    its own docstring. It never gates anything read here: none of the vectors
+    this function returns are camera data.
     """
-    check_usable(handle, config)
+    check_usable(handle, config, save_depth=save_depth)
 
     columns: dict[str, np.ndarray] = {}
     for stream in config.streams:
@@ -388,7 +400,7 @@ def read_episode(ref: EpisodeRef, config, *, save_depth: bool = False) -> Episod
         raise EpisodeSkipped(f"cannot open {ref.path}: {error}") from error
 
     with handle:
-        columns = read_streams(handle, config)
+        columns = read_streams(handle, config, save_depth=save_depth)
         # Always present regardless of what a config's cameras/streams/extras
         # name, unlike picking an arbitrary entry out of ``columns`` -- which
         # would be a bare ``StopIteration`` instead of ``EpisodeSkipped`` for a
