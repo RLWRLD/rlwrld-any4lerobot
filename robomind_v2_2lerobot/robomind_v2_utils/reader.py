@@ -8,6 +8,7 @@
 ``<name>`` 은 real 이면 ``trajectory.hdf5``, sim 이면 ``<timestamp>.hdf5`` 다.
 """
 
+import re
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
@@ -191,3 +192,49 @@ def episode_fps(handle, config) -> float:
         "timestamps do not advance and the config states no fps, so the frame "
         "rate is unknown"
     )
+
+
+_SIM_TASK_PREFIX = re.compile(r"^\d+-")
+
+
+def _from_dirname(task: str) -> str:
+    """The task directory name as a sentence.
+
+    The directory names are English even where the Chinese description file is the
+    only stated instruction, which makes them a usable last resort. Simulated tasks
+    carry a numeric prefix (``101-pick_cube_into_plate``) that is an id, not words.
+    """
+    return _SIM_TASK_PREFIX.sub("", task).replace("_", " ").strip()
+
+
+def instruction(ref: EpisodeRef, config, handle) -> str:
+    """This episode's task instruction, from wherever the config says it lives.
+
+    Three sources exist upstream and one embodiment has none of the first two:
+
+    ==============  ============================================================
+    ``zh_file``     ``<task>/zh_description.txt``, Chinese -- the ten real sets
+    ``h5_metadata`` ``metadata/language_instruction``, an English sentence -- sim
+    ``dirname``     nothing on disk; the directory name is the instruction
+    ==============  ============================================================
+
+    A named source that turns out to be missing falls back to the directory name
+    rather than skipping the episode: one real task (521 episodes) has no
+    description file, and dropping it would cost more than a coarser prompt.
+    """
+    if config.instruction_source == "h5_metadata":
+        key = "metadata/language_instruction"
+        if key in handle:
+            value = handle[key][()]
+            text = (value.decode() if isinstance(value, bytes) else str(value)).strip()
+            if text:
+                return text
+    elif config.instruction_source == "zh_file":
+        # <...>/<task>/success_episodes/<stamp>/data/<file>.hdf5 -> <task>
+        path = ref.path.parents[3] / "zh_description.txt"
+        if path.is_file():
+            text = path.read_text(encoding="utf-8").strip()
+            if text:
+                return text
+
+    return _from_dirname(ref.task)
