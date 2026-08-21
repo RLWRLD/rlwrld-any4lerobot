@@ -522,3 +522,87 @@ class TestReadingByIndex:
         """No `success` field to read, so the predicate must not look for one."""
         subject = self._subject(tmp_path, "bc_z", [_episode(_steps())] * 3)
         assert len(list(subject.load_subset(_task("train[0:3]")))) == 3
+
+
+class TestEpisodesPerTask:
+    """Task size derived from the dataset rather than written down once.
+
+    `episodes_per_task: 8` was measured on toto -- 902 episodes at 326 frames each,
+    113 tasks -- and applied to the collection as a constant. On language_table it
+    means 55,278 tasks of 120 frames: each one pays a process start and a TensorFlow
+    import to do almost nothing, and a 64-core node sat 92% idle with the parent
+    pinned at 100% of one core and no task finished in fourteen minutes.
+
+    What the measurement actually found is a frame count, not an episode count.
+    """
+
+    def test_it_reproduces_the_measured_optimum_on_the_machine_it_was_measured_on(self):
+        """toto, 22 workers: the value this rule replaces."""
+        from adapter import episodes_per_task
+
+        assert episodes_per_task(frames_per_episode=326, episodes=902, workers=22) == 8
+
+    def test_short_episodes_are_grouped_far_more_than_long_ones(self):
+        from adapter import episodes_per_task
+
+        language_table = episodes_per_task(frames_per_episode=16, episodes=442_226, workers=64)
+        furniture_bench = episodes_per_task(frames_per_episode=774, episodes=5_100, workers=64)
+        assert language_table > 100
+        assert furniture_bench <= 4
+        assert language_table > furniture_bench * 20
+
+    def test_a_task_carries_roughly_the_measured_frame_count(self):
+        from adapter import episodes_per_task
+
+        for per_episode, episodes in ((16, 442_226), (12, 209_880), (139, 39_350)):
+            chosen = episodes_per_task(per_episode, episodes, workers=64)
+            assert 1_500 <= chosen * per_episode <= 4_000, (per_episode, chosen)
+
+    def test_a_small_dataset_is_split_finely_enough_to_fill_the_machine(self):
+        """viola is 135 episodes of 510 frames. Grouping by frames alone would make
+        27 tasks for 64 workers, so most of the machine would idle."""
+        from adapter import episodes_per_task
+
+        assert episodes_per_task(frames_per_episode=510, episodes=135, workers=64) == 1
+
+    def test_never_zero(self):
+        from adapter import episodes_per_task
+
+        assert episodes_per_task(frames_per_episode=100_000, episodes=2, workers=64) == 1
+
+    def test_a_pinned_value_is_not_second_guessed(self):
+        from adapter import episodes_per_task
+
+        assert episodes_per_task(16, 442_226, workers=64, pinned=8) == 8
+
+    def test_an_unknown_frame_count_falls_back_to_the_declared_default(self):
+        """A spec without delivered counts cannot be derived from."""
+        from adapter import episodes_per_task
+
+        assert episodes_per_task(None, 442_226, workers=64, default=8) == 8
+        assert episodes_per_task(0, 442_226, workers=64, default=8) == 8
+
+
+class TestTaskSizeReachesLoadTasks:
+    def _for(self, tmp_path, episodes, **kwargs):
+        adapter = OpenXAdapter(
+            raw_dir=Path("/raw/cmu_stretch"), output_path=tmp_path / "out", **kwargs
+        )
+        adapter._count_episodes = lambda: episodes
+        return adapter
+
+    def test_the_size_is_derived_when_nothing_pins_it(self, tmp_path):
+        """language_table's shape: 442,226 episodes of 16 frames on 64 workers.
+        The constant made 55,278 tasks; the derived size makes a few thousand."""
+        tasks = self._for(tmp_path, 442_226, frames_per_episode=16, workers=64).load_tasks()
+        assert 2_000 < len(tasks) < 4_000
+
+    def test_a_pinned_size_still_wins(self, tmp_path):
+        tasks = self._for(
+            tmp_path, 442_226, episodes_per_task=8, frames_per_episode=16, workers=64
+        ).load_tasks()
+        assert len(tasks) == 55_279
+
+    def test_without_a_frame_count_it_falls_back_rather_than_guessing(self, tmp_path):
+        tasks = self._for(tmp_path, 250, workers=64).load_tasks()
+        assert len(tasks) == 3          # the standing default of 100 per task

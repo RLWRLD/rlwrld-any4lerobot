@@ -18,6 +18,7 @@ batch:
 
 builders:
   # one dataset at a time here, but still across this box's cores
-  openx: {executor: local, episodes_per_task: 100}
+  # frames rather than episodes: see the note in ec2.yaml
+  openx: {executor: local, frames_per_task: 2600}
   spec: {executor: local, episodes_per_task: 100}
   agibot: {executor: local}

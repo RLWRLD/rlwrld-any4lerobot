@@ -43,12 +43,23 @@ builders:
   # it can see is the whole machine however many are started.
   openx:
     executor: local
-    # 8 rather than 25, measured. Finer is better on both axes at once: 25 leaves a
-    # large node with fewer tasks than workers, so the tail is one straggler while
-    # everything else idles, and a task carries its own reader and buffers so a smaller
-    # one carries less. Below about 8 the per-task setup costs more than the parallelism
-    # buys. Numbers in verification/records/speed.md.
-    episodes_per_task: 8
+    # How much work a task should carry, measured: 2,600 frames gave 1,262 frames/s
+    # against 1,177 at 8,150 and 1,158 at 978, and improved both axes at once -- peak
+    # resident fell 160.7 GB to 132.5 GB. Below it the per-task setup costs more than
+    # the parallelism buys. Numbers and provenance in verification/records/speed.md.
+    #
+    # Declared in frames rather than episodes because that is what the measurement
+    # found. An episode count shipped here first and does not transfer across the
+    # collection: episode length spans 12 to 1,471 frames, so one number is 120 frames
+    # of work at one end and 11,700 at the other. At the short end that made 55,278
+    # tasks each paying a process start and a TensorFlow import to do almost nothing --
+    # a 64-core node sat 92% idle with the parent pinned at one core and no task
+    # finished in fourteen minutes.
+    #
+    # The converter divides this by the dataset's own episode length, taken from its
+    # spec, and cuts finer when that would leave too few tasks to fill the machine.
+    # Pin `episodes_per_task` here instead to override it.
+    frames_per_task: 2600
     workers: -1
     image_writer_process: 0
     image_writer_threads: 4

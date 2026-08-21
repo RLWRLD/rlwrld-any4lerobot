@@ -116,6 +116,58 @@ def to_numpy(trajectory: Any) -> Any:
     return as_array() if callable(as_array) else trajectory
 
 
+# What a task should carry, measured on toto: 8 episodes of 326 frames, 113 tasks,
+# 1,262 frames/s against 1,177 at 25 per task and 1,158 at 3. Both axes improved at
+# once -- peak resident fell 160.7 GB to 132.5 GB -- and below it the per-task setup
+# costs more than the parallelism buys.
+#
+# A frame count, not an episode count. That distinction is the whole point: 8 episodes
+# is 2,608 frames of work on toto and 120 on language_table, whose episodes are 16
+# frames long. Run as a constant, language_table made 55,278 tasks that each paid a
+# process start and a TensorFlow import to do almost nothing; a 64-core node sat 92%
+# idle with the parent pinned at one core and no task finished in fourteen minutes.
+FRAMES_PER_TASK = 2600
+
+# Tasks per worker, so the tail of a run is not one straggler while everything idles.
+# Two is enough here because a task is minutes rather than seconds; the video stage
+# budgets 4-8 for the same reason and shorter units.
+TASKS_PER_WORKER = 2
+
+
+def episodes_per_task(
+    frames_per_episode: float | None,
+    episodes: int,
+    workers: int,
+    *,
+    frames_per_task: int = FRAMES_PER_TASK,
+    pinned: int | None = None,
+    default: int = 100,
+) -> int:
+    """How many episodes one task should carry, for this dataset on this machine.
+
+    Derived rather than declared, because the two things that decide it are a property
+    of the dataset and a property of the machine, and neither is knowable where a
+    constant would be written. ``frames_per_episode`` comes from the spec's delivered
+    counts -- no source is read to find it out.
+
+    Two bounds, and the smaller wins:
+
+    * enough frames per task to amortise its setup -- see :data:`FRAMES_PER_TASK`;
+    * enough tasks to fill the machine. viola is 135 episodes of 510 frames, which by
+      frames alone is 27 tasks for 64 workers, so most of the node would idle.
+
+    A spec with no delivered counts cannot be derived from and gets ``default``.
+    """
+    if pinned:
+        return int(pinned)
+    if not frames_per_episode:
+        return default
+
+    by_frames = max(1, round(frames_per_task / frames_per_episode))
+    by_workers = max(1, episodes // (TASKS_PER_WORKER * max(1, workers)))
+    return max(1, min(by_frames, by_workers))
+
+
 def episode_chunks(total: int, per_task: int) -> list[tuple[int, int]]:
     """``(start, stop)`` for each task, covering ``total`` episodes in order."""
     if per_task < 1:
@@ -136,7 +188,10 @@ class OpenXAdapter(BaseAdapter):
         raw_dir: Path,
         output_path: Path,
         *,
-        episodes_per_task: int = 100,
+        episodes_per_task: int | None = None,
+        frames_per_episode: float | None = None,
+        workers: int = 1,
+        frames_per_task: int = FRAMES_PER_TASK,
         resize: Any = None,
         encoding: Any = None,
         channels: Any = None,
@@ -150,7 +205,12 @@ class OpenXAdapter(BaseAdapter):
         super().__init__(output_path)
         self.raw_dir = Path(raw_dir)
         self.dataset_name, self.version, self.data_dir = read_raw_dir(self.raw_dir)
-        self.episodes_per_task = episodes_per_task
+        # None means "work it out from the dataset and the machine" -- see
+        # episodes_per_task. A number here pins it and is not second guessed.
+        self.pinned_episodes_per_task = episodes_per_task
+        self.frames_per_episode = frames_per_episode
+        self.workers = workers
+        self.frames_per_task = frames_per_task
         self.max_episodes = max_episodes
         self.resize = resize
         self.encoding = encoding
@@ -205,10 +265,16 @@ class OpenXAdapter(BaseAdapter):
                 f"{self.raw_dir} has no episodes in its train split; nothing to convert"
             )
 
+        per_task = episodes_per_task(
+            self.frames_per_episode,
+            total,
+            self.workers,
+            frames_per_task=self.frames_per_task,
+            pinned=self.pinned_episodes_per_task,
+        )
+
         tasks = []
-        for index, (start, stop) in enumerate(
-            episode_chunks(total, self.episodes_per_task)
-        ):
+        for index, (start, stop) in enumerate(episode_chunks(total, per_task)):
             name = f"{self.dataset_name}_chunk_{index:06d}_{start}_{stop - 1}"
             tasks.append(
                 ConversionTask(
