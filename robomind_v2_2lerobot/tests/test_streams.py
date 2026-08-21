@@ -31,6 +31,14 @@ def test_puppet_becomes_state_and_master_becomes_action(tmp_path, config):
     assert "observation.states.arm_left_position" in columns
     assert "actions.arm_left_position" in columns
     assert columns["observation.states.arm_left_position"].shape == (6, 7)
+    # Verify the mapping is correct: state comes from puppet (offset 0.0) and
+    # action from master (offset 1000.0). A path swap would cause state to have
+    # large values and actions to have small values, failing these assertions.
+    state_values = columns["observation.states.arm_left_position"]
+    action_values = columns["actions.arm_left_position"]
+    assert not (state_values == action_values).all(), "state and action arrays should differ"
+    assert state_values.min() < 100, f"state should have puppet data (offset 0), got min={state_values.min()}"
+    assert action_values.min() >= 1000, f"action should have master data (offset 1000), got min={action_values.min()}"
 
 
 def test_a_one_wide_stream_is_still_two_dimensional(tmp_path, config):

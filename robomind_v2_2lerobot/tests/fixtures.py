@@ -118,6 +118,9 @@ def write_episode(
         )
 
         for side in ("puppet", "master"):
+            # Add a side-dependent offset so puppet and master data are distinguishable,
+            # making it possible to catch bugs that swap their paths.
+            side_offset = 0.0 if side == "puppet" else 1000.0
             for stream, stream_width in streams.items():
                 suffixes = ["_align", "_raw"] if layout == "sim" else ["_align"]
                 for suffix in suffixes:
@@ -126,7 +129,7 @@ def write_episode(
                     shape = (count,) if stream_width == 1 else (count, stream_width)
                     group.create_dataset(
                         "data",
-                        data=np.arange(count * stream_width, dtype=np.float32).reshape(shape),
+                        data=np.arange(count * stream_width, dtype=np.float32).reshape(shape) + side_offset,
                     )
                     group.create_dataset(
                         "is_intervene", data=np.zeros(count, dtype=bool)
