@@ -1,0 +1,37 @@
+# Franka 양팔 시뮬레이션. 10,692 에피소드 / 2.14 TB / 34 task.
+#
+# real 과 다른 점 (Task 2·4·5·7 에서 이미 처리):
+#  * 파일명이 trajectory.hdf5 가 아니라 <episode_id>.hdf5
+#  * task 디렉토리에 숫자 접두가 있다 (103-right_arm_grasp_cup_...)
+#  * 모든 스트림이 _align 과 _raw 두 벌이다 — _raw 는 샘플이 두 배고 카메라에 안 맞다
+#  * camera_color_resolution 이 (W, H) 순서다 — 그래서 해상도를 디코드로 얻는다
+#  * instruction 이 metadata/language_instruction 에 영어 문장으로 있다
+#
+# Task 16 실측 (2 에피소드, 255·221 프레임):
+#  * timestamp 는 초가 아니라 밀리초다 — 33-34 씩 진행 (~30 Hz). config 에는 그래서
+#    fps 필드가 없다 — reader.episode_fps 가 layout: sim 을 보고 단위를 바꿔서 잰다.
+#  * master 에는 end_effector_{left,right}_pose 가 없다 (puppet 에만 있다) — 선언하면
+#    check_usable 이 전 에피소드를 skip 한다. 그래서 여기 선언하지 않는다.
+#  * end_effector_{left,right}_position 은 양쪽 다 1-wide 로 같다 — 그대로 남긴다.
+#
+# arm 은 7 관절이다 (real franka 는 gripper 포함 8).
+robot_type: franka_sim
+
+cameras:
+  camera_front:       {depth: true}
+  camera_left:        {depth: true}
+  camera_right:       {depth: true}
+  camera_top:         {depth: true}
+  camera_wrist_left:  {depth: true}
+  camera_wrist_right: {depth: true}
+
+streams:
+  arm_left_position:           {width: 7}
+  arm_right_position:          {width: 7}
+  end_effector_left_position:  {width: 1}
+  end_effector_right_position: {width: 1}
+
+instruction:
+  source: h5_metadata
+
+layout: sim

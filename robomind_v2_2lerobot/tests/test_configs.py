@@ -163,10 +163,12 @@ def test_ur_dex_has_no_description_file():
 CAMERA_COUNTS = {
     "franka": 6, "agilex": 3, "agilex_mobile": 3, "ark": 3, "ark_mobile": 3, "tienkung": 1,
     "ur": 6, "ur_dex": 6, "tienyi": 1, "tienyi_mobile": 1,
+    "franka_sim": 6, "tienkung_sim": 1,
 }
 ARM_WIDTHS = {
     "franka": 8, "agilex": 6, "agilex_mobile": 6, "ark": 6, "ark_mobile": 6, "tienkung": 7,
     "ur": 6, "ur_dex": 6, "tienyi": 7, "tienyi_mobile": 7,
+    "franka_sim": 7, "tienkung_sim": 7,
 }
 
 
@@ -235,16 +237,18 @@ def test_tactile_becomes_a_two_dimensional_feature():
     assert features["observation.tactile_right"]["dtype"] == "float32"
 
 
-NO_POSE_EMBODIMENTS = {"tienkung", "tienyi", "tienyi_mobile"}
+NO_POSE_EMBODIMENTS = {"tienkung", "tienyi", "tienyi_mobile", "franka_sim", "tienkung_sim"}
 
 
 @pytest.mark.parametrize("name", sorted(NO_POSE_EMBODIMENTS))
-def test_tien_kung_family_declares_no_end_effector_pose(name):
-    """실측: 코퍼스 12 종 중 이 3 종만 end_effector_*_pose 데이터셋이 실물에서
-    (0,) 로 비어 있어서, config 가 그 스트림을 아예 선언하지 않는다. 선언하면
-    (Task 11 실행 기록대로) 전 에피소드가 skip 된다. 이 비대칭은 실측이지 결함이
-    아니다 -- 이 테스트가 없으면 나중에 '빠진 것 같으니 채운다'로 조용히
-    되돌려질 수 있다."""
+def test_these_five_declare_no_end_effector_pose(name):
+    """실측: 코퍼스 12 종 중 이 5 종만 config 에 end_effector_*_pose 를 선언하지
+    않는다 — 이유는 두 갈래다. `tienkung`·`tienyi`·`tienyi_mobile` 은 실물에서 그
+    데이터셋 자체가 (0,) 로 비어 있고, `franka_sim`·`tienkung_sim` 은 (Task 16
+    실측) master 쪽에 그 그룹 자체가 없다 — puppet 에만 있다. 이유는 달라도
+    결과는 같다: 선언하면 (Task 11 실행 기록대로) 전 에피소드가 skip 된다. 이
+    비대칭은 실측이지 결함이 아니다 -- 이 테스트가 없으면 나중에 '빠진 것
+    같으니 채운다'로 조용히 되돌려질 수 있다."""
     config = load(name)
 
     assert config.stream("end_effector_left_pose") is None
@@ -252,8 +256,70 @@ def test_tien_kung_family_declares_no_end_effector_pose(name):
 
 
 def test_robot_outside_that_group_still_declares_end_effector_pose():
-    """대조군: Tien Kung 계열이 아닌 embodiment 는 그대로 선언한다."""
+    """대조군: 그 다섯 종에 속하지 않는 embodiment 는 그대로 선언한다."""
     config = load("agilex")
 
     assert config.stream("end_effector_left_pose") is not None
     assert config.stream("end_effector_right_pose") is not None
+
+
+def test_tienkung_sim_declares_no_end_effector_position_either():
+    """`tienkung_sim` 은 pose 뿐 아니라 position 도 뺐다 -- 이유가 다르다. 실측:
+    `puppet` 은 12-wide, `master` 는 6-wide. 스키마는 스트림 하나에 폭 하나를
+    양쪽에 같이 요구하므로(reader.read_streams), 이 스트림은 이 config 로
+    표현할 수 없다 -- 어느 쪽 폭을 적어도 다른 쪽에서 전 에피소드가 skip 된다.
+    per-side 폭은 이 계획이 미루는 후속 작업이라, 아예 선언하지 않는다. 이
+    테스트가 없으면 '한쪽만 빠졌나 보다'로 조용히 되돌려질 수 있다."""
+    config = load("tienkung_sim")
+
+    assert config.stream("end_effector_left_position") is None
+    assert config.stream("end_effector_right_position") is None
+
+
+def test_franka_sim_still_declares_end_effector_position():
+    """대조군: `franka_sim` 은 `end_effector_*_position` 이 양쪽 다 1-wide 로
+    같아서(실측), pose 와 달리 이 스트림은 그대로 선언한다."""
+    config = load("franka_sim")
+
+    assert config.stream("end_effector_left_position").width == 1
+    assert config.stream("end_effector_right_position").width == 1
+
+
+def test_franka_sim_cameras_match_the_wrist_camera_family():
+    """franka_sim 은 real franka/ur/ur_dex 와 카메라 이름·순서가 같다(실측)."""
+    assert [camera.name for camera in load("franka_sim").cameras] == [
+        "camera_front", "camera_left", "camera_right",
+        "camera_top", "camera_wrist_left", "camera_wrist_right",
+    ]
+
+
+@pytest.mark.parametrize("name", ["franka_sim", "tienkung_sim"])
+def test_sim_configs_have_no_fps_field(name):
+    """브리프 초안은 여기서 `config.fps` 가 양의 정수인지 확인하려 했다 --
+    Task 16 실측 결과 sim 도 시계가 흐르고(단위만 밀리초) 있어서 reader.episode_fps
+    가 양쪽 layout 을 다 계산하게 됐고, config 에서 fps 필드 자체가 없어졌다.
+    그래서 이 테스트는 정정된 버전이다: 값이 아니라 필드의 부재를 확인한다."""
+    config = load(name)
+
+    assert config.layout == "sim"
+    assert not hasattr(config, "fps")
+
+
+@pytest.mark.parametrize("name", ["franka_sim", "tienkung_sim"])
+def test_sim_instruction_comes_from_inside_the_file(name):
+    """sim 만 영어 문장을 파일 안에 갖고 있다 — zh_description.txt 가 없다."""
+    assert load(name).instruction_source == "h5_metadata"
+
+
+def test_tienkung_sim_camera_is_head_not_top():
+    """real tienkung 은 camera_top, sim 은 camera_head 다."""
+    assert [camera.name for camera in load("tienkung_sim").cameras] == ["camera_head"]
+
+
+def test_every_embodiment_has_a_config():
+    """16 repo → 12 embodiment. Franka 5 개가 하나로 모이므로 12 장이다."""
+    assert len(available()) == 12
+    assert set(available()) == {
+        "agilex", "agilex_mobile", "ark", "ark_mobile", "franka", "franka_sim",
+        "tienkung", "tienkung_sim", "tienyi", "tienyi_mobile", "ur", "ur_dex",
+    }
