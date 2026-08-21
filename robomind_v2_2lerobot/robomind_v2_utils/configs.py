@@ -17,8 +17,15 @@ CONFIG_DIR = Path(__file__).resolve().parents[1] / "configs"
 INSTRUCTION_SOURCES = frozenset({"zh_file", "h5_metadata", "dirname"})
 LAYOUTS = frozenset({"real", "sim"})
 
+# There is no `fps` field, for either layout. It used to exist for `layout: sim`
+# only, on the belief that a simulated episode's clock never advances. Measuring
+# real files showed that belief was simply wrong: both layouts advance, every
+# episode checked, just in different units (seconds for `real`, milliseconds for
+# `sim`) -- see `reader.episode_fps`, which now measures both. A config-stated
+# rate would just be a second, driftable source of truth for a number already
+# computed correctly from the file.
 _TOP_LEVEL = frozenset(
-    {"robot_type", "cameras", "streams", "extra", "instruction", "layout", "fps"}
+    {"robot_type", "cameras", "streams", "extra", "instruction", "layout"}
 )
 _CAMERA = frozenset({"depth"})
 _STREAM = frozenset({"width"})
@@ -64,10 +71,6 @@ class EmbodimentConfig:
     extras: tuple[Extra, ...]
     instruction_source: str
     layout: str
-    # Only `sim` sets this. A real episode's fps is computed from its own
-    # timestamps because it varies from 7 to 101 Hz across embodiments and
-    # from episode to episode within one.
-    fps: int | None
 
     def stream(self, name: str) -> Stream | None:
         for stream in self.streams:
@@ -148,19 +151,6 @@ def parse(raw: dict, embodiment: str, origin: str) -> EmbodimentConfig:
             f"got {layout!r}"
         )
 
-    fps = raw.get("fps")
-    if layout == "sim":
-        if not isinstance(fps, int) or isinstance(fps, bool) or fps < 1:
-            raise ConfigError(
-                f"{origin}: layout: sim requires fps (a positive int): a simulated "
-                "episode's timestamps do not advance, so fps cannot be measured"
-            )
-    elif fps is not None:
-        raise ConfigError(
-            f"{origin}: layout: real must not set fps: it is computed per episode "
-            "from camera_observations/timestamp, and varies from 7 to 101 Hz"
-        )
-
     return EmbodimentConfig(
         embodiment=embodiment,
         robot_type=robot_type,
@@ -169,7 +159,6 @@ def parse(raw: dict, embodiment: str, origin: str) -> EmbodimentConfig:
         extras=tuple(extras),
         instruction_source=source,
         layout=layout,
-        fps=fps,
     )
 
 

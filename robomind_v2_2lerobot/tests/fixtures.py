@@ -3,7 +3,8 @@
 실물은 에피소드 하나가 24 MB ~ 738 MB 라서 단위 테스트에 쓸 수 없다. 여기서 만드는
 것은 몇 KB 지만 키 구조·dtype·인코딩이 실물과 같다: color 는 JPEG, depth 는 PNG,
 스트림은 `<name>_align/{data,is_intervene,timestamp}` 3 개짜리 그룹, timestamp 는
-초 단위 정수.
+기본으로 초 단위 정수 (`seconds`) — sim 실측은 밀리초라서 `milliseconds` 를 주면
+그 단위로 대신 쓴다 (기본값 안 주면 예전 그대로).
 """
 
 from pathlib import Path
@@ -51,6 +52,7 @@ def write_episode(
     instruction: str | None = None,
     broken: str | None = None,
     seconds: int = 2,
+    milliseconds: int | None = None,
     resolution: tuple[int, int] = (48, 64),
     depth_resolution: tuple[int, int] | None = None,
     resolution_field: tuple[int, int] | None = None,
@@ -75,6 +77,12 @@ def write_episode(
     keeps writing depth at the same size as colour. Passing a different size
     lets a test prove depth's shape is measured from its own decoded pixels
     rather than borrowed from colour's.
+
+    ``milliseconds``, when given, switches the clock to the finer unit real
+    simulated files actually use, starting near the value their clock does (33)
+    rather than an epoch. Leaving it unset (the default) keeps today's
+    whole-second, epoch-offset clock built from ``seconds`` for every existing
+    caller -- passing both is not meaningful and ``milliseconds`` wins.
     """
     streams = dict(streams or DEFAULT_STREAMS)
     height, width = resolution
@@ -103,7 +111,10 @@ def write_episode(
             pass
         return path
 
-    stamps = np.linspace(0, seconds, frames).astype(np.int64) + 1_747_982_392
+    if milliseconds is not None:
+        stamps = np.linspace(0, milliseconds, frames).astype(np.int64) + 33
+    else:
+        stamps = np.linspace(0, seconds, frames).astype(np.int64) + 1_747_982_392
 
     with h5py.File(path, "w") as handle:
         if broken == "truncated":

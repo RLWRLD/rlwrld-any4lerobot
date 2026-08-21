@@ -15,7 +15,7 @@ def test_tienyi_loads():
     assert config.embodiment == "tienyi"
     assert config.robot_type == "tienyi"
     assert config.layout == "real"
-    assert config.fps is None
+    assert not hasattr(config, "fps")
     assert [camera.name for camera in config.cameras] == ["camera_top"]
     assert config.cameras[0].depth is True
     assert config.stream("arm_left_position").width == 7
@@ -101,18 +101,15 @@ def test_zero_width_stream_is_an_error(tmp_path, monkeypatch):
         load(name)
 
 
-def test_sim_layout_requires_fps(tmp_path, monkeypatch):
-    """sim 에는 시계가 없다 — timestamp span 이 0 이라 fps 를 계산할 수 없다.
-    그래서 sim 만 fps 를 config 에 적고, 빠뜨리면 에러다."""
-    name = write(tmp_path, monkeypatch, {**VALID, "layout": "sim"})
-    with pytest.raises(ConfigError, match="layout: sim requires fps"):
-        load(name)
-
-
-def test_real_layout_rejects_fps(tmp_path, monkeypatch):
-    """real 의 fps 는 에피소드마다 다르다(7~101 Hz). 하나로 못 적는다."""
-    name = write(tmp_path, monkeypatch, {**VALID, "fps": 30})
-    with pytest.raises(ConfigError, match="layout: real must not set fps"):
+@pytest.mark.parametrize("layout", ["real", "sim"])
+def test_fps_is_rejected_as_an_unknown_key_under_either_layout(tmp_path, monkeypatch, layout):
+    """이전 규칙: sim 은 fps 를 필수로 요구하고 real 은 금지했다 — sim 시계가
+    멈춰 있어 계산이 불가능하다고 믿었기 때문이다. 실측해보니 sim 도 흐르고
+    있었다(단위만 밀리초로 다르다, reader.episode_fps 참고). 그래서 fps 는
+    이제 계산되는 값이지 config 가 적는 값이 아니다 — 어느 layout 이든 이 키
+    자체가 알 수 없는 키다."""
+    name = write(tmp_path, monkeypatch, {**VALID, "layout": layout, "fps": 30})
+    with pytest.raises(ConfigError, match="unknown key 'fps'"):
         load(name)
 
 
@@ -143,7 +140,7 @@ def test_ur_has_six_cameras_and_a_one_wide_gripper():
     assert config.stream("end_effector_left_position").width == 1
     assert config.stream("end_effector_left_pose").width == 7
     assert config.layout == "real"
-    assert config.fps is None
+    assert not hasattr(config, "fps")
 
 
 def test_ur_dex_differs_from_ur_only_in_end_effector_width():

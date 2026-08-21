@@ -5,6 +5,13 @@ agilex_mobile 63-66 · agilex ~101 Hz. v1 은 30 으로 박아뒀다.
 
 timestamp 가 초 단위 정수라 짧은 에피소드는 경계 오차가 크다. 그래서 계산은 하되
 정밀도를 주장하지 않는다.
+
+sim 은 단위가 다르다 — timestamp 가 초가 아니라 밀리초로 흐른다 (프레임 간 대략
+33-34 씩, ~30 Hz). 예전엔 sim 시계가 아예 멈춰 있다고 보고 config 의 fps 로
+대체했지만, 실측해보니 sim 도 흐르고 있었다 — 단위만 달랐다. 그래서 config 에는
+이제 fps 필드 자체가 없다 (양쪽 layout 다). 실측 중 한 에피소드는 중간에 시계가
+한 번 거꾸로(-2600 근처) 튀는 것도 발견됐다 — 양끝 차이(span)를 그대로 쓰면 이
+튐 하나가 전체 경과 시간을 깎아먹으므로, sim 은 프레임 간 간격의 중앙값을 쓴다.
 """
 
 import h5py
@@ -24,7 +31,6 @@ def sim_config(tmp_path):
         "streams": {"arm_left_position": {"width": 7}},
         "instruction": {"source": "h5_metadata"},
         "layout": "sim",
-        "fps": 30,
     }
     (tmp_path / "probe_sim.yaml").write_text(yaml.safe_dump(body))
     original, configs.CONFIG_DIR = configs.CONFIG_DIR, tmp_path
@@ -52,15 +58,61 @@ def test_a_fast_episode_reads_high(tmp_path):
         assert episode_fps(handle, config) > 90
 
 
-def test_sim_uses_the_config_because_its_clock_does_not_advance(tmp_path):
+def test_sim_fps_comes_from_millisecond_timestamps(tmp_path):
+    """sim's clock is real, just finer-grained than real's -- milliseconds,
+    stepping by about 33 rather than real's seconds stepping by 0 or 1
+    (measured; see episode_fps's docstring). 30 frames at a clean 33 ms step
+    is a ~30 Hz episode, not the ~0.03 Hz the old code computed by treating
+    that span as seconds, and not a number invented by a config field either
+    -- there is no fps field left to invent one from."""
     config = sim_config(tmp_path)
     path = write_episode(
-        tmp_path, "probe_sim", "task", "0003_000000", frames=8, seconds=0,
+        tmp_path, "probe_sim", "task", "0002_000000", frames=30,
+        streams={"arm_left_position": 7}, layout="sim", milliseconds=33 * 29,
+    )
+
+    with h5py.File(path, "r") as handle:
+        assert episode_fps(handle, config) == pytest.approx(1000 / 33, rel=1e-6)
+
+
+def test_a_mid_episode_backward_jump_does_not_skew_the_sim_rate(tmp_path):
+    """Synthetic mirror of the one release episode whose clock jumps backward
+    once, mid-episode, amid an otherwise constant step (see episode_fps's
+    docstring for why the median step is used for sim instead of the endpoint
+    span). 10 frames at a clean 100 ms step (10 Hz) with a single -500 ms jump
+    injected at frame 5: the endpoint span reads this as 25 Hz (400 ms of
+    apparent span for 10 frames); the median step reads through the one
+    outlier to the true 10 Hz.
+    """
+    config = sim_config(tmp_path)
+    path = write_episode(
+        tmp_path, "probe_sim", "task", "0003_000000", frames=10,
+        streams={"arm_left_position": 7}, layout="sim", milliseconds=900,
+    )
+    with h5py.File(path, "a") as handle:
+        stamps = handle["camera_observations/timestamp"][()]
+        stamps[5:] -= 500
+        del handle["camera_observations/timestamp"]
+        handle.create_dataset("camera_observations/timestamp", data=stamps)
+
+    with h5py.File(path, "r") as handle:
+        assert episode_fps(handle, config) == pytest.approx(10.0)
+
+
+def test_a_sim_episode_with_a_dead_clock_is_skipped(tmp_path):
+    """sim's clock can freeze too, same as real's -- and there is no config
+    fallback left to invent a rate from (configs.py has no fps field at all
+    now; see test_sim_fps_comes_from_millisecond_timestamps for the case
+    where it does advance)."""
+    config = sim_config(tmp_path)
+    path = write_episode(
+        tmp_path, "probe_sim", "task", "0004_000000", frames=8, milliseconds=0,
         streams={"arm_left_position": 7}, layout="sim",
     )
 
     with h5py.File(path, "r") as handle:
-        assert episode_fps(handle, config) == 30.0
+        with pytest.raises(EpisodeSkipped, match="timestamps do not advance"):
+            episode_fps(handle, config)
 
 
 def test_a_real_episode_with_a_dead_clock_is_skipped(tmp_path):

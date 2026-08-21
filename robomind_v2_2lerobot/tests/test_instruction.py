@@ -24,8 +24,6 @@ def probe(tmp_path, source: str, layout: str = "real"):
         "instruction": {"source": source},
         "layout": layout,
     }
-    if layout == "sim":
-        body["fps"] = 30
     (tmp_path / "probe.yaml").write_text(yaml.safe_dump(body))
     original, configs.CONFIG_DIR = configs.CONFIG_DIR, tmp_path
     try:

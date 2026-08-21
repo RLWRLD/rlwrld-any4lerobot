@@ -192,14 +192,41 @@ def episode_fps(handle, config) -> float:
 
     Measured, not configured: the rate runs from about 7 Hz to about 101 Hz
     across the release's robots, and moves between episodes of one embodiment.
-    v1 wrote 30 for everything.
+    v1 wrote 30 for everything. There is no config fallback for either layout --
+    see ``configs.py`` for why the field was removed.
 
-    ``camera_observations/timestamp`` is whole seconds, so a short episode carries
-    a boundary error of up to one second at each end. The value is good enough to
-    put a dataset on the right time base and is not a precise measurement.
+    ``camera_observations/timestamp`` means a different unit depending on
+    ``config.layout``, confirmed by measuring real files rather than assumed:
 
-    A simulated episode's timestamps never advance, so its rate comes from the
-    config instead -- the one number a config is allowed to state.
+    * ``real`` -- whole *seconds* (epoch-like values, stepping by 0 or 1 between
+      consecutive frames). A short episode carries a boundary error of up to one
+      second at each end, so the rate is computed from the episode's total span
+      (``frames / (last - first)``): good enough to put a dataset on the right
+      time base, not a precise measurement.
+    * ``sim`` -- *milliseconds*, on a much finer clock (consecutive frames step
+      by roughly 33-34, i.e. a ~30 Hz tick) -- not seconds, and not frozen. An
+      earlier version of this function assumed a simulated clock never advances
+      at all, and fell back to a config-stated rate whenever the span came out
+      to 0; measuring real simulated-layout files showed that premise was
+      simply wrong. Both layouts advance, every episode checked, just in
+      different units -- there was never a case where the rate genuinely
+      could not be measured, only a wrong assumption about which branch would
+      fire.
+
+    One simulated episode was found with a single mid-episode backward jump (one
+    frame-to-frame step of roughly -2600, amid hundreds of otherwise constant
+    +33/+34 steps) -- the clock resets partway through, rather than merely
+    failing to advance. Using the endpoint span (``stamps[-1] - stamps[0]``) for
+    ``sim`` would silently bake that one glitch into the total and understate
+    the elapsed time by however much the clock fell (measured: it turns a ~30 Hz
+    episode into an apparent ~35 Hz one). Because the per-frame step is
+    otherwise extremely uniform, the *median* consecutive step is used for
+    ``sim`` instead of the endpoint span -- a statistic one outlier among
+    hundreds of samples cannot move -- and the rate is its reciprocal. ``real``
+    keeps the endpoint span: its timestamps are whole seconds, so most
+    consecutive steps are 0 and the median would be 0 too; the coarse
+    total-span average is the only usable signal there, and no backward jump
+    was observed on any real episode.
     """
     if "camera_observations/timestamp" not in handle:
         raise EpisodeSkipped("camera_observations/timestamp is missing")
@@ -207,14 +234,19 @@ def episode_fps(handle, config) -> float:
     if stamps.size < MIN_FRAMES:
         raise EpisodeSkipped(f"too few frames: {stamps.size}")
 
+    if config.layout == "sim":
+        step_ms = float(np.median(np.diff(stamps)))
+        if step_ms > 0:
+            return 1000.0 / step_ms
+        raise EpisodeSkipped(
+            "timestamps do not advance, so the frame rate is unknown"
+        )
+
     span = int(stamps[-1] - stamps[0])
     if span > 0:
         return float(stamps.size) / span
-    if config.fps is not None:
-        return float(config.fps)
     raise EpisodeSkipped(
-        "timestamps do not advance and the config states no fps, so the frame "
-        "rate is unknown"
+        "timestamps do not advance, so the frame rate is unknown"
     )
 
 
