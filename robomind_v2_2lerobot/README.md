@@ -40,6 +40,32 @@ is treated as a broken recording rather than a short task, carried over from v1'
 
 Run the tests from the repo root with `uv run pytest robomind_v2_2lerobot/tests`.
 
+## Sample data
+
+The full release is 114.28 TB — too large to pull to a laptop, and it should be
+converted near the S3 mirror rather than from one. `fetch_sample.sh` pulls a
+handful of real episodes instead, for local development and manual smoke-testing:
+
+```bash
+export AWS_PROFILE=rlwrld   # `default` may be expired; `rlwrld` and `company-sso` both work
+robomind_v2_2lerobot/fetch_sample.sh tienyi 2      # -> ./sample/tienyi/, ~0.2-0.5 GB
+uv run python robomind_v2_2lerobot/robomind_v2_h5.py \
+    --src-paths robomind_v2_2lerobot/sample/tienyi --output-path ./out --debug
+```
+
+`fetch_sample.sh <embodiment> [count]` (default `count` 2) lists the embodiment's
+objects on S3, keeps only files that look like a real episode (`.hdf5` over 20 KB),
+downloads the first `count` of them into `./sample/<embodiment>/` in the same
+`data/<embodiment>/<task>/success_episodes/<stamp>/data/*.hdf5` shape the converter
+discovers, and also pulls every `zh_description.txt` under that embodiment so
+`instruction.source: zh_file` has something to read. `DEST` overrides the `./sample`
+destination; the embodiment-to-repo-slug mapping it needs (one robot ships as five
+repos, `tienyi` the directory is `tianyi` the repo, ...) lives in the script itself.
+
+Episode size varies enormously by embodiment — from about 24 MB (the smallest
+`tienkung_sim` episodes) to about 738 MB (the largest `agilex_mobile` ones) — so
+`count` controls how many episodes land on disk, not a fixed download size.
+
 ## Why not `robomind2lerobot` (v1)
 
 `robomind2lerobot` reads RoboMIND 1.x. Every key it opens moved in 2.0:
