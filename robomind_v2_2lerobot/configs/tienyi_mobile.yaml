@@ -1,0 +1,29 @@
+# Tianyi 이동형. repo 는 RoboMIND2.0-Tianyi-mobile, 디렉토리는 data/tienyi_mobile.
+# 1,779 에피소드 / 0.29 TB / 10 task. 실측 fps ~19.
+#
+# 코퍼스에서 head_position 을 가진 유일한 embodiment 이고, chassis 는 pose 없이
+# twist 만 있다 — mobile 3 종이 서로 다르다.
+robot_type: tienyi_mobile
+
+cameras:
+  camera_top: {depth: true}
+
+# ⚠️ end_effector_*_pose 는 선언하지 않는다 — Tien Kung 계열 3종은 그 데이터셋이
+# shape (0,) 로 비어 있다. 선언하면 전 에피소드가 skip 된다. 실측(에피소드 2개,
+# 1010_182117/1010_182331): puppet·master 양쪽 다 (0,) 다.
+#
+# head_position 폭은 3 이다 — pan/tilt 로 추정해 2 로 적었던 값은 틀렸다. 같은
+# 두 에피소드에서 puppet·master 양쪽 다 (T, 3) 으로 실측했다. chassis_twist 는
+# 추정대로 6 이었다(같은 두 에피소드에서 확인).
+streams:
+  arm_left_position:           {width: 7}
+  arm_right_position:          {width: 7}
+  end_effector_left_position:  {width: 1}
+  end_effector_right_position: {width: 1}
+  chassis_twist:               {width: 6}
+  head_position:               {width: 3}
+
+instruction:
+  source: zh_file
+
+layout: real

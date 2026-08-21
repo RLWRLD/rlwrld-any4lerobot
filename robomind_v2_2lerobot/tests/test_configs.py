@@ -195,3 +195,65 @@ def test_agilex_cameras_are_front_left_right():
     assert [camera.name for camera in load("agilex").cameras] == [
         "camera_front", "camera_left", "camera_right"
     ]
+
+
+def test_agilex_mobile_adds_chassis_and_tactile():
+    config = load("agilex_mobile")
+
+    assert config.stream("chassis_pose").width == 7
+    assert config.stream("chassis_twist").width == 6
+    assert {extra.name for extra in config.extras} == {"tactile_left", "tactile_right"}
+    assert all(extra.group == "tactile_observations" for extra in config.extras)
+    assert all(extra.shape == (2, 6) for extra in config.extras)
+
+
+def test_ark_mobile_adds_chassis_but_no_tactile():
+    config = load("ark_mobile")
+
+    assert config.stream("chassis_pose").width == 7
+    assert config.stream("chassis_twist").width == 6
+    assert config.extras == ()
+
+
+def test_tienyi_mobile_adds_head_position_and_only_twist():
+    """tienyi_mobile 만 head_position 을 갖고, chassis 는 twist 만 있다."""
+    config = load("tienyi_mobile")
+
+    assert config.stream("head_position") is not None
+    assert config.stream("chassis_twist").width == 6
+    assert config.stream("chassis_pose") is None
+
+
+def test_tactile_becomes_a_two_dimensional_feature():
+    """평탄한 벡터가 아니다 — build_features 가 shape 을 그대로 넘겨야 한다."""
+    from robomind_v2_utils.lerobot_utils import build_features
+
+    config = load("agilex_mobile")
+    features = build_features(config, {})
+
+    assert features["observation.tactile_left"]["shape"] == (2, 6)
+    assert features["observation.tactile_left"]["dtype"] == "float32"
+
+
+NO_POSE_EMBODIMENTS = {"tienkung", "tienyi", "tienyi_mobile"}
+
+
+@pytest.mark.parametrize("name", sorted(NO_POSE_EMBODIMENTS))
+def test_tien_kung_family_declares_no_end_effector_pose(name):
+    """실측: 코퍼스 12 종 중 이 3 종만 end_effector_*_pose 데이터셋이 실물에서
+    (0,) 로 비어 있어서, config 가 그 스트림을 아예 선언하지 않는다. 선언하면
+    (Task 11 실행 기록대로) 전 에피소드가 skip 된다. 이 비대칭은 실측이지 결함이
+    아니다 -- 이 테스트가 없으면 나중에 '빠진 것 같으니 채운다'로 조용히
+    되돌려질 수 있다."""
+    config = load(name)
+
+    assert config.stream("end_effector_left_pose") is None
+    assert config.stream("end_effector_right_pose") is None
+
+
+def test_robot_outside_that_group_still_declares_end_effector_pose():
+    """대조군: Tien Kung 계열이 아닌 embodiment 는 그대로 선언한다."""
+    config = load("agilex")
+
+    assert config.stream("end_effector_left_pose") is not None
+    assert config.stream("end_effector_right_pose") is not None

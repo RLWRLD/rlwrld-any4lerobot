@@ -1,0 +1,30 @@
+# AgileX 이동형 양팔. 13,873 에피소드 / 10.23 TB / 77 task. 실측 fps 63-66.
+# 코퍼스에서 tactile 스트림을 가진 유일한 embodiment 다.
+robot_type: agilex_mobile
+
+cameras:
+  camera_front: {depth: true}
+  camera_left:  {depth: true}
+  camera_right: {depth: true}
+
+streams:
+  arm_left_position:           {width: 6}
+  arm_right_position:          {width: 6}
+  end_effector_left_pose:      {width: 7}
+  end_effector_left_position:  {width: 1}
+  end_effector_right_pose:     {width: 7}
+  end_effector_right_position: {width: 1}
+  chassis_pose:                {width: 7}
+  chassis_twist:               {width: 6}
+
+# tactile_observations/<name>_align/data → observation.<name>
+# 평탄한 벡터가 아니라 (T, 2, 6) 이다 — 패드 2 개 × 6 축.
+extra:
+  tactile_observations:
+    tactile_left:  {shape: [2, 6]}
+    tactile_right: {shape: [2, 6]}
+
+instruction:
+  source: zh_file
+
+layout: real
