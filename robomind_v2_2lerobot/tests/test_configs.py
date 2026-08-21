@@ -46,6 +46,27 @@ def test_path_traversal_is_an_error():
         load("../tienyi")
 
 
+def test_unparseable_yaml_is_a_configerror_not_a_raw_parse_error(tmp_path, monkeypatch):
+    """yaml.safe_load itself raises yaml.YAMLError for a syntax problem, not
+    ConfigError -- unlike a well-formed-but-semantically-wrong config (a
+    missing key, a bad width, ...), which parse() turns into ConfigError.
+    Neither main's upfront per-embodiment config validation nor the entry
+    point's own exception handler catches a bare yaml.YAMLError, so a
+    genuinely broken YAML file used to crash the whole run instead of
+    producing the promised "invalid config for X" message. load() is the one
+    place every caller loads a config, so catching it there -- rather than at
+    each caller -- makes both kinds of broken config look the same to
+    everything downstream.
+    """
+    from robomind_v2_utils import configs
+
+    (tmp_path / "probe_broken.yaml").write_text("cameras: [oops\n  bad: indent\n")
+    monkeypatch.setattr(configs, "CONFIG_DIR", tmp_path)
+
+    with pytest.raises(ConfigError, match="invalid YAML"):
+        load("probe_broken")
+
+
 def write(tmp_path, monkeypatch, body: dict, name: str = "probe"):
     from robomind_v2_utils import configs
 

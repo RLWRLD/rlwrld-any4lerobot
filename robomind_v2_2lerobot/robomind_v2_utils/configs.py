@@ -174,7 +174,21 @@ def load(name: str) -> EmbodimentConfig:
         raise ConfigError(
             f"unknown embodiment {name!r}. available: {', '.join(available())}"
         )
-    return parse(yaml.safe_load(path.read_text()), embodiment=name, origin=str(path))
+    try:
+        raw = yaml.safe_load(path.read_text())
+    except yaml.YAMLError as error:
+        # yaml.safe_load raises its own parser/scanner error for a syntax
+        # problem, not ConfigError -- unlike a well-formed-but-semantically-
+        # wrong config (a missing key, a bad width, ...), which parse() below
+        # turns into ConfigError. Neither main's upfront per-embodiment
+        # config validation nor the entry point's own exception handler
+        # catches a bare yaml.YAMLError, so a genuinely broken YAML file used
+        # to crash the whole run instead of producing the promised "invalid
+        # config for X" message. Converting it here, at the one place every
+        # caller loads a config, makes both kinds of broken config look the
+        # same to everything downstream.
+        raise ConfigError(f"{path}: invalid YAML: {error}") from error
+    return parse(raw, embodiment=name, origin=str(path))
 
 
 def load_all() -> list[EmbodimentConfig]:
