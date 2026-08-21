@@ -46,3 +46,31 @@ def discover(src_paths: list[Path]) -> Iterator[EpisodeRef]:
                         task=task_dir.name,
                         path=hdf5,
                     )
+
+
+def check_usable(handle, config) -> None:
+    """Raise ``EpisodeSkipped`` unless every dataset the config names is present.
+
+    Two kinds of broken file exist upstream and only the first is recognisable by
+    size: 4,500 UR5 files are a valid hdf5 with nothing in it, and two more were
+    truncated mid-write and hold only their first stream. Checking the config's
+    own key list catches both, and also catches a config pointed at the wrong
+    embodiment.
+    """
+    if not handle.keys():
+        raise EpisodeSkipped("no objects in the file")
+
+    required = ["camera_observations/timestamp"]
+    for camera in config.cameras:
+        required.append(f"camera_observations/color_images/{camera.name}")
+        if camera.depth:
+            required.append(f"camera_observations/depth_images/{camera.name}")
+    for stream in config.streams:
+        required.append(f"puppet/{stream.name}_align/data")
+        required.append(f"master/{stream.name}_align/data")
+    for extra in config.extras:
+        required.append(f"{extra.group}/{extra.name}_align/data")
+
+    missing = [key for key in required if key not in handle]
+    if missing:
+        raise EpisodeSkipped(f"missing {len(missing)} dataset(s): {', '.join(missing[:4])}")
