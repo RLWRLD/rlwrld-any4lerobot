@@ -31,7 +31,7 @@ from lerobot.datasets.compute_stats import (
 )
 from lerobot.datasets.dataset_writer import DatasetWriter, _encode_video_worker
 from lerobot.datasets.feature_utils import validate_episode_buffer
-from lerobot.datasets.io_utils import write_info, write_stats
+from lerobot.datasets.io_utils import load_image_as_numpy, write_info, write_stats
 from lerobot.datasets.utils import DEFAULT_EPISODES_PATH, flatten_dict
 
 
@@ -85,20 +85,55 @@ def build_features(config, shapes: dict[str, tuple[int, ...]]) -> dict:
 def sample_images(input):
     """Copied from ``robomind2lerobot/robomind_uitls/lerobot_uitls.py``.
 
-    Only the ndarray branch is reachable here: frames arrive decoded in memory,
-    never as a list of paths.
+    Both branches below are reachable. The pinned lerobot's ``DatasetWriter.add_frame``
+    writes every ``image``/``video``-dtype value out to a per-frame file on disk and
+    leaves the episode buffer holding that file's path instead of the decoded array;
+    every other feature's values stay in memory. ``compute_episode_stats`` calls this
+    for every ``image``/``video`` feature, so dropping either branch here makes
+    ``save_episode`` raise for any dataset that has a camera -- which is every
+    embodiment in this project.
+
+    Changed from v1: the ``ndarray`` branch also transposes a channel-last frame
+    (``(H, W, 3)`` or ``(H, W, 1)``, what this project's own decoded frames look like)
+    to channel-first before downsampling -- v1's ndarray branch never needed this,
+    since it never received a raw decoded frame there. And a value that is neither a
+    list nor an ndarray now raises ``TypeError`` instead of falling through: v1 left
+    ``images`` unassigned in that case, so its own ``return images`` raised an obscure
+    ``UnboundLocalError`` there (verified by calling it directly), not the silent
+    ``None`` previously assumed here.
     """
-    frames_array = input if input.ndim == 4 else input[:, None, :, :]
-    sampled_indices = sample_indices(len(frames_array))
-    images = None
-    for position, index in enumerate(sampled_indices):
-        image = frames_array[index]
-        if image.ndim == 3 and image.shape[-1] in (1, 3):
-            image = np.transpose(image, (2, 0, 1))
-        image = auto_downsample_height_width(image)
-        if images is None:
-            images = np.empty((len(sampled_indices), *image.shape), dtype=np.uint8)
-        images[position] = image
+    if type(input) is list:
+        image_paths = input
+
+        sampled_indices = sample_indices(len(image_paths))
+        images = None
+        for i, idx in enumerate(sampled_indices):
+            path = image_paths[idx]
+
+            img = load_image_as_numpy(path, dtype=np.uint8, channel_first=True)
+            img = auto_downsample_height_width(img)
+
+            if images is None:
+                images = np.empty((len(sampled_indices), *img.shape), dtype=np.uint8)
+
+            images[i] = img
+    elif type(input) is np.ndarray:
+        frames_array = input if input.ndim == 4 else input[:, None, :, :]
+        sampled_indices = sample_indices(len(frames_array))
+        images = None
+        for position, index in enumerate(sampled_indices):
+            image = frames_array[index]
+            if image.ndim == 3 and image.shape[-1] in (1, 3):
+                image = np.transpose(image, (2, 0, 1))
+            image = auto_downsample_height_width(image)
+            if images is None:
+                images = np.empty((len(sampled_indices), *image.shape), dtype=np.uint8)
+            images[position] = image
+    else:
+        raise TypeError(
+            f"sample_images expected a list of image paths or a decoded ndarray, "
+            f"got {type(input).__name__}"
+        )
     return images
 
 
