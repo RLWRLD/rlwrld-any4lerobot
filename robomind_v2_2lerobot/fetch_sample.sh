@@ -34,17 +34,34 @@ esac
 for slug in "${SLUGS[@]}"; do
   prefix="external/robomind_2_0__robomind2-0-${slug}/2026-08-11/"
   echo "listing s3://$BUCKET/$prefix ..."
-  aws s3 ls "s3://$BUCKET/$prefix" --recursive --profile "$PROFILE" \
+
+  # `head -n "$COUNT"` exits the moment it has its lines, which SIGPIPEs the
+  # still-writing `aws s3 ls`/`awk` upstream whenever the real listing has
+  # more than $COUNT matches -- the normal case here, not a failure (nothing
+  # downloaded below is affected). With `pipefail`, that SIGPIPE (141) would
+  # otherwise be reported as this line's exit status, so `-e` is suspended
+  # just for this one capture and the status is checked by hand: 0 or 141 is
+  # fine, anything else is a real `aws`/`awk`/`head` error and still fails
+  # the script below.
+  set +e
+  listing="$(aws s3 ls "s3://$BUCKET/$prefix" --recursive --profile "$PROFILE" \
     | awk '$4 ~ /\.hdf5$/ && $3 > 20000 {print $3, $4}' \
-    | head -n "$COUNT" \
-    | while read -r size key; do
-        # keep the tree shape the converter discovers: data/<emb>/<task>/...
-        rel="${key#"$prefix"}"
-        out="$DEST/$EMBODIMENT/$rel"
-        mkdir -p "$(dirname "$out")"
-        echo "  $(( size / 1000000 )) MB  $rel"
-        aws s3 cp "s3://$BUCKET/$key" "$out" --profile "$PROFILE" --only-show-errors
-      done
+    | head -n "$COUNT")"
+  list_status=$?
+  set -e
+  if (( list_status != 0 && list_status != 141 )); then
+    echo "listing s3://$BUCKET/$prefix failed (exit $list_status)" >&2
+    exit "$list_status"
+  fi
+
+  while read -r size key; do
+    # keep the tree shape the converter discovers: data/<emb>/<task>/...
+    rel="${key#"$prefix"}"
+    out="$DEST/$EMBODIMENT/$rel"
+    mkdir -p "$(dirname "$out")"
+    echo "  $(( size / 1000000 )) MB  $rel"
+    aws s3 cp "s3://$BUCKET/$key" "$out" --profile "$PROFILE" --only-show-errors
+  done <<< "$listing"
   # the task's description file, where the release has one
   aws s3 cp "s3://$BUCKET/$prefix" "$DEST/$EMBODIMENT/" --recursive \
     --exclude "*" --include "*/zh_description.txt" --profile "$PROFILE" \
