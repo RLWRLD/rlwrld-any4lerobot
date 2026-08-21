@@ -127,6 +127,21 @@ def test_a_depth_feature_writes_successfully_end_to_end(tmp_path, config):
     )
     for frame in episode.frames:
         dataset.add_frame(frame)
+
+    # `add_frame` writes each depth frame to disk immediately; `save_episode`'s
+    # final `clear_episode_buffer(delete_images=True)` rmtree's this directory
+    # once the frame is embedded in the episode parquet, so this window -- after
+    # `add_frame`, before `save_episode` -- is the only place the on-disk
+    # extension can be checked. Declaring the feature `is_depth_map` (see
+    # `build_features`) is what routes it through `DEFAULT_DEPTH_PATH` (`.tiff`)
+    # instead of `DEFAULT_IMAGE_PATH` (`.png`) -- `.png` would round-trip through
+    # `sample_images` -> `load_image_as_numpy` as a truncated 3-channel uint8 read,
+    # since that loader picks its branch purely from the file extension.
+    depth_dir = root / "images" / "observation.images.camera_top_depth"
+    depth_files = sorted(p for p in depth_dir.rglob("*") if p.is_file())
+    assert depth_files, "expected depth frame files on disk before save_episode() clears them"
+    assert {p.suffix for p in depth_files} == {".tiff"}
+
     dataset.save_episode()
     dataset.finalize()
 
@@ -137,6 +152,23 @@ def test_a_depth_feature_writes_successfully_end_to_end(tmp_path, config):
     on_disk = json.loads((root / "meta" / "info.json").read_text())
     assert on_disk["total_episodes"] == 1
     assert "observation.images.camera_top_depth" in on_disk["features"]
+
+    # Without `is_depth_map`, `compute_episode_stats` samples depth back in through
+    # the RGB branch of `load_image_as_numpy`: three channels instead of one, and
+    # clamped to [0, 255] instead of the sensor's real range. Pin both symptoms --
+    # the shape and the max -- so either regressing alone still fails this test.
+    # The reference max comes from `episode.frames` itself (the same arrays handed
+    # to `add_frame`), not a hardcoded literal, so this holds regardless of the
+    # fixture's random depth values.
+    stats = json.loads((root / "meta" / "stats.json").read_text())
+    depth_stats = stats["observation.images.camera_top_depth"]
+    depth_max = np.array(depth_stats["max"])
+    assert depth_max.shape == (1, 1, 1)
+    expected_max = max(
+        frame["observation.images.camera_top_depth"].max() for frame in episode.frames
+    )
+    assert depth_max.item() == float(expected_max)
+    assert depth_max.item() != 255.0
 
 
 def two_camera_config(tmp_path):

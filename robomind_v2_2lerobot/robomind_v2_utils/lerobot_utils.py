@@ -60,6 +60,17 @@ def build_features(config, shapes: dict[str, tuple[int, ...]]) -> dict:
                 "dtype": "image",
                 "shape": tuple(shapes[depth_key]),
                 "names": ["height", "width", "channel"],
+                # Flags this key in the pinned lerobot's `depth_keys` (see
+                # `DatasetMetadata.depth_keys`, which looks for exactly this
+                # `info.is_depth_map` nesting). That property gates two things
+                # this feature needs: `DatasetWriter._get_image_file_path` writes
+                # it as `.tiff` instead of `.png`, and `load_image_as_numpy`
+                # (called back on that path by `sample_images` below) branches on
+                # the `.tiff` extension to read the native dtype instead of
+                # downcasting through a forced 3-channel RGB convert. Without
+                # this, both the storage format and the statistics silently
+                # treat single-channel depth as truncated 8-bit colour.
+                "info": {"is_depth_map": True},
             }
 
     for stream in config.streams:
@@ -100,6 +111,14 @@ def sample_images(input):
     ``images`` unassigned in that case, so its own ``return images`` raised an obscure
     ``UnboundLocalError`` there (verified by calling it directly), not the silent
     ``None`` previously assumed here.
+
+    Two more divergences: the ``list`` branch's accumulating buffer is now allocated
+    with ``dtype=img.dtype``, preserving whatever ``load_image_as_numpy`` returned
+    (native dtype for depth, ``uint8`` for colour), where v1 hardcoded ``dtype=np.uint8``
+    for that buffer regardless of what was loaded. And the ``ndarray`` branch now guards
+    on the input's number of dimensions -- ``input if input.ndim == 4 else
+    input[:, None, :, :]`` -- where v1 unconditionally inserted the axis
+    (``input[:, None, :, :]``), assuming a 3-D input every time.
     """
     if type(input) is list:
         image_paths = input
@@ -127,7 +146,7 @@ def sample_images(input):
                 image = np.transpose(image, (2, 0, 1))
             image = auto_downsample_height_width(image)
             if images is None:
-                images = np.empty((len(sampled_indices), *image.shape), dtype=np.uint8)
+                images = np.empty((len(sampled_indices), *image.shape), dtype=image.dtype)
             images[position] = image
     else:
         raise TypeError(
@@ -209,8 +228,18 @@ def compute_episode_stats(episode_data, features: dict, quantile_list=None) -> d
 # a user-supplied path into this driver, at which point this line deletes whatever that
 # user points it at, not just this call's own just-written output.
 #
-# Everything else -- control flow, comments, the broad ``except Exception`` in
-# the parallel video-encoding block -- is unchanged from v1.
+# ``RoboMINDv2DatasetWriter.save_episode``'s stacking loop is the one place control flow
+# itself diverges from v1: it skips ``ft["dtype"] in ["image", "video"]``, where v1's
+# equivalent loop skipped only ``["video"]``. v1's narrower filter left an ``image``-dtype
+# key -- a depth feature, here -- as its raw list of on-disk path strings when it reached
+# this point; ``np.stack``-ing that list, as v1's filter would have let happen, collapses
+# it into a single ndarray of path *strings* before ``compute_episode_stats`` ever calls
+# ``sample_images`` on it, and ``sample_images`` has no branch that can sample strings.
+# Skipping ``image`` here keeps the path list intact for ``sample_images``' own list
+# branch to consume, the same way it already left ``video`` keys alone for that reason.
+#
+# Everything else -- control flow (apart from that one stacking-loop condition), comments,
+# the broad ``except Exception`` in the parallel video-encoding block -- is unchanged from v1.
 # ---------------------------------------------------------------------------
 
 
