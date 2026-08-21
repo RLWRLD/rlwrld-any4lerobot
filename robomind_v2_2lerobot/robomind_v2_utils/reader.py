@@ -157,3 +157,35 @@ def read_streams(handle, config) -> dict[str, "np.ndarray"]:
             + ", ".join(f"{key}={count}" for key, count in list(wrong.items())[:3])
         )
     return columns
+
+
+MIN_FRAMES = 2
+
+
+def episode_fps(handle, config) -> float:
+    """This episode's frame rate.
+
+    Measured, not configured: the rate runs from about 7 Hz on UR5 to about
+    101 Hz on AgileX, and moves between episodes of one embodiment. v1 wrote 30
+    for everything.
+
+    ``camera_observations/timestamp`` is whole seconds, so a short episode carries
+    a boundary error of up to one second at each end. The value is good enough to
+    put a dataset on the right time base and is not a precise measurement.
+
+    A simulated episode's timestamps never advance, so its rate comes from the
+    config instead -- the one number a config is allowed to state.
+    """
+    stamps = np.asarray(handle["camera_observations/timestamp"][()], dtype=np.int64)
+    if stamps.size < MIN_FRAMES:
+        raise EpisodeSkipped(f"too few frames: {stamps.size}")
+
+    span = int(stamps[-1] - stamps[0])
+    if span > 0:
+        return float(stamps.size) / span
+    if config.fps is not None:
+        return float(config.fps)
+    raise EpisodeSkipped(
+        "timestamps do not advance and the config states no fps, so the frame "
+        "rate is unknown"
+    )
