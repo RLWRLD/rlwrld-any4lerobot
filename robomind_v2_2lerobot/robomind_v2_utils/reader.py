@@ -12,6 +12,8 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
+import numpy as np
+
 from .configs import EmbodimentConfig
 from .errors import EpisodeSkipped
 
@@ -98,3 +100,60 @@ def check_usable(handle, config: EmbodimentConfig) -> None:
         f"missing {len(missing)} of {len(required)} dataset(s), {matched} "
         f"present -- looks like the config does not match this file's embodiment: {sample}"
     )
+
+
+def _stream_data(handle, path: str, width: int) -> "np.ndarray":
+    values = np.asarray(handle[f"{path}/data"][()], dtype=np.float32)
+    if values.ndim == 1:
+        values = values.reshape(-1, 1)
+    if values.ndim != 2:
+        raise EpisodeSkipped(f"{path} is {values.shape}, expected 1-D or 2-D")
+    if values.shape[1] != width:
+        raise EpisodeSkipped(
+            f"{path.rsplit('/', 1)[-1].removesuffix('_align')} is "
+            f"{values.shape[1]} wide, expected {width}"
+        )
+    return values
+
+
+def read_streams(handle, config) -> dict[str, "np.ndarray"]:
+    """The per-frame vectors this config names, as ``(T, width)`` arrays.
+
+    Only ``_align`` is read. Simulated episodes carry a ``_raw`` copy of every
+    stream at roughly twice the rate, sampled on its own clock; ``_align`` is the
+    one lined up with the cameras.
+
+    Widths are checked rather than trusted. Two embodiments in this release name
+    their streams identically and differ only in that ``end_effector_*_position``
+    is one column wide on one and twelve on the other, so reading by name alone
+    would silently reinterpret a dexterous hand as a gripper.
+    """
+    check_usable(handle, config)
+
+    columns: dict[str, np.ndarray] = {}
+    for stream in config.streams:
+        columns[f"observation.states.{stream.name}"] = _stream_data(
+            handle, f"puppet/{stream.name}_align", stream.width
+        )
+        columns[f"actions.{stream.name}"] = _stream_data(
+            handle, f"master/{stream.name}_align", stream.width
+        )
+
+    for extra in config.extras:
+        values = np.asarray(
+            handle[f"{extra.group}/{extra.name}_align/data"][()], dtype=np.float32
+        )
+        if values.shape[1:] != extra.shape:
+            raise EpisodeSkipped(
+                f"{extra.name} is {values.shape[1:]}, expected {extra.shape}"
+            )
+        columns[f"observation.{extra.name}"] = values
+
+    frames = len(handle["camera_observations/timestamp"])
+    wrong = {key: value.shape[0] for key, value in columns.items() if value.shape[0] != frames}
+    if wrong:
+        raise EpisodeSkipped(
+            f"length mismatch against {frames} camera frames: "
+            + ", ".join(f"{key}={count}" for key, count in list(wrong.items())[:3])
+        )
+    return columns
