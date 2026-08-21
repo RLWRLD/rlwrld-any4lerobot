@@ -164,12 +164,12 @@ def test_ur_dex_has_no_description_file():
 
 
 CAMERA_COUNTS = {
-    "franka": 6, "agilex": 3, "ark": 3, "tienkung": 1,
-    "ur": 6, "ur_dex": 6, "tienyi": 1,
+    "franka": 6, "agilex": 3, "agilex_mobile": 3, "ark": 3, "ark_mobile": 3, "tienkung": 1,
+    "ur": 6, "ur_dex": 6, "tienyi": 1, "tienyi_mobile": 1,
 }
 ARM_WIDTHS = {
-    "franka": 8, "agilex": 6, "ark": 6, "tienkung": 7,
-    "ur": 6, "ur_dex": 6, "tienyi": 7,
+    "franka": 8, "agilex": 6, "agilex_mobile": 6, "ark": 6, "ark_mobile": 6, "tienkung": 7,
+    "ur": 6, "ur_dex": 6, "tienyi": 7, "tienyi_mobile": 7,
 }
 
 
@@ -220,6 +220,7 @@ def test_tienyi_mobile_adds_head_position_and_only_twist():
     config = load("tienyi_mobile")
 
     assert config.stream("head_position") is not None
+    assert config.stream("head_position").width == 3
     assert config.stream("chassis_twist").width == 6
     assert config.stream("chassis_pose") is None
 
@@ -233,6 +234,8 @@ def test_tactile_becomes_a_two_dimensional_feature():
 
     assert features["observation.tactile_left"]["shape"] == (2, 6)
     assert features["observation.tactile_left"]["dtype"] == "float32"
+    assert features["observation.tactile_right"]["shape"] == (2, 6)
+    assert features["observation.tactile_right"]["dtype"] == "float32"
 
 
 NO_POSE_EMBODIMENTS = {"tienkung", "tienyi", "tienyi_mobile"}
