@@ -151,7 +151,31 @@ def worker_budget(cpus_per_task: int, episode_bytes: int | None = None) -> int:
     memory = available_memory()
     if memory is None:
         return cores
-    return max(1, min(cores, memory // worker_memory(episode_bytes)))
+    return max(1, min(cores, memory // _memory_share() // worker_memory(episode_bytes)))
+
+
+def _memory_share() -> int:
+    """How many builds are sharing this machine, or 1 when nothing says.
+
+    A batch runs its builds at once, each in its own process, so each one asking
+    ``available_memory`` gets the whole machine and the budget above is computed that
+    many times over. Three datasets on a 185 GB node then plan for 555 GB, which is
+    the overcommit this budget exists to prevent, arrived at one level up from where
+    it looks. The orchestrator declares the divisor because it is the only thing that
+    knows how many builds it started.
+
+    Cores are deliberately not divided the same way. Oversubscribed CPU degrades --
+    the measurement that picked the worker count left 34% of it idle anyway -- while
+    oversubscribed memory does not degrade, it wedges the node.
+
+    The value crosses a process boundary as text, so anything that is not a positive
+    integer is read as "nothing said" rather than failing a build over it.
+    """
+    try:
+        share = int(os.environ.get("ANY4LEROBOT_MEMORY_SHARE", ""))
+    except ValueError:
+        return 1
+    return share if share >= 1 else 1
 
 
 class Stalled(RuntimeError):
@@ -826,7 +850,13 @@ class PlannedVideoFiles:
         return video_idx
 
     def build(self, workers: int = -1) -> None:
-        """Build every destination, each from its whole source list, at once."""
+        """Build every destination, each from its whole source list, at once.
+
+        ``-1`` is one per core here, not ``worker_budget``'s "as many as memory
+        holds": these are threads waiting on an ffmpeg concat, not processes holding
+        a decoded episode. The sentinel is shared with the converter's worker count
+        and the unit is not.
+        """
         from lerobot.datasets.aggregate import concatenate_video_files
 
         if not self._sources:

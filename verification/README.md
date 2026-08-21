@@ -374,6 +374,15 @@ resolve the rule through the same step object, which a test asserts directly —
 that answered differently on the two would build half a collection one way and half the
 other, which is the failure the declared value was introduced to prevent.
 
+> **2026-08-21: the profile now names `sinc`, for every camera at every scale factor.**
+> That is a decision about what the collection is rather than a measurement overturning
+> the one below -- the threshold is still the assignment that put all eight resized
+> cameras inside the band. What it gives back is what the plain-sinc run measured:
+> `taco_play` and `stanford_hydra` fail video SIZE again, 11 and 24 episodes, and their
+> worst frame agreement returns to 0.963 from 0.976. The rule was deleted with the
+> same change rather than kept as dead configuration -- what it measured is below, and
+> everything below is left as it was measured.
+
 ### Verified: the threshold improves both sides, and it is not a trade
 
 Run end-to-end on an image built from `85a9252` over four datasets chosen to

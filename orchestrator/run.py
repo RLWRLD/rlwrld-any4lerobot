@@ -18,6 +18,7 @@ an encoder or a terabyte of disk.
 """
 
 import hashlib
+import os
 import shutil
 import subprocess
 import sys
@@ -133,6 +134,7 @@ def build(
     *,
     env_source: str,
     workers: int | None = None,
+    batch_size: int = 1,
     dry_run: bool = False,
     run=None,
 ) -> Outcome:
@@ -141,6 +143,11 @@ def build(
     Nothing about how a dataset is processed is repeated here -- the pipeline
     already takes ``--env`` and ``--dataset`` and reads the rest from the registry
     and the profile. This decides only whether it is worth starting.
+
+    ``batch_size`` is how many builds are running on this machine at once, declared
+    because nothing downstream can find it out. The converter sizes its workers
+    against the memory it can see, and what it can see is the whole node however many
+    of these are started -- so a batch of three planned for three times the machine.
     """
     run = run or subprocess.run
     problems = spec.buildable()
@@ -171,7 +178,13 @@ def build(
         return Outcome(spec.id, "build", "skipped", "would run " + " ".join(command[1:]))
 
     started = now()
-    completed = run(command, capture_output=True, text=True, check=False)
+    completed = run(
+        command,
+        capture_output=True,
+        text=True,
+        check=False,
+        **_shared_machine_env(batch_size),
+    )
     if completed.returncode != 0:
         error = (completed.stderr or "").strip()[-2000:] or "the pipeline exited non-zero"
         steps.write(
@@ -352,6 +365,7 @@ def process(
                 steps,
                 env_source=env_source,
                 workers=share,
+                batch_size=len(specs),
                 dry_run=dry_run,
                 run=run,
             ),
@@ -380,6 +394,17 @@ def _spread(specs: Sequence, work) -> list[Outcome]:
         return [work(spec) for spec in specs]
     with ThreadPoolExecutor(max_workers=len(specs)) as pool:
         return list(pool.map(work, specs))
+
+
+def _shared_machine_env(batch_size: int) -> dict:
+    """The subprocess keywords that tell one build how much of the node is its own.
+
+    Nothing when the build has the machine to itself, so the common path starts the
+    pipeline with the environment it inherited and nothing to explain.
+    """
+    if batch_size <= 1:
+        return {}
+    return {"env": {**os.environ, "ANY4LEROBOT_MEMORY_SHARE": str(batch_size)}}
 
 
 def _worker_share(env, batch_size: int) -> int | None:

@@ -301,3 +301,51 @@ class TestWorkerMemoryFollowsTheEpisode:
 
         monkeypatch.setenv("ANY4LEROBOT_WORKER_MEMORY_GB", "3")
         assert pipeline.worker_memory(152_000_000) == 3 * 1024**3
+
+
+class TestSharingAMachine:
+    """The orchestrator runs up to ``max_datasets`` builds at once, each its own
+    process, and each one sized itself against the whole machine -- which is the
+    overcommit this budget exists to prevent, one level up from where it looks."""
+
+    def test_builds_sharing_a_machine_each_get_a_share_of_its_memory(self, monkeypatch):
+        monkeypatch.setattr(os, "cpu_count", lambda: 48)
+        monkeypatch.setattr(pipeline, "available_memory", lambda: 185 * 1024**3)
+        monkeypatch.delenv("ANY4LEROBOT_WORKER_MEMORY_GB", raising=False)
+        monkeypatch.setenv("ANY4LEROBOT_MEMORY_SHARE", "3")
+
+        assert pipeline.worker_budget(1) == 10      # (185 / 3) // 6, not 30
+
+    def test_a_run_with_the_machine_to_itself_is_unchanged(self, monkeypatch):
+        monkeypatch.setattr(os, "cpu_count", lambda: 48)
+        monkeypatch.setattr(pipeline, "available_memory", lambda: 185 * 1024**3)
+        monkeypatch.delenv("ANY4LEROBOT_WORKER_MEMORY_GB", raising=False)
+        monkeypatch.setenv("ANY4LEROBOT_MEMORY_SHARE", "1")
+
+        assert pipeline.worker_budget(1) == 30
+
+    def test_no_share_declared_is_the_whole_machine(self, monkeypatch):
+        monkeypatch.setattr(os, "cpu_count", lambda: 48)
+        monkeypatch.setattr(pipeline, "available_memory", lambda: 185 * 1024**3)
+        monkeypatch.delenv("ANY4LEROBOT_WORKER_MEMORY_GB", raising=False)
+        monkeypatch.delenv("ANY4LEROBOT_MEMORY_SHARE", raising=False)
+
+        assert pipeline.worker_budget(1) == 30
+
+    def test_a_share_too_small_for_one_worker_still_gets_one(self, monkeypatch):
+        """Asking for zero workers is a hang of its own, so the floor holds here too."""
+        monkeypatch.setattr(os, "cpu_count", lambda: 48)
+        monkeypatch.setattr(pipeline, "available_memory", lambda: 8 * 1024**3)
+        monkeypatch.delenv("ANY4LEROBOT_WORKER_MEMORY_GB", raising=False)
+        monkeypatch.setenv("ANY4LEROBOT_MEMORY_SHARE", "4")
+
+        assert pipeline.worker_budget(1) == 1
+
+    def test_a_nonsense_share_is_ignored_rather_than_crashing_the_build(self, monkeypatch):
+        """It arrives from the environment, so it can be anything."""
+        monkeypatch.setattr(os, "cpu_count", lambda: 48)
+        monkeypatch.setattr(pipeline, "available_memory", lambda: 185 * 1024**3)
+        monkeypatch.delenv("ANY4LEROBOT_WORKER_MEMORY_GB", raising=False)
+        for value in ("0", "-2", "half", ""):
+            monkeypatch.setenv("ANY4LEROBOT_MEMORY_SHARE", value)
+            assert pipeline.worker_budget(1) == 30

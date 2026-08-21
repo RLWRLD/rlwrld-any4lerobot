@@ -459,3 +459,31 @@ class TestModalityIsAlwaysWritten:
         )
         run_pipeline(config, workdir=tmp_path / "work", executors=_recorder([]))
         assert not (tmp_path / "out" / "meta" / "modality.json").exists()
+
+
+def test_a_converter_inherits_the_environment_it_was_started_with(monkeypatch):
+    """A regression guard, not a design.
+
+    The orchestrator declares how many builds share a node in the environment, and
+    the converter three processes down is what reads it. Nothing in between may
+    replace that environment. This repo has already lost a measurement to exactly
+    this shape once -- `node.sh` set the transfer client on the host while the
+    transfer ran in a container with its own `$HOME`, and 3.9 TB moved on stock
+    defaults.
+    """
+    import subprocess
+
+    calls = []
+
+    def record(command, *args, **kwargs):
+        calls.append(kwargs)
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setattr(run_module.subprocess, "run", record)
+    run_module._run(["true"], "a converter")
+
+    assert calls, "the converter was never started"
+    assert "env" not in calls[0], (
+        "passing env= here drops ANY4LEROBOT_MEMORY_SHARE and every worker budget "
+        "below silently plans for the whole machine again"
+    )
