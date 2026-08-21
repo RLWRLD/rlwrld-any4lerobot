@@ -38,6 +38,39 @@ not running with `--debug`; `--save-depth` additionally writes each depth camera
 `image` feature; `--min-frames` (default 50) is the frame count below which an episode
 is treated as a broken recording rather than a short task, carried over from v1's floor.
 
+A run also writes `summary.json` beside `--output-path`: written/skipped counts and skip
+reasons per embodiment, plus which tasks (if any) failed outright. The same tally is
+logged at the end of a run, but under Ray a worker's per-episode log lines never reach
+the driver's console — this file is what actually survives, and how to reconcile what
+landed against what was expected (4,502 files in the release are already known-broken).
+
+### Memory and scratch disk per task
+
+`read_episode` holds every camera's fully decoded frames in memory at once before
+building the frame list, so peak memory scales with an episode's frame count, camera
+count, and resolution. Measured directly, not assumed: a 2,653-frame, 3-camera,
+480×640 episode holds 6.83 GiB of decoded colour alone, +3.80 GiB more with
+`--save-depth`; a 310-frame, 6-camera, 720×1280 episode is 4.79 GiB colour, +3.19 GiB
+with depth. `--cpus-per-task` is a CPU reservation only, so it never accounted for
+this — every task this converter submits to Ray now also carries a `memory`
+reservation, sized off the worse of those two per-camera figures (~2.3 GiB/camera
+without depth, ~3.6 GiB/camera with it, plus 50% headroom for `decode_color`'s
+transient extra copy while it builds a list before copying it into one contiguous
+array). Concretely: a 6-camera task reserves ~21 GiB (~32 GiB with depth); a 1-camera
+task ~3.5 GiB (~5.4 GiB with depth).
+
+Ray admits fewer concurrent tasks on a memory-constrained node rather than
+oversubscribing it, which is the point — but it does mean `--cpus-per-task 2` on a
+64-vCPU node no longer implies 32 concurrent tasks unless the node also has the RAM
+for 32 of whatever the actual embodiment mix needs. `--cpus-per-task`'s default stays
+2 here: there is no single node size this project always runs on to size it against.
+Pick the node's RAM for the concurrency you want, or raise `--cpus-per-task` yourself
+to deliberately cap concurrency lower on a smaller one.
+
+`add_frame` separately writes one file per frame per camera to scratch disk, ahead of
+`save_episode`'s own video-encoding step — roughly 3 GB per episode for the widest
+robot in the release. Size scratch disk for that too, not just for the final dataset.
+
 Run the tests from the repo root with `uv run pytest robomind_v2_2lerobot/tests`.
 
 ## Sample data
@@ -97,12 +130,20 @@ nothing, no error. Even if the directories are hand-massaged into v1's shape,
 rather than returning, at every one of the ways it can happen (no episodes found, an
 embodiment with no config, or every found episode skipped).
 
+A task that fails outright — partway through, after writing some real episodes — is a
+different outcome again, and is not swallowed either: `convert_task` re-raises rather
+than returning as if the task were merely empty, `main` raises `TasksFailed` (a non-zero
+exit) even when every other task succeeded, and the failed task's own output directory
+is renamed to `<task>.failed` rather than left finalized and looking complete. See
+`convert_task`'s docstring for exactly which failures are treated as recoverable at the
+single-episode level versus fatal to the whole task.
+
 ## The 12 embodiments
 
 One repo can hold several tasks and, for Franka, several source repos share one
 embodiment. Arm/eef widths and camera counts are measured, not assumed, per
-embodiment — sampled from 1-2 episodes each, not a full scan; see the design doc's
-Assumptions section (linked at the bottom) for that caveat.
+embodiment — sampled from 1-2 episodes each, not a full scan; see
+[Design](#design) below for that caveat.
 
 | embodiment | usable episodes | TB | tasks | cameras | arm DoF | eef pos DoF | extra streams | fps |
 |---|---|---|---|---|---|---|---|---|
@@ -142,8 +183,11 @@ like Python. Adding an embodiment this converter already knows how to handle is 
 YAML file. `robomind_v2_utils/configs.py` validates every field below; an unknown key
 or a malformed value raises `ConfigError` rather than being ignored.
 
-- **`cameras`** — mapping of camera name to `{depth: bool}`. `depth: true` also reads
-  and, with `--save-depth`, writes that camera's depth stream.
+- **`cameras`** — mapping of camera name to `{depth: bool}`. `depth: true` marks a
+  camera whose depth stream exists to read; only `--save-depth` actually reads and
+  writes it as an `image` feature. Without `--save-depth`, `depth: true` requires
+  nothing extra from the file — an episode missing its depth data is still usable, and
+  every real conversion so far has run without `--save-depth`.
 - **`streams`** — mapping of stream name to `{width: int}`. Each entry reads
   `puppet/<name>_align` as `observation.states.<name>` and `master/<name>_align` as
   `actions.<name>`. The width is checked against the file, not trusted: a mismatch
@@ -184,6 +228,14 @@ The rule this project uses: config states only what is constant within an embodi
   just picks whichever is more common — reading a systematically fast 30.3030 Hz
   instead of 30.0000. There was never a case where the rate genuinely couldn't be
   measured, so there is no `fps` config field for either layout.
+- **one task's rate is a median, not any single episode's measurement.** One LeRobot
+  dataset is opened per `(embodiment, task)` at one fps, but the per-episode rate above
+  does move between episodes of the same task — real evidence from this release: two
+  episodes of one task measured 26.94 Hz and 31.33 Hz, 16% apart. `convert_task` takes
+  the *median* of every episode's own rate as the task's fps (`reader.task_fps`, a
+  cheap pre-pass over just the tiny timestamp array — no frame decoding, no cost
+  anywhere near `read_episode`'s), and skips, rather than writes onto the wrong time
+  base, any episode whose own rate drifts from that median by more than 10%.
 - **resolution** is measured by decoding an episode's first frame
   (`images.frame_shape`), never read from the file's own `camera_color_resolution`
   field. That field lies about axis order (see trap ④ below), so trusting it would
@@ -193,12 +245,13 @@ The rule this project uses: config states only what is constant within an embodi
 
 These came out of measuring the actual 2.0 corpus (114.28 TB, 269,569 objects) rather
 than assuming it matches 1.x or matches itself across embodiments. Full detail on each
-is in the design doc linked below; this is the short version and where the guard lives.
+was in the design doc named in [Design](#design) below; this is the short version and
+where the guard lives.
 
 | # | trap | guarded in |
 |---|---|---|
 | ① | `ur_dex` uses the same stream names as `ur`; only the width differs (`end_effector_*_position` is 1-wide gripper on `ur`, 12-wide dexterous hand on `ur_dex`). Mapping by name alone reads a dexterous hand as a gripper with no error. | `configs.py` (`Stream.width` is required and validated); `reader._stream_data` (checks the file's width against it, raises `EpisodeSkipped` on mismatch) |
-| ② | Two different kinds of broken file exist upstream: 4,500 files (all `ur`) are a valid, empty HDF5; 2 files were truncated mid-write and hold only their first stream. Filtering on size alone catches only the first kind. | `reader.check_usable` (`not handle.keys()` for empty; a required-key count for truncated, told apart from a wrong-embodiment config by whether *any* of the config's own keys are present at all) |
+| ② | Two different kinds of broken file exist upstream: 4,500 files (all `ur`) carry the full group skeleton but no dataset anywhere inside it, at any depth; 2 files were truncated mid-write and hold only their first stream. Filtering on size alone catches only the first kind — and `handle.keys()` alone can't even tell that one from a whole file, since the skeleton keeps the top-level group names non-empty either way. | `reader.check_usable` (a whole-tree walk via `handle.visititems(...)` for the first kind, since top-level keys stay non-empty regardless; a required-key count for truncated, told apart from a wrong-embodiment config by whether *any* of the config's own keys are present at all) |
 | ③ | The two `sim` embodiments are a different format: episode filename is `<episode_id>.hdf5` instead of `trajectory.hdf5`, task directories carry a numeric prefix, every stream exists as both `_align` and `_raw`, sim-only keys (`metadata`, intrinsics/extrinsics) appear, and `camera_observations/timestamp` advances in milliseconds rather than `real`'s seconds. | `reader.discover` globs any `*.hdf5` regardless of name; `reader._from_dirname` strips the numeric prefix; `reader.read_streams` only ever builds `_align` paths, so `_raw` is never read regardless of layout; `reader.episode_fps` picks the unit from `layout` and measures both, rather than a config stating a `sim` rate it was once assumed couldn't be measured |
 | ④ | `camera_color_resolution` stores axes as (H, W) for a real episode and (W, H) for a simulated one, while the decoded pixels are (H, W) in both. | `images.frame_shape` (and `decode_color`) never read that field — resolution comes from decoding the first frame |
 | ⑤ | Instructions come from three different places and none of them is complete: `h5_metadata` only exists for sim, `ur_dex` has neither of the file-based sources, and even `zh_file` has holes — `ur/assemble_lego_letters` has 521 episodes but no `zh_description.txt`, and `ark_mobile/grab_beaker_from_left_and_place_on_right` has the file but zero episodes. | `reader.instruction` tries the config's named source first, `reader._from_dirname` is the universal fallback that guarantees a non-empty prompt even when the named source is missing, unreadable, or empty |
@@ -207,7 +260,12 @@ is in the design doc linked below; this is the short version and where the guard
 ## Design
 
 Full measurements (S3 inventory, per-embodiment schema, the repo→embodiment mapping,
-sample strategy) and the rationale behind decisions summarized above — why not
-`spec2lerobot`, why the config folders stay separate, what counts as config versus
-data — are in
-[`docs/superpowers/specs/2026-08-21-robomind-v2-converter-design.md`](../docs/superpowers/specs/2026-08-21-robomind-v2-converter-design.md).
+sample strategy, and the 1-2-episode sampling caveat referenced above) and the
+rationale behind decisions summarized in this file — why not `spec2lerobot`, why the
+config folders stay separate, what counts as config versus data — lived in a design
+doc at `docs/superpowers/specs/2026-08-21-robomind-v2-converter-design.md` while this
+converter was being built. That directory is gitignored by convention (design docs are
+working notes, not shipped artifacts), so the file will not exist in a fresh clone —
+this paragraph is a pointer for whoever still has it locally, not a dependency. Nothing
+above assumes it exists: everything a maintainer needs — the traps, the config schema,
+why fps and resolution are measured rather than configured — is in this file already.
