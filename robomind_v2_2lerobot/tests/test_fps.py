@@ -25,7 +25,7 @@ from fixtures import write_episode
 
 from robomind_v2_utils import configs
 from robomind_v2_utils.errors import EpisodeSkipped
-from robomind_v2_utils.reader import episode_fps
+from robomind_v2_utils.reader import EpisodeRef, episode_fps, task_fps
 
 
 def sim_config(tmp_path):
@@ -169,3 +169,79 @@ def test_missing_timestamp_is_skipped(tmp_path):
     with h5py.File(path, "r") as handle:
         with pytest.raises(EpisodeSkipped, match="camera_observations/timestamp is missing"):
             episode_fps(handle, config)
+
+
+def _refs(paths, embodiment="tienyi", task="task"):
+    return [EpisodeRef(embodiment=embodiment, task=task, path=path) for path in paths]
+
+
+def test_task_fps_is_the_median_of_its_episodes(tmp_path):
+    """One dataset is opened per task at a single fps, so a task with more than
+    one episode needs one rate for all of them -- the median of what each
+    episode actually measured, not whichever happens to be looked at first
+    (see convert_task and the I1 finding this closes). Two ~10 Hz episodes and
+    one much faster one: the median is the middle value, not pulled toward the
+    outlier the way a mean would be.
+    """
+    config = configs.load("tienyi")
+    slow_a = write_episode(tmp_path, "tienyi", "task", "0001_000000", frames=101, seconds=10)
+    slow_b = write_episode(tmp_path, "tienyi", "task", "0002_000000", frames=101, seconds=10)
+    fast = write_episode(tmp_path, "tienyi", "task", "0003_000000", frames=203, seconds=2)
+
+    rate = task_fps(_refs([slow_a, slow_b, fast]), config)
+
+    assert rate == pytest.approx(10.1, abs=0.05)
+
+
+def test_task_fps_excludes_a_rate_that_rounds_to_zero(tmp_path):
+    """A rate this slow can't be a dataset's fps on its own -- convert_task holds
+    a single surviving episode to the same floor (round(fps) >= 1) -- so it must
+    not get to drag the task's median toward zero either.
+    """
+    config = configs.load("tienyi")
+    slow = write_episode(tmp_path, "tienyi", "task", "0001_000000", frames=2, seconds=10)
+    normal = write_episode(tmp_path, "tienyi", "task", "0002_000000", frames=6, seconds=2)
+
+    rate = task_fps(_refs([slow, normal]), config)
+
+    assert rate == pytest.approx(3.0, abs=0.1)
+
+
+def test_task_fps_skips_a_file_it_cannot_open(tmp_path):
+    """A ref this function can't even open contributes nothing to the median --
+    read_episode hits the same file again for real and logs the specific
+    reason when the caller actually processes it.
+    """
+    config = configs.load("tienyi")
+    good = write_episode(tmp_path, "tienyi", "task", "0001_000000", frames=6, seconds=2)
+    missing = tmp_path / "does_not_exist.hdf5"
+
+    rate = task_fps(_refs([missing, good]), config)
+
+    assert rate == pytest.approx(3.0, abs=0.1)
+
+
+def test_task_fps_is_none_when_no_episode_is_measurable(tmp_path):
+    config = configs.load("tienyi")
+    dead_clock = write_episode(tmp_path, "tienyi", "task", "0001_000000", frames=8, seconds=0)
+
+    assert task_fps(_refs([dead_clock]), config) is None
+
+
+def test_task_fps_excludes_episodes_shorter_than_min_frames(tmp_path):
+    """An episode this short will be skipped by convert_task's own min_frames
+    check regardless of its rate, and a broken-recording-length episode's own
+    timestamp span is exactly the least trustworthy measurement (see
+    episode_fps's docstring on the boundary error a short `real` episode
+    carries) -- so it must not get a vote in the task's median either. Without
+    threading min_frames through, a 2-frame episode measuring 1.0 Hz here would
+    have pulled the two-episode median down to 2.0 Hz instead of the 6-frame
+    episode's own 3.0 Hz -- a real gap this test pins shut.
+    """
+    config = configs.load("tienyi")
+    too_short = write_episode(tmp_path, "tienyi", "task", "0001_000000", frames=2, seconds=2)
+    normal = write_episode(tmp_path, "tienyi", "task", "0002_000000", frames=6, seconds=2)
+
+    rate = task_fps(_refs([too_short, normal]), config, min_frames=3)
+
+    assert rate == pytest.approx(3.0, abs=0.1)

@@ -294,6 +294,64 @@ def episode_fps(handle, config) -> float:
     )
 
 
+# A rate that rounds below this cannot be a dataset's fps -- see task_fps below,
+# and convert_task's own drift check, which both hold single episodes to the
+# same floor.
+_MIN_TASK_FPS = 1
+
+
+def task_fps(refs: list[EpisodeRef], config, min_frames: int = 0) -> float | None:
+    """The whole task's frame rate: the median of its episodes' own measured rates.
+
+    One LeRobot dataset is opened per ``(embodiment, task)`` at a single fps, but
+    that rate moves between episodes of the same task -- real evidence from this
+    release: one task's episodes measured 26.94 Hz and 31.33 Hz, 16% apart.
+    Taking it from whichever episode happens to survive first and write
+    everything else onto that base, silently or with a mere warning, is what this
+    function replaces: the caller fixes the task at this median instead, and
+    skips any episode whose own rate drifts too far from it (see ``convert_task``).
+
+    A cheap pre-pass, deliberately: ``camera_observations/timestamp`` is a tiny
+    dataset, so this opens every episode's file for that array alone, without
+    decoding a single camera frame -- nothing here approaches the cost of
+    ``read_episode``, called once per episode that actually gets written.
+
+    ``min_frames`` should be the same floor the caller applies to a full episode
+    (``convert_task``'s own ``min_frames``): an episode this short will be
+    skipped there regardless of its rate, and a broken-recording-length episode's
+    own timestamp span is exactly the kind of measurement least likely to be
+    trustworthy (``episode_fps``'s own docstring notes the boundary error a short
+    ``real`` episode carries) -- so it is excluded from the median here too,
+    rather than letting a handful of them quietly pull a task's whole rate away
+    from what its real episodes actually run at.
+
+    An episode this function cannot open, or cannot measure a rate for, is simply
+    left out of the median -- ``read_episode`` reaches the same file again and
+    logs the specific reason when the caller processes it for real. A measured
+    rate that rounds below ``_MIN_TASK_FPS`` is left out too, the same floor a
+    lone surviving episode was always held to: unusable as a dataset's fps on its
+    own, so it must not get to drag the median toward zero either.
+
+    Returns ``None`` if not one episode produced a usable rate -- the caller
+    treats that the same as every episode failing to read.
+    """
+    import h5py
+
+    rates = []
+    for ref in refs:
+        try:
+            with h5py.File(ref.path, "r") as handle:
+                key = "camera_observations/timestamp"
+                if key in handle and len(handle[key]) < min_frames:
+                    continue
+                rate = episode_fps(handle, config)
+        except (OSError, ValueError, EpisodeSkipped):
+            continue
+        if round(rate) >= _MIN_TASK_FPS:
+            rates.append(rate)
+    return float(np.median(rates)) if rates else None
+
+
 _SIM_TASK_PREFIX = re.compile(r"^\d+-")
 
 
