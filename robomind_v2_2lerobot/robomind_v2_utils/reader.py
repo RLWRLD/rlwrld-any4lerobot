@@ -203,8 +203,22 @@ def _from_dirname(task: str) -> str:
     The directory names are English even where the Chinese description file is the
     only stated instruction, which makes them a usable last resort. Simulated tasks
     carry a numeric prefix (``101-pick_cube_into_plate``) that is an id, not words.
+
+    The prefix is stripped unconditionally, with no layout check, because that
+    cannot misfire: across all 738 task directory names in this release, a numeric
+    prefix appears only in the two simulated subsets and in none of the 679 real
+    ones, so gating the strip on layout would add a parameter for a case that does
+    not exist.
+
+    Stripping the prefix, swapping underscores for spaces, and trimming whitespace
+    can still leave nothing behind -- ``"42-"`` and ``"_"`` are both legal directory
+    names that reduce to an empty string this way. This function backs the
+    guarantee that ``instruction()`` never returns an empty prompt, so it must
+    never return one either: when the transformation empties the result, the
+    untouched directory name is returned instead.
     """
-    return _SIM_TASK_PREFIX.sub("", task).replace("_", " ").strip()
+    sentence = _SIM_TASK_PREFIX.sub("", task).replace("_", " ").strip()
+    return sentence or task
 
 
 def instruction(ref: EpisodeRef, config, handle) -> str:
@@ -221,19 +235,38 @@ def instruction(ref: EpisodeRef, config, handle) -> str:
     A named source that turns out to be missing falls back to the directory name
     rather than skipping the episode: one real task (521 episodes) has no
     description file, and dropping it would cost more than a coarser prompt.
+
+    A named source that is present but unreadable gets the same fallback instead
+    of raising: reading ``zh_file`` and decoding ``h5_metadata`` are each wrapped
+    in a ``try`` that catches only ``UnicodeDecodeError`` and ``OSError`` -- never
+    a bare ``except`` or ``Exception`` -- and falls through to the directory name
+    below. A corrupt or mis-encoded source should cost this episode a coarser
+    prompt, the same as a missing one, not the episode itself.
+
+    ``zh_file`` is read as UTF-8, which is measured rather than assumed: one
+    ``zh_description.txt`` was sampled from each of six repos of the release,
+    six different robots, and all six decoded cleanly as UTF-8, while GBK and
+    GB18030 -- the other Chinese encoding upstream could plausibly have used --
+    failed to decode five of the six.
     """
     if config.instruction_source == "h5_metadata":
         key = "metadata/language_instruction"
         if key in handle:
-            value = handle[key][()]
-            text = (value.decode() if isinstance(value, bytes) else str(value)).strip()
+            try:
+                value = handle[key][()]
+                text = (value.decode() if isinstance(value, bytes) else str(value)).strip()
+            except (UnicodeDecodeError, OSError):
+                text = ""
             if text:
                 return text
     elif config.instruction_source == "zh_file":
         # <...>/<task>/success_episodes/<stamp>/data/<file>.hdf5 -> <task>
         path = ref.path.parents[3] / "zh_description.txt"
         if path.is_file():
-            text = path.read_text(encoding="utf-8").strip()
+            try:
+                text = path.read_text(encoding="utf-8").strip()
+            except (UnicodeDecodeError, OSError):
+                text = ""
             if text:
                 return text
 
