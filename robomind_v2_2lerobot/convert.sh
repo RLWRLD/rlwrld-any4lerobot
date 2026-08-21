@@ -1,9 +1,14 @@
 #!/bin/bash
+# Runs from anywhere: resolve paths against this script's own directory.
+set -euo pipefail
+cd "$(dirname "$0")"
+
 export HDF5_USE_FILE_LOCKING=FALSE
 export RAY_DEDUP_LOGS=0
 
-# RoboMIND ships Franka as five repos that all start at data/franka, so several
-# roots can be given at once and they land in one embodiment.
+# One robot in this release ships as five repos that all start at the same
+# data/<embodiment> path, so several roots can be given at once and they land in
+# one embodiment with one config.
 python robomind_v2_h5.py \
     --src-paths /path/to/robomind_2_0/franka-part-1 \
                 /path/to/robomind_2_0/franka-part-2 \

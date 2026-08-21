@@ -89,7 +89,7 @@ def convert_task(
             # written onto the wrong time base.
             fps = round(episode.fps)
             if fps < 1:
-                # Below 0.5 Hz rounds to 0, and a dataset can't be opened at
+                # A rate at or below 0.5 Hz rounds to 0, and a dataset can't be opened at
                 # 0 fps -- nor can the drift check below divide by it. Treat
                 # this measurement the same as any other unusable episode:
                 # skip it and let the next surviving episode set the rate.
