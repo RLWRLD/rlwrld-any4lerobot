@@ -58,9 +58,14 @@ def write_episode(
 ) -> Path:
     """One episode on disk. Returns the hdf5 path.
 
-    ``broken="empty"`` writes a valid hdf5 with no objects -- the 6,144-byte shape
-    that 4,500 UR5 files have. ``broken="truncated"`` writes only the first stream,
-    the shape the two 9-13 KB files have.
+    ``broken="empty"`` writes the shape 4,500 UR5 files actually have: the
+    group skeleton (six top-level groups such as ``camera_model`` and
+    ``master``, one of them an empty ``<stream>_align`` group) with no dataset
+    anywhere inside it -- the 6,144-byte shape measured off a real file.
+    ``broken="no_objects"`` writes a plainer version of the same failure, an
+    hdf5 with no top-level keys at all, so the reader's handling of both shapes
+    is covered. ``broken="truncated"`` writes only the first stream, the shape
+    the two 9-13 KB files have.
 
     ``resolution_field`` overrides what ``camera_color_resolution`` claims, so a
     test can prove the reader ignores it. ``sim`` stores (W, H) where real stores
@@ -80,6 +85,20 @@ def write_episode(
     path = directory / name
 
     if broken == "empty":
+        with h5py.File(path, "w") as handle:
+            for group_name in (
+                "camera_color_channel",
+                "camera_color_resolution",
+                "camera_depth_resolution",
+                "camera_model",
+                "master",
+                "metadata",
+            ):
+                handle.create_group(group_name)
+            handle.create_group(f"master/{next(iter(streams))}_align")
+        return path
+
+    if broken == "no_objects":
         with h5py.File(path, "w"):
             pass
         return path

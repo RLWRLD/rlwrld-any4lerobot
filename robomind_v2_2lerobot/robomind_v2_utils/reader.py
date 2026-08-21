@@ -53,20 +53,43 @@ def discover(src_paths: list[Path]) -> Iterator[EpisodeRef]:
                     )
 
 
+def _has_any_dataset(handle) -> bool:
+    """Whether the file holds a dataset anywhere in it, at any depth.
+
+    A broken file can carry the full group skeleton -- ``camera_model``,
+    ``master/<stream>_align``, and the rest -- and still hold zero datasets if
+    the write that would have populated them never happened. ``handle.keys()``
+    only sees the top-level group names and stays non-empty either way, so
+    telling a truly empty file from a skeleton-only one needs a walk of the
+    whole tree, not a look at the top level.
+    """
+    import h5py
+
+    return (
+        handle.visititems(
+            lambda _, obj: True if isinstance(obj, h5py.Dataset) else None
+        )
+        is not None
+    )
+
+
 def check_usable(handle, config: EmbodimentConfig) -> None:
     """Raise ``EpisodeSkipped`` unless every dataset the config names is present.
 
     Three kinds of broken file exist upstream. 4,500 files in one repo of the
-    release are a valid hdf5 with nothing in it -- recognisable by size alone,
-    and caught before the config's key list is even built. The other two both
-    need that key list checked against the file, and are told apart by how many
-    keys survive: two more files were truncated mid-write and hold only their
-    first stream, so a few of the config's keys are present and the rest are
-    missing; a config pointed at the wrong embodiment names keys the file never
-    had, so none of them are present at all.
+    release are recognisable by size alone, at exactly 6,144 bytes: a valid
+    hdf5 that carries the group skeleton -- six top-level groups such as
+    ``camera_model`` and ``master`` -- but not one dataset anywhere inside it,
+    at any depth. That is checked first and needs no config, since there is
+    nothing yet to compare against. The other two both need the config's key
+    list checked against the file, and are told apart by how many keys survive:
+    two more files were truncated mid-write and hold only their first stream,
+    so a few of the config's keys are present and the rest are missing; a
+    config pointed at the wrong embodiment names keys the file never had, so
+    none of them are present at all.
     """
-    if not handle.keys():
-        raise EpisodeSkipped("no objects in the file")
+    if not _has_any_dataset(handle):
+        raise EpisodeSkipped("no datasets in the file")
 
     own_keys: list[str] = []
     for camera in config.cameras:

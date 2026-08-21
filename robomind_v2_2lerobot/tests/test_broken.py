@@ -1,7 +1,8 @@
 """깨진 파일은 조용히 통과해서도, 런을 죽여서도 안 된다 — 건너뛰고 이유를 남긴다.
 
 실측으로 두 종류가 있다:
-  * 6,144 B 짜리 유효한 HDF5, 객체 0 개 — ur 에 4,500 개
+  * 6,144 B 짜리 유효한 HDF5, 그룹 뼈대(camera_model, master 등)는 있지만
+    데이터셋은 0 개 — ur 에 4,500 개
   * 9,485 / 13,105 B 짜리 잘린 파일, 첫 스트림만 있고 EOF — ur·franka 에 각 1 개
 두 번째는 크기로 못 걸러진다.
 """
@@ -20,12 +21,18 @@ def config():
     return load("tienyi")
 
 
-def test_empty_hdf5_is_skipped(tmp_path, config):
-    path = write_episode(tmp_path, "tienyi", "task", "0001_000000", broken="empty")
+@pytest.mark.parametrize("broken", ["empty", "no_objects"])
+def test_empty_hdf5_is_skipped(tmp_path, config, broken):
+    """4,500 real files carry the group skeleton (camera_model, master, ...)
+    with no dataset anywhere inside; a plain objectless hdf5 is the same
+    failure in a simpler shape. Both are skipped with the same message, and
+    neither is blamed on the config."""
+    path = write_episode(tmp_path, "tienyi", "task", "0001_000000", broken=broken)
 
     with h5py.File(path, "r") as handle:
-        with pytest.raises(EpisodeSkipped, match="no objects"):
+        with pytest.raises(EpisodeSkipped, match="no datasets") as excinfo:
             check_usable(handle, config)
+    assert "config does not match" not in str(excinfo.value)
 
 
 def test_truncated_hdf5_is_skipped(tmp_path, config):
