@@ -32,8 +32,13 @@ def test_truncated_hdf5_is_skipped(tmp_path, config):
     path = write_episode(tmp_path, "tienyi", "task", "0002_000000", broken="truncated")
 
     with h5py.File(path, "r") as handle:
-        with pytest.raises(EpisodeSkipped, match="damaged or partial"):
+        try:
             check_usable(handle, config)
+            assert False, "Expected EpisodeSkipped to be raised"
+        except EpisodeSkipped as e:
+            # Verify the message matches and elision tail is present
+            assert "damaged or partial" in str(e)
+            assert ", and " in str(e), f"Expected elision tail in message: {e}"
 
 
 def test_a_wrong_embodiment_is_skipped(tmp_path, config):

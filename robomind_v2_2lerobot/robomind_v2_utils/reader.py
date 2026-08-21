@@ -64,16 +64,17 @@ def check_usable(handle, config: EmbodimentConfig) -> None:
     if not handle.keys():
         raise EpisodeSkipped("no objects in the file")
 
-    required = ["camera_observations/timestamp"]
+    own_keys: list[str] = []
     for camera in config.cameras:
-        required.append(f"camera_observations/color_images/{camera.name}")
+        own_keys.append(f"camera_observations/color_images/{camera.name}")
         if camera.depth:
-            required.append(f"camera_observations/depth_images/{camera.name}")
+            own_keys.append(f"camera_observations/depth_images/{camera.name}")
     for stream in config.streams:
-        required.append(f"puppet/{stream.name}_align/data")
-        required.append(f"master/{stream.name}_align/data")
+        own_keys.append(f"puppet/{stream.name}_align/data")
+        own_keys.append(f"master/{stream.name}_align/data")
     for extra in config.extras:
-        required.append(f"{extra.group}/{extra.name}_align/data")
+        own_keys.append(f"{extra.group}/{extra.name}_align/data")
+    required = ["camera_observations/timestamp", *own_keys]
 
     missing = [key for key in required if key not in handle]
     if not missing:
@@ -88,12 +89,12 @@ def check_usable(handle, config: EmbodimentConfig) -> None:
     # of embodiment, so it says nothing about whether the config matches this
     # file. Ignore it here and ask whether any of the config's *own* keys --
     # the ones its cameras/streams/extras actually name -- showed up at all.
-    if any(key in handle for key in required[1:]):
+    if any(key in handle for key in own_keys):
         raise EpisodeSkipped(
             f"missing {len(missing)} of {len(required)} dataset(s), {matched} "
             f"present -- looks like a damaged or partial file: {sample}"
         )
     raise EpisodeSkipped(
-        f"{matched} of {len(required)} required dataset(s) present -- looks like "
-        f"the config does not match this file's embodiment: {sample}"
+        f"missing {len(missing)} of {len(required)} dataset(s), {matched} "
+        f"present -- looks like the config does not match this file's embodiment: {sample}"
     )
