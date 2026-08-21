@@ -67,3 +67,43 @@ def test_a_synthetic_episode_becomes_a_real_lerobot_dataset(tmp_path, config):
     assert "action" not in on_disk["features"]
 
     assert list(root.rglob("*.mp4")), "expected a real encoded video file on disk"
+
+
+def test_a_depth_feature_writes_successfully_end_to_end(tmp_path, config):
+    """``tienyi``'s one camera carries depth (see its config). Before the writer's
+    stacking loop also skipped ``image``-dtype keys (not just ``video``), a depth key's
+    list of on-disk paths got stacked into an ndarray of path *strings*, which
+    `sample_images` then fed to its ndarray branch -- `input[:, None, :, :]` on a 1-D
+    array of strings raises `IndexError: too many indices for array`. This test asks
+    for depth explicitly (`save_depth=True`) so that path is actually exercised.
+    """
+    path = write_episode(
+        tmp_path, "tienyi", "task", "0001_000000", frames=4, seconds=1, resolution=(32, 32)
+    )
+    episode = read_episode(
+        EpisodeRef(embodiment="tienyi", task="task", path=path), config, save_depth=True
+    )
+    features = build_features(config, episode.shapes)
+    assert features["observation.images.camera_top_depth"]["dtype"] == "image"
+
+    root = tmp_path / "dataset"
+    dataset = RoboMINDv2Dataset.create(
+        repo_id="test/depth",
+        fps=round(episode.fps),
+        features=features,
+        root=root,
+        robot_type=config.robot_type,
+        use_videos=True,
+    )
+    for frame in episode.frames:
+        dataset.add_frame(frame)
+    dataset.save_episode()
+    dataset.finalize()
+
+    feature_keys = set(dataset.meta.features)
+    assert "observation.images.camera_top" in feature_keys
+    assert "observation.images.camera_top_depth" in feature_keys
+
+    on_disk = json.loads((root / "meta" / "info.json").read_text())
+    assert on_disk["total_episodes"] == 1
+    assert "observation.images.camera_top_depth" in on_disk["features"]

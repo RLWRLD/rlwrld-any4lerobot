@@ -110,11 +110,12 @@ def sample_images(input):
         for i, idx in enumerate(sampled_indices):
             path = image_paths[idx]
 
+            # we load RGB images as uint8 to reduce memory usage; depth keeps its native dtype
             img = load_image_as_numpy(path, dtype=np.uint8, channel_first=True)
             img = auto_downsample_height_width(img)
 
             if images is None:
-                images = np.empty((len(sampled_indices), *img.shape), dtype=np.uint8)
+                images = np.empty((len(sampled_indices), *img.shape), dtype=img.dtype)
 
             images[i] = img
     elif type(input) is np.ndarray:
@@ -295,7 +296,7 @@ class RoboMINDv2DatasetWriter(DatasetWriter):
         episode_buffer["task_index"] = np.array([self._meta.get_task_index(task) for task in tasks])
 
         for key, ft in self._meta.features.items():
-            if key in ["index", "episode_index", "task_index"] or ft["dtype"] in ["video"]:
+            if key in ["index", "episode_index", "task_index"] or ft["dtype"] in ["image", "video"]:
                 continue
             episode_buffer[key] = np.stack(episode_buffer[key]).squeeze()
 
