@@ -2,11 +2,11 @@
 
 RoboMIND 2.0 은 embodiment 12 종이고, 서로 다른 것은 카메라 이름·개수, arm 과
 end-effector 의 폭, 추가 스트림(chassis / tactile / head), instruction 이 어디
-있는가뿐이다. 그것들이 전부 데이터라서 이 파일에는 embodiment 이름이 없다.
+있는가뿐이다. 그것들이 전부 데이터라서 검증은 구조(schema)로만 한다.
 
-검증이 엄격한 이유: `ur` 과 `ur_dex` 는 스트림 이름이 완전히 같고
-`end_effector_*_position` 의 폭만 1 과 12 로 다르다. 오타나 누락이 조용히 통과하면
-12-DoF 손을 gripper 로 읽고도 에러가 나지 않는다.
+검증이 엄격한 이유: 두 embodiment 은 스트림 이름이 완전히 같고 `end_effector_*_position`
+의 폭만 다르다 (1 과 12 DoF). 오타나 누락이 조용히 통과하면 고-자유도 손을 단일-열
+gripper 로 읽고도 에러가 나지 않는다.
 """
 
 from dataclasses import dataclass
@@ -46,8 +46,8 @@ class Stream:
 class Extra:
     """A per-frame array that is neither a camera nor a puppet/master stream.
 
-    ``agilex_mobile`` is the only embodiment with one today: two tactile pads at
-    ``tactile_observations/tactile_{left,right}_align/data``, shape ``(T, 2, 6)``.
+    한 embodiment 만 이를 가지고 있으며, 두 개의 tactile pad 가 ``<group>/tactile_{left,right}_align/data``
+    에 저장되며, 형태는 ``(T, 2, 6)`` 이다.
     """
 
     name: str
