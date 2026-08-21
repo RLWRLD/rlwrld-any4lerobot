@@ -24,15 +24,14 @@ import pyarrow.parquet as pq
 from lerobot.datasets import LeRobotDataset, LeRobotDatasetMetadata
 from lerobot.datasets.compute_stats import (
     DEFAULT_QUANTILES,
-    aggregate_stats,
     auto_downsample_height_width,
     get_feature_stats,
     sample_indices,
 )
 from lerobot.datasets.dataset_writer import DatasetWriter, _encode_video_worker
 from lerobot.datasets.feature_utils import validate_episode_buffer
-from lerobot.datasets.io_utils import load_image_as_numpy, write_info, write_stats
-from lerobot.datasets.utils import DEFAULT_EPISODES_PATH, flatten_dict
+from lerobot.datasets.io_utils import load_image_as_numpy
+from lerobot.datasets.utils import DEFAULT_EPISODES_PATH
 
 
 def build_features(config, shapes: dict[str, tuple[int, ...]]) -> dict:
@@ -192,11 +191,23 @@ def compute_episode_stats(episode_data, features: dict, quantile_list=None) -> d
 # changes -- v1 never set the old parameter either, so both sides still
 # default to "let the library choose."
 #
-# Additionally, ``RoboMINDv2DatasetMetadata.save_episode`` now accesses the
-# ``DatasetInfo`` dataclass by its fields (e.g., ``self.info.total_episodes``)
-# instead of dict-style indexing, as the compatibility shim for dict-style
-# access is deprecated. The distinction is that ``splits`` is a dict field,
-# so indexing into it (``self.info.splits["train"]``) is correct and stays.
+# ``RoboMINDv2DatasetMetadata.save_episode`` no longer exists as an override at all --
+# it used to access the ``DatasetInfo`` dataclass by its fields instead of the deprecated
+# dict-style shim, but once that was its only remaining difference from the base
+# ``LeRobotDatasetMetadata.save_episode``, the override was deleted outright rather than
+# kept as a no-op copy. See that class's own docstring for the reasoning and for what is
+# still overridden.
+#
+# ``RoboMINDv2Dataset.create`` also carries forward a v1 behaviour worth flagging rather
+# than silently repeating: right after the ``super().create(*args, **kwargs)`` call above
+# it has already written a dataset to ``params["root"]``, it calls
+# ``shutil.rmtree(params["root"], ignore_errors=True)`` and rebuilds ``obj.meta``/
+# ``obj.writer`` from scratch. This deletes whatever the base ``create()`` just wrote --
+# and anything else already sitting at that path -- and makes resuming an existing dataset
+# there impossible. v1 did this too, so the behaviour stays unchanged, but it is a real
+# hazard once a path with something worth keeping can land in ``root``: a later task wires
+# a user-supplied path into this driver, at which point this line deletes whatever that
+# user points it at, not just this call's own just-written output.
 #
 # Everything else -- control flow, comments, the broad ``except Exception`` in
 # the parallel video-encoding block -- is unchanged from v1.
@@ -204,7 +215,23 @@ def compute_episode_stats(episode_data, features: dict, quantile_list=None) -> d
 
 
 class RoboMINDv2DatasetMetadata(LeRobotDatasetMetadata):
-    """Copied from ``robomind_h5.py::RoboMINDDatasetMetadata``. See module docstring."""
+    """Copied from ``robomind_h5.py::RoboMINDDatasetMetadata``. See module docstring.
+
+    ``save_episode`` is no longer overridden here: once the ``split``/``action_config``
+    removal left it a verbatim, statement-for-statement copy of the base
+    ``LeRobotDatasetMetadata.save_episode`` (the only difference was
+    ``self.info.splits["train"] = ...`` vs. the base's ``self.info.splits = {"train": ...}``,
+    equivalent since ``splits`` starts empty and only ``"train"`` is ever written), the
+    override was deleted and the base method is now inherited unchanged.
+
+    ``_flush_metadata_buffer`` is the one method that still genuinely differs: this port
+    passes ``schema=`` into ``pa.Table.from_pydict(...)``, while the base instead calls
+    ``table.select(schema.names)`` to realign a differently-ordered batch onto the writer's
+    established schema. The base has therefore already solved, in its own way, the same
+    schema-alignment problem this override exists for -- so a later reader should treat
+    this override, too, as a candidate for removal, once someone verifies the base's
+    approach behaves the same way here.
+    """
 
     def _flush_metadata_buffer(self) -> None:
         """Write all buffered episode metadata to parquet file."""
@@ -237,34 +264,6 @@ class RoboMINDv2DatasetMetadata(LeRobotDatasetMetadata):
 
         self.latest_episode = self._metadata_buffer[-1]
         self._metadata_buffer.clear()
-
-    def save_episode(
-        self,
-        episode_index: int,
-        episode_length: int,
-        episode_tasks: list[str],
-        episode_stats: dict[str, dict],
-        episode_metadata: dict,
-    ) -> None:
-        episode_dict = {
-            "episode_index": episode_index,
-            "tasks": episode_tasks,
-            "length": episode_length,
-        }
-        episode_dict.update(episode_metadata)
-        episode_dict.update(flatten_dict({"stats": episode_stats}))
-        self._save_episode_metadata(episode_dict)
-
-        # Update info
-        self.info.total_episodes += 1
-        self.info.total_frames += episode_length
-        self.info.total_tasks = len(self.tasks)
-        self.info.splits["train"] = f"0:{self.info.total_episodes}"
-
-        write_info(self.info, self.root)
-
-        self.stats = aggregate_stats([self.stats, episode_stats]) if self.stats is not None else episode_stats
-        write_stats(self.stats, self.root)
 
 
 class RoboMINDv2DatasetWriter(DatasetWriter):
