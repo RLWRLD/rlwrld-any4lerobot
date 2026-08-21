@@ -103,3 +103,14 @@ def test_depth_shape_is_measured_not_derived_from_colour(tmp_path, config):
     # bug gets wrong instead.
     assert episode.shapes["observation.images.camera_top_depth"] == (32, 40, 1)
     assert episode.frames[0]["observation.images.camera_top_depth"].shape == (32, 40, 1)
+
+
+def test_unopenable_episode_is_skipped_not_raised(tmp_path, config):
+    """Missing or unreadable files raise EpisodeSkipped, not OSError."""
+    nonexistent = tmp_path / "nonexistent.hdf5"
+
+    with pytest.raises(EpisodeSkipped) as exc_info:
+        read_episode(ref_for(nonexistent), config)
+
+    # The guard preserves the original error as the cause
+    assert isinstance(exc_info.value.__cause__, OSError)
