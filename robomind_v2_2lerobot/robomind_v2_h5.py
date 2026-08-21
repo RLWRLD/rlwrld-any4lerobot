@@ -27,7 +27,18 @@ from robomind_v2_utils.lerobot_utils import RoboMINDv2Dataset, build_features
 from robomind_v2_utils.errors import EpisodeSkipped
 from robomind_v2_utils.reader import EpisodeRef, discover, read_episode
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+# This module's own logger -- never `logging` (the root logger) directly.
+# Importing this file must not reconfigure logging for everyone else who
+# imports it (tests included): only the "run as a script" entry point at the
+# bottom attaches a handler to *this* logger. That also sidesteps a real
+# failure mode this had as a plain `logging.basicConfig(...)` call at import
+# time: some dependency pulled in via `robomind_v2_utils.lerobot_utils`
+# attaches its own handler to the root logger as an import side effect, and
+# `basicConfig` is a no-op once a handler already exists there -- so the
+# messages below silently never reached the console in a real run. A
+# dedicated logger, configured only at the entry point, doesn't depend on
+# root's state either way.
+logger = logging.getLogger(__name__)
 
 # An episode this short is a recording that went wrong rather than a short task.
 # Carried over from v1, which used the same floor.
@@ -70,14 +81,14 @@ def convert_task(
         try:
             episode = read_episode(ref, config, save_depth=save_depth)
         except EpisodeSkipped as exc:
-            logging.warning("skipped %s: %s", ref.path, exc)
+            logger.warning("skipped %s: %s", ref.path, exc)
             continue
         except (OSError, ValueError) as exc:
-            logging.warning("skipped %s: unreadable: %s", ref.path, exc)
+            logger.warning("skipped %s: unreadable: %s", ref.path, exc)
             continue
 
         if len(episode.frames) < min_frames:
-            logging.warning(
+            logger.warning(
                 "skipped %s: %d frames < %d", ref.path, len(episode.frames), min_frames
             )
             continue
@@ -93,7 +104,7 @@ def convert_task(
                 # 0 fps -- nor can the drift check below divide by it. Treat
                 # this measurement the same as any other unusable episode:
                 # skip it and let the next surviving episode set the rate.
-                logging.warning(
+                logger.warning(
                     "skipped %s: measured rate %.3f Hz rounds to 0, not usable as a fps",
                     ref.path, episode.fps,
                 )
@@ -106,7 +117,7 @@ def convert_task(
                 features=build_features(config, episode.shapes),
             )
         elif abs(episode.fps - fps) / fps > 0.1:
-            logging.warning(
+            logger.warning(
                 "%s runs at %.1f Hz but %s/%s was opened at %d Hz",
                 ref.path, episode.fps, embodiment, task, fps,
             )
@@ -115,10 +126,10 @@ def convert_task(
             dataset.add_frame(frame)
         dataset.save_episode()
         written += 1
-        logging.info("wrote %s (%d frames)", ref.path, len(episode.frames))
+        logger.info("wrote %s (%d frames)", ref.path, len(episode.frames))
 
     if dataset is None:
-        logging.warning("no episode survived for %s/%s", embodiment, task)
+        logger.warning("no episode survived for %s/%s", embodiment, task)
         return 0
 
     dataset.finalize()
@@ -176,7 +187,7 @@ def main(
             try:
                 results.append(ray.get(future))
             except Exception as exc:  # noqa: BLE001 - one task must not kill the run
-                logging.error("failed %s/%s: %s", embodiment, task, exc)
+                logger.error("failed %s/%s: %s", embodiment, task, exc)
                 results.append(0)
 
     total = sum(results)
@@ -186,7 +197,7 @@ def main(
             "was skipped -- check the log for the reasons rather than treating this "
             "as an empty dataset."
         )
-    logging.info("wrote %d episodes across %d tasks", total, len(grouped))
+    logger.info("wrote %d episodes across %d tasks", total, len(grouped))
     return output_path
 
 
@@ -208,9 +219,22 @@ def parse_args(argv=None):
 
 
 if __name__ == "__main__":
+    # Configured here, not at import time: this is the one place this file
+    # acts as a script rather than a library, so this is its one chance to
+    # decide how its own records reach the console. A handler on this
+    # module's own logger, not on `logging.root`, so nothing belonging to
+    # another package -- e.g. whatever attaches a handler to the root logger
+    # as an import side effect (see the comment above `logger`'s definition)
+    # -- is touched, replaced, or silenced.
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+    logger.addHandler(_handler)
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+
     args = parse_args()
     try:
         print(main(**vars(args)))
     except (NothingConverted, ConfigError) as error:
-        logging.error("%s", error)
+        logger.error("%s", error)
         raise SystemExit(1) from error

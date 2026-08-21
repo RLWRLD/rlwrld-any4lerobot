@@ -7,6 +7,8 @@ v1 은 `h5_<embodiment>/` 를 못 찾으면 아무 것도 yield 하지 않고 �
 
 import json
 import re
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -119,6 +121,51 @@ def test_a_rate_that_rounds_to_zero_is_skipped_rather_than_divided_by(tmp_path, 
     assert info["total_episodes"] == 1
     assert info["total_frames"] == 6
     assert info["fps"] == 3
+
+
+def test_running_as_a_script_emits_its_own_log_records(tmp_path):
+    """The module used to call `logging.basicConfig(...)` at import time.
+    That is a no-op once the root logger already has a handler -- which, in
+    a real run, it does by the time this module is imported: something
+    pulled in via `robomind_v2_utils.lerobot_utils` attaches one first. The
+    effective root level then silently stayed at the default WARNING, so
+    every `logging.info(...)` call -- including the one telling an operator
+    how many episodes were written -- never reached the console.
+
+    Every other test in this file calls `main()` in-process, which can't
+    exercise this: `if __name__ == "__main__":` only runs when the file is
+    actually executed as a script, which is exactly the situation that was
+    broken. So this test launches it as a real subprocess -- still against a
+    synthetic fixture tree, no S3, no real data -- and checks its own
+    stderr, the way an operator watching a real run would.
+    """
+    write_episode(tmp_path, "tienyi", "task", "0001_000000", frames=6, seconds=2)
+    output_path = tmp_path / "out"
+    script = Path(__file__).resolve().parent.parent / "robomind_v2_h5.py"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--src-paths", str(tmp_path),
+            "--output-path", str(output_path),
+            "--min-frames", "1",
+            "--debug",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+
+    assert result.returncode == 0, result.stderr
+
+    # The configured format ("<asctime> - <LEVEL> - <message>"), not the bare
+    # "INFO:root:..." that Python's own unconfigured-logging fallback would
+    # print -- evidence this came from the entry point's own handler rather
+    # than happening to slip out some other way.
+    timestamped = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3} - "
+    assert re.search(timestamped + r"INFO - wrote .*trajectory\.hdf5", result.stderr)
+    assert re.search(timestamped + r"INFO - wrote 1 episodes across 1 tasks", result.stderr)
 
 
 def test_no_embodiment_name_appears_in_the_converter():
