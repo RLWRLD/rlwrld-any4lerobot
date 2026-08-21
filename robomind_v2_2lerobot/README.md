@@ -39,25 +39,45 @@ not running with `--debug`; `--save-depth` additionally writes each depth camera
 is treated as a broken recording rather than a short task, carried over from v1's floor.
 
 A run also writes `summary.json` beside `--output-path`: written/skipped counts and skip
-reasons per embodiment, plus which tasks (if any) failed outright. The same tally is
-logged at the end of a run, but under Ray a worker's per-episode log lines never reach
-the driver's console — this file is what actually survives, and how to reconcile what
-landed against what was expected (4,502 files in the release are already known-broken).
+reasons per embodiment *and* per task (a task that loses almost all of its episodes no
+longer hides inside its embodiment's rolled-up total), plus which tasks (if any) failed
+outright — including a failed task's own written/skipped counts, recovered from a small
+marker its own quarantined directory carries, so a task that died after writing real
+episodes is not reported as having written zero. The same tally is logged at the end of
+a run, but under Ray a worker's per-episode log lines never reach the driver's console —
+this file is what actually survives, and how to reconcile what landed against what was
+expected (4,502 files in the release are already known-broken). It is written after
+*every* task resolves, not only once at the end, so a run killed hours in still leaves a
+tally of whatever had already finished; and each run additionally leaves its own
+`summary-<timestamp>.json` copy that a later run into the same `--output-path` does not
+overwrite (`summary.json` itself is always just the most recent run's tally).
 
 ### Memory and scratch disk per task
 
 `read_episode` holds every camera's fully decoded frames in memory at once before
 building the frame list, so peak memory scales with an episode's frame count, camera
-count, and resolution. Measured directly, not assumed: a 2,653-frame, 3-camera,
-480×640 episode holds 6.83 GiB of decoded colour alone, +3.80 GiB more with
-`--save-depth`; a 310-frame, 6-camera, 720×1280 episode is 4.79 GiB colour, +3.19 GiB
-with depth. `--cpus-per-task` is a CPU reservation only, so it never accounted for
-this — every task this converter submits to Ray now also carries a `memory`
-reservation, sized off the worse of those two per-camera figures (~2.3 GiB/camera
-without depth, ~3.6 GiB/camera with it, plus 50% headroom for `decode_color`'s
-transient extra copy while it builds a list before copying it into one contiguous
-array). Concretely: a 6-camera task reserves ~21 GiB (~32 GiB with depth); a 1-camera
-task ~3.5 GiB (~5.4 GiB with depth).
+count, *and* resolution. Measured directly, not assumed, on two real episodes: a
+2,653-frame, 3-camera, 480×640 episode holds 6.83 GiB of decoded colour alone
+(0.878 MiB per frame per camera), +3.80 GiB more with `--save-depth`; a 310-frame,
+6-camera, 720×1280 episode is 4.79 GiB colour (2.638 MiB per frame per camera — over
+4x the previous episode's, despite far fewer frames, because each frame is over 4x the
+pixels), +3.19 GiB with depth. `--cpus-per-task` is a CPU reservation only, so it never
+accounted for any of this — every task this converter submits to Ray also carries a
+`memory` reservation, sized as `max_frames × cameras × bytes_per_frame`, where
+`max_frames` is that specific task's own largest episode (found by the same cheap
+pre-pass that measures fps and camera shape — see below), and `bytes_per_frame` is the
+larger of the two measured per-frame-per-camera figures above (~2.7 MiB without depth,
+~4.5 MiB with it, plus 50% headroom for `decode_color`'s transient extra copy while it
+builds a list before copying it into one contiguous array). This scales with the actual
+task rather than assuming every task runs about as many frames as whichever episode the
+constant was measured on — the earlier, frame-count-blind version of this reservation
+implied a ceiling of roughly 1,340 frames at 720×1280, which a two-minute episode on the
+six-camera 720×1280 robot in this release exceeds outright.
+
+If a computed reservation exceeds every node's own memory, a run now warns about it:
+Ray does not split one task across nodes, so a task that needs more than any single node
+has will simply sit pending forever rather than fail loudly, which the warning at least
+surfaces up front instead of leaving an operator to notice a stalled dashboard hours in.
 
 Ray admits fewer concurrent tasks on a memory-constrained node rather than
 oversubscribing it, which is the point — but it does mean `--cpus-per-task 2` on a
@@ -137,6 +157,19 @@ exit) even when every other task succeeded, and the failed task's own output dir
 is renamed to `<task>.failed` rather than left finalized and looking complete. See
 `convert_task`'s docstring for exactly which failures are treated as recoverable at the
 single-episode level versus fatal to the whole task.
+
+The quarantined `<task>.failed` directory is a complete, independently loadable LeRobot
+dataset of however many episodes actually landed before the failure — not a directory
+split across two locations. `convert_task` finalizes the dataset (flushing its
+in-memory metadata buffer to disk) *before* renaming it away, and forces its own
+internal "already finalized" bookkeeping true regardless of whether that finalize
+attempt fully succeeded: the pinned LeRobot writer's own garbage-collection safety net
+(`DatasetWriter.__del__`) otherwise runs `finalize()` again whenever the abandoned
+dataset object eventually gets collected — at a time this converter does not control —
+and a retry after the rename recreates the just-renamed-away directory from scratch via
+`mkdir(parents=True, exist_ok=True)`, splitting the real output between a resurrected,
+incomplete directory at the live path and a `.failed` copy now missing its own episode
+index. Finalizing before the rename, unconditionally, is what prevents that.
 
 ## The 12 embodiments
 
@@ -232,14 +265,32 @@ The rule this project uses: config states only what is constant within an embodi
   dataset is opened per `(embodiment, task)` at one fps, but the per-episode rate above
   does move between episodes of the same task — real evidence from this release: two
   episodes of one task measured 26.94 Hz and 31.33 Hz, 16% apart. `convert_task` takes
-  the *median* of every episode's own rate as the task's fps (`reader.task_fps`, a
-  cheap pre-pass over just the tiny timestamp array — no frame decoding, no cost
-  anywhere near `read_episode`'s), and skips, rather than writes onto the wrong time
-  base, any episode whose own rate drifts from that median by more than 10%.
+  the *median* of every episode's own rate as the task's fps (`reader.task_profile`, a
+  cheap pre-pass over just the tiny timestamp array for the rate half — no frame
+  decoding, no cost anywhere near `read_episode`'s), and skips, rather than writes onto
+  the wrong time base, any episode whose own rate drifts from that median by more than
+  the larger of a flat 10% and a term proportional to `1/span` for that one episode's
+  own span. A `real` episode's rate is `frame_count / span` from a span rounded to
+  whole seconds, so the rate itself already carries about `1/span` of quantization
+  noise before it has drifted from its task at all — across this release's real sample
+  episodes, spans of 8-34 seconds put that noise band at 2.9%-12.5%, comparable to or
+  wider than a flat 10% on its own. A flat threshold alone would skip a perfectly good
+  short episode as "drift" that is really just how coarsely a short episode's own rate
+  can ever be known. `sim` keeps the flat 10% only: its timestamps are milliseconds on
+  a fine clock, with no comparable quantization to correct for.
 - **resolution** is measured by decoding an episode's first frame
   (`images.frame_shape`), never read from the file's own `camera_color_resolution`
   field. That field lies about axis order (see trap ④ below), so trusting it would
-  silently transpose height and width for half the corpus.
+  silently transpose height and width for half the corpus. A task's dataset is created
+  at the *majority* shape its own episodes agree on (`reader.task_profile`, the same
+  pre-pass that measures fps — one JPEG decode per camera per episode, not a full frame
+  list), not at whichever episode happens to survive first: both 720×1280 and 480×640
+  occur within a single release task, and an odd-resolution episode that happens to
+  sort first in discovery order used to get to define the dataset's own shape, skipping
+  every correctly-sized episode instead of itself. `summary.json`'s per-task counts
+  (see above) also warn when a task's skipped count exceeds what it wrote, so a task
+  that still loses most of its episodes — after majority-basing, likely for some other
+  reason — is visible rather than buried inside its embodiment's rolled-up total.
 
 ## Six traps this converter guards against
 
