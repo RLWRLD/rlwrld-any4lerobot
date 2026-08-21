@@ -1,0 +1,24 @@
+# Tianyi 정적 양팔. repo 는 RoboMIND2.0-Tianyi, 디렉토리는 data/tienyi (철자 불일치).
+# 7,145 에피소드 / 1.90 TB / 36 task. 실측 fps ~48.
+robot_type: tienyi
+
+# 해상도는 첫 프레임을 디코드해서 얻는다. camera_color_resolution 필드는 sim 에서
+# 축 순서가 뒤집혀 있어 믿지 않는다.
+cameras:
+  camera_top: {depth: true}
+
+# puppet/<name>_align/data → observation.states.<name>
+# master/<name>_align/data → actions.<name>
+# width 는 검증용이다: 안 맞으면 그 에피소드를 건너뛴다.
+streams:
+  arm_left_position:           {width: 7}
+  arm_right_position:          {width: 7}
+  end_effector_left_pose:      {width: 7}
+  end_effector_left_position:  {width: 1}
+  end_effector_right_pose:     {width: 7}
+  end_effector_right_position: {width: 1}
+
+instruction:
+  source: zh_file        # zh_file | h5_metadata | dirname
+
+layout: real             # real | sim
