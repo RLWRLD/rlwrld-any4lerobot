@@ -12,6 +12,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
+from .configs import EmbodimentConfig
 from .errors import EpisodeSkipped
 
 
@@ -48,14 +49,17 @@ def discover(src_paths: list[Path]) -> Iterator[EpisodeRef]:
                     )
 
 
-def check_usable(handle, config) -> None:
+def check_usable(handle, config: EmbodimentConfig) -> None:
     """Raise ``EpisodeSkipped`` unless every dataset the config names is present.
 
-    Two kinds of broken file exist upstream and only the first is recognisable by
-    size: 4,500 UR5 files are a valid hdf5 with nothing in it, and two more were
-    truncated mid-write and hold only their first stream. Checking the config's
-    own key list catches both, and also catches a config pointed at the wrong
-    embodiment.
+    Three kinds of broken file exist upstream. 4,500 UR5 files are a valid hdf5
+    with nothing in it -- recognisable by size alone, and caught before the
+    config's key list is even built. The other two both need that key list
+    checked against the file, and are told apart by how many keys survive: two
+    more files were truncated mid-write and hold only their first stream, so a
+    few of the config's keys are present and the rest are missing; a config
+    pointed at the wrong embodiment names keys the file never had, so none of
+    them are present at all.
     """
     if not handle.keys():
         raise EpisodeSkipped("no objects in the file")
@@ -72,5 +76,24 @@ def check_usable(handle, config) -> None:
         required.append(f"{extra.group}/{extra.name}_align/data")
 
     missing = [key for key in required if key not in handle]
-    if missing:
-        raise EpisodeSkipped(f"missing {len(missing)} dataset(s): {', '.join(missing[:4])}")
+    if not missing:
+        return
+
+    matched = len(required) - len(missing)
+    sample = ", ".join(missing[:4])
+    if len(missing) > 4:
+        sample += f", and {len(missing) - 4} more"
+
+    # camera_observations/timestamp is the one key every layout carries regardless
+    # of embodiment, so it says nothing about whether the config matches this
+    # file. Ignore it here and ask whether any of the config's *own* keys --
+    # the ones its cameras/streams/extras actually name -- showed up at all.
+    if any(key in handle for key in required[1:]):
+        raise EpisodeSkipped(
+            f"missing {len(missing)} of {len(required)} dataset(s), {matched} "
+            f"present -- looks like a damaged or partial file: {sample}"
+        )
+    raise EpisodeSkipped(
+        f"{matched} of {len(required)} required dataset(s) present -- looks like "
+        f"the config does not match this file's embodiment: {sample}"
+    )

@@ -32,7 +32,24 @@ def test_truncated_hdf5_is_skipped(tmp_path, config):
     path = write_episode(tmp_path, "tienyi", "task", "0002_000000", broken="truncated")
 
     with h5py.File(path, "r") as handle:
-        with pytest.raises(EpisodeSkipped, match="missing"):
+        with pytest.raises(EpisodeSkipped, match="damaged or partial"):
+            check_usable(handle, config)
+
+
+def test_a_wrong_embodiment_is_skipped(tmp_path, config):
+    """config 의 카메라·스트림과 하나도 안 겹치는, 완전한 파일은 손상이 아니라
+    config 불일치로 알려준다."""
+    path = write_episode(
+        tmp_path,
+        "other",
+        "task",
+        "0006_000000",
+        cameras=("camera_wrist",),
+        streams={"gripper_position": 6},
+    )
+
+    with h5py.File(path, "r") as handle:
+        with pytest.raises(EpisodeSkipped, match="config does not match"):
             check_usable(handle, config)
 
 
