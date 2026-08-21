@@ -52,6 +52,7 @@ def write_episode(
     broken: str | None = None,
     seconds: int = 2,
     resolution: tuple[int, int] = (48, 64),
+    depth_resolution: tuple[int, int] | None = None,
     resolution_field: tuple[int, int] | None = None,
     extras: dict[str, tuple[int, ...]] | None = None,
 ) -> Path:
@@ -64,9 +65,15 @@ def write_episode(
     ``resolution_field`` overrides what ``camera_color_resolution`` claims, so a
     test can prove the reader ignores it. ``sim`` stores (W, H) where real stores
     (H, W), and decoding shows both are really (H, W).
+
+    ``depth_resolution`` defaults to ``resolution``, so every existing caller
+    keeps writing depth at the same size as colour. Passing a different size
+    lets a test prove depth's shape is measured from its own decoded pixels
+    rather than borrowed from colour's.
     """
     streams = dict(streams or DEFAULT_STREAMS)
     height, width = resolution
+    depth_height, depth_width = depth_resolution or resolution
     name = "trajectory.hdf5" if layout == "real" else f"{stamp}.hdf5"
     directory = root / "data" / embodiment / task / "success_episodes" / stamp / "data"
     directory.mkdir(parents=True, exist_ok=True)
@@ -92,12 +99,15 @@ def write_episode(
         claimed = resolution_field or (
             (width, height) if layout == "sim" else (height, width)
         )
+        claimed_depth = (
+            (depth_width, depth_height) if layout == "sim" else (depth_height, depth_width)
+        )
         for index, camera in enumerate(cameras):
             handle.create_dataset(
                 f"camera_color_resolution/{camera}", data=np.array(claimed, dtype=np.int64)
             )
             handle.create_dataset(
-                f"camera_depth_resolution/{camera}", data=np.array(claimed, dtype=np.int64)
+                f"camera_depth_resolution/{camera}", data=np.array(claimed_depth, dtype=np.int64)
             )
             handle.create_dataset(f"camera_color_channel/{camera}", data=b"rgb")
             handle.create_dataset(f"camera_model/{camera}", data=b"RealSense_D435if")
@@ -110,7 +120,7 @@ def write_episode(
             )
             for frame in range(frames):
                 colors[frame] = _jpeg(height, width, seed=index * 100 + frame)
-                depths[frame] = _png_depth(height, width, seed=index * 100 + frame)
+                depths[frame] = _png_depth(depth_height, depth_width, seed=index * 100 + frame)
 
         handle.create_dataset("camera_observations/timestamp", data=stamps)
         handle.create_dataset(

@@ -288,14 +288,26 @@ class Episode:
 def read_episode(ref: EpisodeRef, config, *, save_depth: bool = False) -> Episode:
     """One episode as the per-frame dicts LeRobot's ``add_frame`` takes.
 
-    Raises ``EpisodeSkipped`` for anything wrong with this one file -- a broken
-    write, a width that contradicts the config, a clock that never advances -- so
-    that a run drops the episode and keeps going.
+    Raises ``EpisodeSkipped`` for anything wrong with this one file -- a path
+    that cannot be opened, a broken write, a width that contradicts the config,
+    a clock that never advances -- so that a run drops the episode and keeps
+    going.
     """
     import h5py
 
-    with h5py.File(ref.path, "r") as handle:
+    try:
+        handle = h5py.File(ref.path, "r")
+    except (OSError, ValueError) as error:
+        raise EpisodeSkipped(f"cannot open {ref.path}: {error}") from error
+
+    with handle:
         columns = read_streams(handle, config)
+        # Always present regardless of what a config's cameras/streams/extras
+        # name, unlike picking an arbitrary entry out of ``columns`` -- which
+        # would be a bare ``StopIteration`` instead of ``EpisodeSkipped`` for a
+        # config with no streams. Also the same value read_streams already
+        # checked every column's length against, so nothing else changes.
+        count = len(handle["camera_observations/timestamp"])
         fps = episode_fps(handle, config)
         task = instruction(ref, config, handle)
 
@@ -309,13 +321,16 @@ def read_episode(ref: EpisodeRef, config, *, save_depth: bool = False) -> Episod
             shapes[key] = frame_shape(handle, camera.name)
             if camera.depth and save_depth:
                 depth_key = f"{key}_depth"
-                images[depth_key] = decode_depth(
+                depth = decode_depth(
                     handle[f"camera_observations/depth_images/{camera.name}"]
                 )
-                height, width, _ = shapes[key]
-                shapes[depth_key] = (height, width, 1)
+                images[depth_key] = depth
+                # Measured from the decoded array itself, not derived from
+                # colour's shape: a stated resolution can silently disagree
+                # with the pixels, and assuming depth's resolution equals
+                # colour's is the same class of unverified assumption.
+                shapes[depth_key] = depth.shape[1:]
 
-    count = len(next(iter(columns.values())))
     for key, value in images.items():
         if len(value) != count:
             raise EpisodeSkipped(f"{key} has {len(value)} frames, streams have {count}")

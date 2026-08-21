@@ -69,10 +69,37 @@ def test_a_broken_episode_raises_skipped(tmp_path, config):
 
 
 def test_state_and_action_differ(tmp_path, config):
-    """puppet 과 master 를 같은 배열로 채우는 실수를 잡는다."""
+    """puppet 과 master 를 같은 배열로 채우는 실수를 값 비교로 잡는다."""
     path = write_episode(tmp_path, "tienyi", "task", "0006_000000", frames=4, seconds=2)
 
     frame = read_episode(ref_for(path), config).frames[0]
+    state = frame["observation.states.arm_left_position"]
+    action = frame["actions.arm_left_position"]
 
-    assert frame["observation.states.arm_left_position"].dtype == np.float32
-    assert frame["actions.arm_left_position"].dtype == np.float32
+    assert state.dtype == np.float32
+    assert action.dtype == np.float32
+    # The fixture offsets master (action) by 1000 over puppet (state), so a bug
+    # that fills both sides from the same array would make this fail.
+    assert not np.array_equal(state, action), "state and action arrays should differ"
+
+
+def test_depth_shape_is_measured_not_derived_from_colour(tmp_path, config):
+    """color 와 depth 해상도가 다르면, depth shape 을 color 에서 베끼는 버그를 잡는다."""
+    path = write_episode(
+        tmp_path,
+        "tienyi",
+        "task",
+        "0007_000000",
+        frames=4,
+        seconds=2,
+        resolution=(48, 64),
+        depth_resolution=(32, 40),
+    )
+
+    episode = read_episode(ref_for(path), config, save_depth=True)
+
+    # The per-frame pixels would be correct either way -- decode_depth always
+    # returns the true size -- so the recorded shape is what a derive-from-colour
+    # bug gets wrong instead.
+    assert episode.shapes["observation.images.camera_top_depth"] == (32, 40, 1)
+    assert episode.frames[0]["observation.images.camera_top_depth"].shape == (32, 40, 1)
