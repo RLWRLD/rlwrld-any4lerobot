@@ -63,12 +63,18 @@ WORKDIR /app
 # --locked refuses to proceed if uv.lock disagrees with pyproject.toml. That is the
 # point of the image: two nodes can only be claimed identical if what decides their
 # contents is pinned, so a drifted lock should stop the build, not be quietly fixed.
+#
+# robomind_v2 alongside openx: this is the one image every node boots from, and
+# robomind_v2_2lerobot/robomind_v2_h5.py needs ray, which openx alone does not pull
+# in. Without it, `import ray` only fails once a run has already walked the whole
+# source tree looking for episodes -- see that file's own comment on why the
+# import is ordered before discovery instead of relying on this alone.
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_PROJECT_ENVIRONMENT=/app/.venv
 COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --extra openx --no-dev
+    uv sync --locked --extra openx --extra robomind_v2 --no-dev
 
 # Then swap torch for the CPU build. lerobot pins torch to the cu128 index for
 # linux in its own [tool.uv.sources], which our pyproject cannot outvote -- uv
