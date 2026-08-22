@@ -1,0 +1,26 @@
+# ARX 이동형 양팔. 4,295 에피소드 / 3.09 TB / 20 task. 실측 fps ~27.
+#
+# ⚠️ zh_description.txt 는 21 개인데 에피소드가 있는 task 는 20 개다 —
+# grab_beaker_from_left_and_place_on_right 는 설명만 있고 에피소드가 0 개다.
+# 탐색이 그 디렉토리를 그냥 지나간다.
+robot_type: ark_mobile
+
+cameras:
+  camera_left:  {depth: true}
+  camera_right: {depth: true}
+  camera_top:   {depth: true}
+
+streams:
+  arm_left_position:           {width: 6}
+  arm_right_position:          {width: 6}
+  end_effector_left_pose:      {width: 7}
+  end_effector_left_position:  {width: 1}
+  end_effector_right_pose:     {width: 7}
+  end_effector_right_position: {width: 1}
+  chassis_pose:                {width: 7}
+  chassis_twist:               {width: 6}
+
+instruction:
+  source: zh_file
+
+layout: real

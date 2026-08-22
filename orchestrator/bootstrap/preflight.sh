@@ -15,8 +15,10 @@ SCRATCH=${SCRATCH:-/scratch}
 UV=${UV:-/usr/local/bin/uv}
 MARKER=${BOOTSTRAP_MARKER:-/opt/oxe/BOOTSTRAP_DONE}
 # In the image the environment is already on PATH, so there is nothing for `uv run`
-# to resolve; on a machine built by user-data.sh there is.
-PYTHON=${PYTHON:-"$UV run --extra openx python"}
+# to resolve; on a machine built by user-data.sh there is. robomind_v2 alongside
+# openx: robomind_v2_2lerobot/robomind_v2_h5.py needs ray, which openx alone does
+# not pull in.
+PYTHON=${PYTHON:-"$UV run --extra openx --extra robomind_v2 python"}
 
 failures=0
 pass() { printf '  ok    %s\n' "$1"; }
@@ -86,13 +88,13 @@ apple=$(find . -name '._*' | wc -l)
 echo "== environment"
 
 if $PYTHON -c "
-import lerobot, tensorflow, tensorflow_datasets, datatrove
+import lerobot, ray, tensorflow, tensorflow_datasets, datatrove
 from generic_converter.pipeline import aggregate_tasks
 from openx2lerobot.adapter import OpenXAdapter
 " >/dev/null 2>&1; then
   pass "imports resolve"
 else
-  fail "imports do not resolve -- run: $UV sync --locked --extra openx --group dev"
+  fail "imports do not resolve -- run: $UV sync --locked --extra openx --extra robomind_v2 --group dev"
 fi
 
 if $PYTHON -c "import tensorflow_graphics" >/dev/null 2>&1; then

@@ -1,0 +1,30 @@
+# Tianyi 정적 양팔. repo 는 RoboMIND2.0-Tianyi, 디렉토리는 data/tienyi (철자 불일치).
+# 7,145 에피소드 / 1.90 TB / 36 task. 실측 fps ~48.
+robot_type: tienyi
+
+# 해상도는 첫 프레임을 디코드해서 얻는다. camera_color_resolution 필드는 sim 에서
+# 축 순서가 뒤집혀 있어 믿지 않는다.
+cameras:
+  camera_top: {depth: true}
+
+# puppet/<name>_align/data → observation.states.<name>
+# master/<name>_align/data → actions.<name>
+# width 는 검증용이다: 안 맞으면 그 에피소드를 건너뛴다.
+#
+# end_effector_{left,right}_pose 는 여기 없다. 그룹(<name>_align/{data,is_intervene,
+# timestamp})은 파일에 존재하지만 data 자체가 실물에서 항상 (0,) 로 비어 있다 --
+# is_intervene/timestamp 는 프레임 수만큼 채워지는데 data 만 비었다. 실측: 서로 다른
+# 4 task, 5 에피소드(1211/1212/0102 로 수집 일자도 다름) 전부 puppet·master 양쪽 다
+# (0,) -- 특정 에피소드나 task 의 결함이 아니라 이 embodiment 자체가 pose 를 아예
+# 안 쓴다는 뜻이다(그리퍼 open/scalar 인 end_effector_*_position 만 실제로 채워진다).
+# width: 7 로 요구했을 때 실물 변환이 100% 스킵됐던 것이 이 절의 근거다 -- Task 11 실행 기록.
+streams:
+  arm_left_position:           {width: 7}
+  arm_right_position:          {width: 7}
+  end_effector_left_position:  {width: 1}
+  end_effector_right_position: {width: 1}
+
+instruction:
+  source: zh_file        # zh_file | h5_metadata | dirname
+
+layout: real             # real | sim

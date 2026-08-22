@@ -184,3 +184,5 @@ docs/superpowers/
 
 # Claude Code worktrees, session state and local agent config
 .claude/
+robomind_v2_2lerobot/sample/
+robomind_v2_2lerobot/out/

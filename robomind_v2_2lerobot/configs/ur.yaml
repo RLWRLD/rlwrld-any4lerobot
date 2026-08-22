@@ -1,0 +1,27 @@
+# UR5e 양팔. repo 는 RoboMIND2.0-UR5, 디렉토리는 data/ur.
+# 49,940 에피소드 / 15.58 TB / 150 task. 실측 fps ~7.
+#
+# 이 repo 에만 깨진 파일이 몰려 있다: 6,144 B 빈 hdf5 4,500 개(전체의 8.27%)와
+# 9,485 B 잘린 파일 1 개. 리더가 건너뛴다.
+robot_type: ur
+
+cameras:
+  camera_front:       {depth: true}
+  camera_left:        {depth: true}
+  camera_right:       {depth: true}
+  camera_top:         {depth: true}
+  camera_wrist_left:  {depth: true}
+  camera_wrist_right: {depth: true}
+
+streams:
+  arm_left_position:           {width: 6}
+  arm_right_position:          {width: 6}
+  end_effector_left_pose:      {width: 7}
+  end_effector_left_position:  {width: 1}    # gripper. ur_dex 는 12 다
+  end_effector_right_pose:     {width: 7}
+  end_effector_right_position: {width: 1}
+
+instruction:
+  source: zh_file
+
+layout: real

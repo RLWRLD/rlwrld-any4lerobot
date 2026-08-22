@@ -1,0 +1,32 @@
+# Tien Kung 시뮬레이션. 8,015 에피소드 / 0.19 TB / 25 task. 에피소드 평균 24 MB —
+# 12 종 중 가장 작아서 스모크 테스트에 쓰기 좋다.
+#
+# 카메라 이름이 real tienkung 과 다르다: camera_top 이 아니라 camera_head.
+#
+# Task 16 실측 (2 에피소드, 530·338 프레임, task 101):
+#  * timestamp 는 초가 아니라 밀리초다 — 33-34 씩 진행 (~30 Hz). config 에는 그래서
+#    fps 필드가 없다 — reader.episode_fps 가 layout: sim 을 보고 단위를 바꿔서 잰다.
+#    한 에피소드는 중간에 시계가 한 번 거꾸로(-2600 근처) 튀었다 — episode_fps 는
+#    그래서 양끝 차이 대신 프레임 간 간격 중 양수만 골라 평균을 쓴다 (중앙값이 아니라
+#    평균인 이유는 그 함수의 docstring 참고 — timestamp 가 정수 밀리초라 중앙값은
+#    33/34 중 한쪽으로 양자화돼 +1% 오차가 생긴다).
+#  * master 에는 end_effector_{left,right}_pose 가 없다 (puppet 에만 있다) — franka_sim
+#    과 같은 이유로 여기 선언하지 않는다.
+#  * end_effector_{left,right}_position 도 뺐다 — 이유가 다르다: puppet 은 12-wide,
+#    master 는 6-wide (두 에피소드 모두 동일하게 측정). 스키마는 스트림 하나에 폭
+#    하나를 양쪽에 같이 요구하므로(reader.read_streams), 이 스트림은 이 config 로
+#    표현할 수 없다 — 어느 쪽 폭을 적어도 다른 쪽에서 전 에피소드가 skip 된다.
+#    per-side 폭을 스키마에 추가하는 건 이 계획이 미루는 후속 작업이다.
+robot_type: tienkung_sim
+
+cameras:
+  camera_head: {depth: true}
+
+streams:
+  arm_left_position:  {width: 7}
+  arm_right_position: {width: 7}
+
+instruction:
+  source: h5_metadata
+
+layout: sim

@@ -23,6 +23,7 @@ agibot = ["h5py"]
 libero = ["h5py"]
 robocasa = ["h5py"]
 robomind = ["h5py"]
+robomind_v2 = ["h5py", "pyyaml", "opencv-python-headless", "ray"]
 # openx2lerobot reads RLDS/tfrecord through tfds, which only ships a TensorFlow
 # reader -- hence the heavyweight dependency for one converter.
 # tensorflow-graphics for the quaternion-to-euler step three of the OXE

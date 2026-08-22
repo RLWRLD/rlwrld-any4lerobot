@@ -210,6 +210,12 @@ robocasa = [
 robomind = [
     { name = "h5py" },
 ]
+robomind-v2 = [
+    { name = "h5py" },
+    { name = "opencv-python-headless" },
+    { name = "pyyaml" },
+    { name = "ray" },
+]
 spec2lerobot = [
     { name = "h5py" },
     { name = "pyyaml" },
@@ -232,16 +238,20 @@ requires-dist = [
     { name = "h5py", marker = "extra == 'libero'" },
     { name = "h5py", marker = "extra == 'robocasa'" },
     { name = "h5py", marker = "extra == 'robomind'" },
+    { name = "h5py", marker = "extra == 'robomind-v2'" },
     { name = "h5py", marker = "extra == 'spec2lerobot'" },
     { name = "lerobot", extras = ["dataset"], git = "https://github.com/huggingface/lerobot.git?rev=9e14584904d14eb79dc960b27bb40220f85bb993" },
     { name = "numpy" },
+    { name = "opencv-python-headless", marker = "extra == 'robomind-v2'" },
+    { name = "pyyaml", marker = "extra == 'robomind-v2'" },
     { name = "pyyaml", marker = "extra == 'spec2lerobot'" },
+    { name = "ray", marker = "extra == 'robomind-v2'" },
     { name = "tensorflow", marker = "extra == 'openx'" },
     { name = "tensorflow-datasets", marker = "extra == 'openx'" },
     { name = "tensorflow-graphics", marker = "extra == 'openx'" },
     { name = "torchcodec" },
 ]
-provides-extras = ["hdf5", "spec2lerobot", "agibot", "libero", "robocasa", "robomind", "openx", "ray"]
+provides-extras = ["hdf5", "spec2lerobot", "agibot", "libero", "robocasa", "robomind", "robomind-v2", "openx", "ray"]
 
 [package.metadata.requires-dev]
 dev = [

@@ -1,0 +1,25 @@
+# Franka 양팔. repo 는 RoboMIND2.0-Franka-Part-1 ~ 5 다섯 개이고, 전부 data/franka 로
+# 시작한다 — task 만 나눠 담은 샤딩이고 스키마는 하나라서 config 는 이 한 장이다.
+# 112,624 에피소드 / 50.87 TB / 213 task. 실측 fps 10-14.
+robot_type: franka
+
+cameras:
+  camera_front:       {depth: true}
+  camera_left:        {depth: true}
+  camera_right:       {depth: true}
+  camera_top:         {depth: true}
+  camera_wrist_left:  {depth: true}
+  camera_wrist_right: {depth: true}
+
+streams:
+  arm_left_position:           {width: 8}   # 7 관절 + gripper
+  arm_right_position:          {width: 8}
+  end_effector_left_pose:      {width: 7}
+  end_effector_left_position:  {width: 1}
+  end_effector_right_pose:     {width: 7}
+  end_effector_right_position: {width: 1}
+
+instruction:
+  source: zh_file
+
+layout: real
